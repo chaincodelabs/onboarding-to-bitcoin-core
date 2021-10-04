@@ -1,0 +1,266 @@
+= Week 2 — Overview & Architecture
+:toc:
+:toclevels: 4
+:developing-bitcoin: https://blog.okcoin.com/2020/09/15/developing-bitcoin/
+:core-contributing: https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md
+:core-developer-notes: https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md
+:atack-pr-core: https://jonatack.github.io/articles/how-to-contribute-pull-requests-to-bitcoin-core
+:beams-git-commit: https://chris.beams.io/posts/git-commit/
+:making-clean: https://github.com/bitcoin/bitcoin/issues/19330
+:lsilva01-architecture: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc
+:lsilva01-regions: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc
+:bip-signet: https://github.com/bitcoin/bips/blob/master/bip-0325.mediawiki
+:bitcoin-wiki-signet: https://en.bitcoin.it/wiki/Signet
+:what-is-a-bip: https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip
+:bip2: https://github.com/bitcoin/bips/blob/master/bip-0002.mediawiki
+:bip-extensions-mail: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html
+:issue-22665: https://github.com/bitcoin/bitcoin/pull/22665
+:core-dev-08-26: https://www.erisian.com.au/bitcoin-core-dev/log-2021-08-26.html
+:kallewoof-BIP2: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html
+:signet-readme: https://github.com/bitcoin/bitcoin/blob/master/contrib/signet/README.md
+:bc-arch-1: https://www.youtube.com/watch?v=J1Ru8V36z_Y
+:bc-arch-2: https://www.youtube.com/watch?v=RVWcUnpZX4E
+:bc-arch-3: https://www.youtube.com/watch?v=UiD5DZU9Zp4
+:good-first-issue: https://github.com/bitcoin/bitcoin/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+:v22-0: https://github.com/bitcoin/bitcoin/tree/v22.0
+:bip2-types: https://github.com/bitcoin/bips/blob/master/bip-0002.mediawiki#BIP_types
+:bip2-workflow: https://github.com/bitcoin/bips/blob/master/bip-0002.mediawiki#BIP_workflow
+:pr-21186: https://github.com/bitcoin/bitcoin/pull/21186
+:pr-21186-motivation: https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848
+:wiki-signet: https://en.bitcoin.it/wiki/Signet#Custom_Signet
+:signet-faucet: https://signet.bc-2.jp/
+:getcoins: https://github.com/bitcoin/bitcoin/tree/master/contrib/signet#getcoinspy
+
+== Goals
+
+* How are changes made to Bitcoin Core?
+* Development environment optimisations
+* How is Bitcoin Core source code organised
+* What's the BIP process?
+** What type of changes require a BIP?
+* Learn how to test changes on a live distributed test network
+
+== Concepts
+
+* Decentralised Development
+* BIPs
+* Bitcoin Core development
+* Bitcoin Core architecture 
+* Signet
+
+== Source material
+
+=== Decentralised development
+
+Olivia Lovenmark and Amiti Uttarwar describe in their blog post {developing-bitcoin}[Developing Bitcoin] how changes to bitcoin follow the pathway from proposal to being merged into the software, and finally adopted by users.
+
+=== BIPs
+
+Bitcoin uses Bitcoin Improvement Proposals, or BIPs, as a design document for introducing new features or behaviour into bitcoin. 
+Bitcoin magazine describes what a BIP is in their article {what-is-a-bip}[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
+
+The BIPs are hosted on GitHub and include {bip2}[BIP2] which self-describes the BIP process in more detail.
+Of particular interest might be the sections {bip2-types}[BIP Types] and {bip2-workflow}[BIP Workflow].
+
+=== Bitcoin Core development
+
+The Bitcoin Core project itself contains two documents of particular interest to contributors:
+
+. {core-contributing}[CONTRIBUTING.md] -- How to get started contributing to the project.
+. {core-developer-notes}[developer-notes.md] -- Development guidelines, coding style etc.
+
+Jon Atack's article {atack-pr-core}[How To Contribute Pull Requests To Bitcoin Core] describes some less-obvious requirements that any pull request you make might be subjected to during peer review, for example that it needs an accompanying test or, that an intermediate commit on the branch doesn't compile.
+It also describes the non-codified expectation that contributors should not only be writing code, but more importantly be reviewing others' pull requests.
+Most developers enjoy writing their own code more than reviewing code from others, but the decentralised review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
+
+NOTE: Jon's estimates of  "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon personally feels would be best for the project. Don't be put off submitting a potentially valuable pull request just because "you have not completed enough reviews", as this requirement doesn't exist!
+
+When writing commit messages be sure to have read Chris Beams' {beams-git-commit}[How to Write a Git Commit Message] blog post.
+As described in CONTRIBUTING.md pull requests should be prefixed with the component or area the PR affects.
+Common areas are listed in CONTRIBUTING.md {core-contributing}#creating-the-pull-request[here].
+In addition to this, individual commit messages are also often given similar prefixes in the commit title.
+
+Some compile-time issues can be caused by an unclean build directory.
+The comments in {making-clean}[PR 19330] provide some clarifications and tips on how other contributors clean their directories, as well as some ideas for shell aliases.
+
+=== Bitcoin Core architecture
+
+lsilva01 has written a deep technical dive into the architecture of Bitcoin Core in the document {lsilva01-architecture}[Bitcoin Architecture].
+
+Once you've gained some insight into the architecture of the program itself, you can learn further details about which code files implement which functionality using lsilva01's document {lsilva01-regions}[Regions].
+
+James O'Beirne has recorded 3 videos which go into detail on how the codebase is laid out, how the build system works, what devtools there are, as well as what the primary function of many of the files are:
+
+. {bc-arch-1}[Architectural tour of Bitcoin Core (part 1 of 3)]
+. {bc-arch-2}[Architectural tour of Bitcoin Core (part 2 of 3)]
+. {bc-arch-3}[Architectural tour of Bitcoin Core (part 3 of 3)]
+
+=== Signet
+
+Signet is both a tool that allows developers to create their own networks for testing interactions between different Bitcoin software and the name of the most popular of these testing networks.
+Signet was codified in {bip-signet}[BIP325].
+
+To connect to the "main" Signet network, simply start bitcoind with the signet flag, e.g. `bitcoind -signet`.
+Don't forget to also pass the signet flag to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet`.
+Instructions on how to setup your own Signet network can be found in the Bitcoin Core {signet-readme}[Signet README.md].
+The {bitcoin-wiki-signet}[Bitcoin wiki Signet page] provides additional background on Signet.
+
+== Historical context & research
+
+=== BIP process
+
+Bitcoin Core {issue-22665}[issue #22665] described how BIP125 was not being strictly adhered to by Bitcoin Core.
+This raised questions amongst developers about whether the code or the BIP should act as the specification for the behaviour, with most developers expressing that they felt that the code was the spec, and any BIP generated was merely a design document to aid with reimplementation by others.
+Note that this view was not completely unanimous in the community.
+For consensus critical code most bitcoin (Core) developers consider "the code is the spec" to be the ultimate source of truth.
+A knock-on effect of this was that there were calls for review on BIP2 itself, with newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posting his thoughts to the {kallewoof-BIP2}[bitcoin-dev mailing list].
+
+== How to get started
+
+How can you get started with Bitcoin Core development?
+There are 3 main avenues which might lead you to submitting your *own* pull request to the repository, as opposed to getting started by performing reviews:
+
+. Finding a `good first issue` tagged in the {good-first-issue}[issue tracker]
+. Fixing a bug (you've found yourself?)
+. Adding a new feature (that you want for yourself?)
+
+Of these three, I'd highly recommend choosing a good first issue from an area of the codebase that seems interesting to you.
+The reason is that these have been somewhat implicitly "concept ACKed" by other contributors as "something that is likely worth working on".
+For the purposes of the remainder of this section though it doesn't much matter which approach you decide to take.
+
+Hopefully now you have an idea of roughly what your PR is going to _do_; often this is the hardest part to getting started!
+If you don't have a bugfix or new feature in mind, and you're struggling to find a good first issue which looks suitable for you, don't panic.
+Instead keep reviewing other developers' PRs to continue improving your understanding of the process (and the codebase), while you watch the issue tracker for something which you like the look of.
+
+Now that you've decided what to work on it's time to take a look at the current behaviour of that part of the code and perhaps more importantly, try to understand _why_ this was originally implemented in this way.
+This process of code "archaeology" will prove invaluable in the future when you are trying to learn about other parts of the codebase on your own.
+
+===  Codebase archaeology
+
+When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally, if possible.
+One of the best ways to do this is by using a combination of git tools -- `git blame`, `git log -S`, and less commonly `git log -G` -- and the discussions on GitHub.
+
+==== git blame
+
+The git `blame` command will show you when and by who a particular line of code was last changed by.
+
+For example, if we checkout Bitcoin Core at {v22-0}[v22.0] and we are planning to make a change related to the `m_addr_send_times_mutex` found in `src/net_processing.cpp`, we might want to find out more about its history before touching it.
+
+With `git `blame` we can find out the last person who touched this code: 
+
+[source,bash,options="nowrap"]
+----
+# Find the line number for blame
+$ grep -n m_addr_send_times_mutex src/net_processing.cpp
+233:    mutable Mutex m_addr_send_times_mutex;
+235:    std::chrono::microseconds m_next_addr_send GUARDED_BY(m_addr_send_times_mutex){0};
+237:    std::chrono::microseconds m_next_local_addr_send GUARDED_BY(m_addr_send_times_mutex){0};
+4304:    LOCK(peer.m_addr_send_times_mutex);
+----
+
+[source,bash]
+----
+$ git blame -L233,233 src/net_processing.cpp
+
+76568a3351 (John Newbery 2020-07-10 16:29:57 +0100 233)     mutable Mutex m_addr_send_times_mutex;
+----
+
+With this information we can easily look up that commit to gain some additional context:
+
+[source,bash]
+----
+$ git show 76568a3351
+
+───────────────────────────────────────
+commit 76568a3351418c878d30ba0373cf76988f93f90e
+Author: John Newbery <john@johnnewbery.com>
+Date:   Fri Jul 10 16:29:57 2020 +0100
+
+    [net processing] Move addr relay data and logic into net processing
+
+----
+
+So we've learned now that this mutex was moved here by John from net.{cpp|h} in it's most recent touch.
+Let's see what else we can find out about it.
+
+==== git log -S
+
+`git log -S` allows us to search for commits where this line was modified (not where it was only moved, for that use `git log -G`).
+A 'modification' (vs. a 'move') in git terms implies that there are uneven instances of the search term in the commit diffs add/remove sections.
+
+[source,bash]
+----
+$ git log -S m_addr_send_times_mutex
+───────────────────────────────────────
+commit 76568a3351418c878d30ba0373cf76988f93f90e
+Author: John Newbery <john@johnnewbery.com>
+Date:   Fri Jul 10 16:29:57 2020 +0100
+
+    [net processing] Move addr relay data and logic into net processing
+
+───────────────────────────────────────
+commit ad719297f2ecdd2394eff668b3be7070bc9cb3e2
+Author: John Newbery <john@johnnewbery.com>
+Date:   Thu Jul 9 10:51:20 2020 +0100
+
+    [net processing] Extract `addr` send functionality into MaybeSendAddr()
+
+    Reviewer hint: review with
+
+     `git diff --color-moved=dimmed-zebra --ignore-all-space`
+
+───────────────────────────────────────
+commit 4ad4abcf07efefafd439b28679dff8d6bbf62943
+Author: John Newbery <john@johnnewbery.com>
+Date:   Mon Mar 29 11:36:19 2021 +0100
+
+    [net] Change addr send times fields to be guarded by new mutex
+
+----
+
+We can see that John also originally added this to `net.{cpp|h}`, before later moving it into `net_processing.{cpp|h}` as part of a push to separate out addr relay data and logic from `net.cpp`.
+
+==== PR discussion
+
+To get even more context we can take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
+To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top, e.g.: 
+
+[source,bash]
+----
+$ git log --merges --reverse --oneline --ancestry-path 4ad4abcf07efefafd439b28679dff8d6bbf62943..upstream | head -n 1
+
+d3fa42c79 Merge bitcoin/bitcoin#21186: net/net processing: Move addr data into net_processing
+----
+
+Reading up on {pr-21186}[PR#21186] will hopefully provide us with even more context.
+For example we can see from the {pr-21186-motivation}[linked PR] what the motivation for this move was.
+
+== Solo work
+
+* Read lsilva01's {lsilva01-architecture}[1.0 Bitcoin Architecture]. Particularly sections:
+** Executables
+** {lsilva01-regions}[Regions] (and all sub-sections)
+
+TODO: Add questions on current architecture of Core
+
+== Group work
+
+=== Signet
+
+Either:
+
+* One member of the group create a private signet as documented on the Bitcoin Wiki {wiki-signet}[Custom Signet] page.
+* Distribute the `signetchallenge` value
+* One or all group members can act as Signet miners
+* Have all group members connect in to the custom signet
+
+OR:
+
+* Group members request some signet coins from the {signet-faucet}[signet faucet] or using the {getcoins}[getcoins.py] script.
++
+NOTE: The Signet `getcoins.py` script may not work if a captcha has been added to the site.
+
+THEN:
+
+* Send coins around the group
+
