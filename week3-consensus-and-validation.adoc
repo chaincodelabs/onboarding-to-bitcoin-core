@@ -1,0 +1,200 @@
+= Week 3 — Consensus & Validation
+:toc:
+:toclevels: 4
+:aantonop-decentralized-consensus: https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch10.asciidoc#decentralized-consensus
+:lsilva01-consensus: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#consensus_region
+:lsilva01-validation: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#validationhcpp
+:lsilva01-policy: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#policy_region
+:lsilva01-script-verification: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc#script-verification
+:sdaftuar-se-answer: https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319
+:process-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L3667-L3701
+:check-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L3192-L3264
+// TODO: keep this link up to date if/when PR merged
+:glozow-tx-mempool-validation: https://github.com/glozow/bitcoin-notes/blob/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool
+:glozow-block-validation: https://github.com/glozow/bitcoin-notes/blob/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation
+:recv-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001
+:broadcast-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29
+:recv-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529
+
+== Goals
+
+* What is consensus
+* What is validation
+* What is policy
+
+== Concepts
+
+* Decentralised consensus
+* Transaction validation in Bitcoin Core
+* How do nodes stay in consensus on the network
+
+== Source material
+
+=== Decentralised consensus
+
+One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
+The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
+The secondary mechanism is that all nodes should follow the chain with the most cumulative proof-of-work.
+The combination of following these two mechanisms is that all nodes in the network will eventually converge onto a single canonical chain.
+For more information on how the bitcoin networks' decentralised consensus mechanism works, see the Mastering Bitcoin section on {aantonop-decentralized-consensus}[decentralized consensus].
+
+==== Consensus in Bitcoin Core
+
+Review of the architecture of Bitcoin Core from the previous weeks material will naturally lead us to a region in the project titled {lsilva01-consensus}["consensus/"] which we might conclude contains *all* the logic for maintaining consensus.
+However this is not entirely the case.
+
+_Aspects_ of consensus-enforcement code can be found across the Bitcoin Core codebase in a number of regions and files, including notably:
+
+* {lsilva01-validation}[validation.{h|cpp}]
+* {lsilva01-consensus}[consensus/]
+* {lsilva01-policy}[policy/]
+* {lsilva01-script-verification}[script verification]
+
+Why is such a critical function split up between many files, and how do they all interact?
+Part of the answer can be learned from sdaftuar's {sdaftuar-se-answer}[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
+
+The answer teaches us that policy checks are a superset of validation checks, that is to say that a transaction that passes policy checks has implicitly passed consensus checks, too.
+Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
+Many of the policy checks contained in {lsilva01-policy}[policy/] are called from inside {lsilva01-validation}[validation] in the context of adding a new transaction to the mempool.
+
+==== Transaction validation
+
+We can follow a transactions' journey through Bitcoin Core by following glozow's notes on transaction {glozow-tx-mempool-validation}[Validation and submission to the mempool].
+glozow details what different types of checks there are run on a new transaction before it is accepted into the node's local mempool -- consensus vs policy, script vs non-script, contextual vs context-free.
+
+glozow continues with sections on P2P transaction relay, orphans and mining, but more relevant to consensus is the following section, {glozow-block-validation}[Block Validation], which describes the consensus checks performed on newly-learned blocks, specifically:
+
+:utxo-set: https://github.com/bitcoin/bitcoin/pull/1677
+:total-sigop-cost: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935
+:duplicate-transactions: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866
+:timestamps: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179
+:witness-commitments: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255
+:block-subsidy-amount: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969
+:input-scripts: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946
+:work-queue: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887
+:script-cache: https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430
+
+[quote,glozow]
+____
+Since v0.8, Bitcoin Core nodes have used a {utxo-set}[UTXO set] rather than blockchain lookups to represent state and validate transactions.
+To fully validate new blocks, nodes only need to consult their UTXO set and knowledge of the current consensus rules.
+Since consensus rules depend on block height and time (both of which can decrease in a reorg), they are recalculated for each block prior to validation.
+
+Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. {total-sigop-cost}[total sigop cost], {duplicate-transactions}[duplicate transactions], {timestamps}[timestamps], {witness-commitments}[witness commitments] {block-subsidy-amount}[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and {input-scripts}[input scripts]) for each block.
+
+Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a {work-queue}[work queue] delegated to a set of threads while the main validation thread is working on other things.
+While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
+
+If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just {script-cache}[uses the script cache]!
+____
+
+lsilva01's section on {lsilva01-script-verification}[script verification] also highlights how the script interpreter is called from at least 3 distinct sites within the codebase:
+
+:recv-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001
+:broadcast-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29
+:recv-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529
+[quote,lsilva01]
+____
+* when the node {recv-new-tx}[receives a new transaction].
+
+* when the {broadcast-new-tx}[node wants to broadcast a new transaction].
+
+* when {recv-new-block}[receiving a new block]
+____
+
+Having considered both transactions that were already known about (in the mempool), and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
+
+==== Multiple chains
+
+TODO: Reorgs, undo data, `DisconnectBlock`
+
+==== DER signature verification consensus bug
+
+:consensus-bug-BIP66: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html
+:libsecp256k1: https://github.com/bitcoin/bitcoin/pull/6954
+
+Pieter Wuille {consensus-bug-BIP66}[disclosed the possibility of a consensus failure] due to DER signature verification when using OpenSSL.
+This was ultimately fixed in {libsecp256k1}[PR 6954] which switched to using libsecp256k1 for signature verification.
+
+== Exercises
+
+:PR10279: https://github.com/bitcoin/bitcoin/pull/10279
+:PR20158: https://github.com/bitcoin/bitcoin/pull/20158
+:tx-in-range: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/consensus/tx_check.cpp#L25-L28
+:standard-tx-weight: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/policy/policy.cpp#L88
+:inputs-available: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L671-L692
+:BIP50: https://github.com/bitcoin/bips/blob/master/bip-0050.mediawiki
+
+[qanda]
+What is the difference between contextual and context-free validation checks?::
+Contextual checks require some knowledge of the current "state", e.g. ChainState, chain tip or UTXO set.
++
+Context-free checks only require the information required in the transaction itself.
++
+See {glozow-tx-mempool-validation}[glozow-tx-mempool-validation] for more info.
+
+What are some examples of each?::
+context-free:
++
+. `tx.isCoinbase()`
+. {tx-in-range}[0 &#8804; tx_value &#8804; MAX_MONEY]
+. {standard-tx-weight}[tx not overweight]
+
++
+contextual: {inputs-available}[check inputs are available]
+
+In which function(s) do UTXO-related validity checks happen?::
+`ConnectBlock()`
+
+What type of validation checks are `CheckBlockHeader()` and `CheckBlock()` performing?::
+context-free
+
+Which class is in charge of managing the current blockchain?::
+`ChainstateManager()`
+
+Which class is in charge of managing the UTXO set?::
+`CCoinsViews()`
+
+Which functions are called when a longer chain is found that we need to re-org onto?::
+TODO
+
+Are there any areas of the codebase where the same consensus or validation checks are performed twice?::
+Again see {glozow-tx-mempool-validation}[glozows notes] for examples
+
+Why does `CheckInputsFromMempoolAndCache` exist?::
+To prevent us from re-checking the scripts of transactions already in our mempool during consensus validation on learning about a new block
+
+Which function(s) are in charge of validating the merkle root of a block?::
+`BlockMerkleRoot()` and `BlockWitnessMerkleRoot()` construct a vector of merkle leaves, which is then passed to `ComputeMerkleRoot()` for calculation.
+// TODO: Calculate the merkle root of a sample block
+
+Can you find any evidence (e.g. PRs) which have been made in an effort to modularize consensus code?::
+A few examples: {PR10279}[#10279], {PR20158}[#20158]
+
+What is the function of `BlockManager()`?::
+It manages the current most-work chaintip and pruning of un-needed blocks (`\*.blk`) and associated undo (`*.rev`) files
+
+What stops a malicious node sending multiple invalid headers to try and use up a nodes' disk space? (hint: these might be stored in `BlockManager.m_failed_blocks`)::
+Even invalid headers would need a valid proof of work which would be too costly to construct for a spammer
+
+Which functions are responsible from writing consensus-valid blocks to disk?::
+TODO: answer
+
+Are there any circumstances you could see under which changes to the database layer could result in nodes falling out of consensus?::
+{BIP50}[BIP 50] provides a historical example of this happening.
++
+BDB required you to configure some number of locks for your DB. Bitcoin Core also was interpreting failure to grab locks (when needed) as the block being invalid. This combination caused some nodes to mark blocks as invalid and caused a consensus split.
+
+Are there any other components to Bitcoin Core which similarly to the block storage database, are not themselves performing validation but can still be consensus-critical?::
+Not sure myself, sounds like an interesting question though!
+
+In which module (and class) is signature verification handled?::
+`src/script/interpreter.cpp#BaseSignatureChecker`
+
+Which function is used to calculate the Merkle root of a block, and from where is it called?::
+`src/consensus/merkle.cpp#ComputeMerkleRoot` is used to compute the merkle root.
++
+It is called from `src/chainparams.cpp#CreateGenesisBlock`, `src/miner.cpp#IncrementExtraNonce` & `src/miner.cpp#RegenerateCommitments` and from `src/validation.cpp#CheckBlock` to validate incoming blocks.
+
+Practical question on Merkle root calculation::
+TODO, add exercise
