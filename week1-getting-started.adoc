@@ -21,10 +21,9 @@
 :lsilva01-git-tutorial: https://github.com/lsilva01/operating-bitcoin-core-v1/blob/main/git-tutorial.md
 :chris-beams-git: https://chris.beams.io/posts/git-commit/
 :core-test-overview: https://github.com/bitcoin/bitcoin/tree/master/test
-:core-functional-test-suite: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc
+:core-functional-test-suite: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc
 :core-running-the-tests: https://github.com/bitcoin/bitcoin/tree/master/test#running-the-tests
 :core-unit-tests: https://github.com/bitcoin/bitcoin/blob/master/src/test/README.md
-:lsilva-function-test-framework: https://github.com/lsilva01/dissecting-bitcoin-core-v01/blob/main/5_0_functional_test_framework.asciidoc
 
 == Goals
 
@@ -209,7 +208,7 @@ Comments (inside issues, PRs, discussions etc.) are where users can discuss rele
 
 === Create a test using test framework
 
-* Read lsilva01's {lsilva-function-test-framework}[Functional Test Framework]
+* You can refer to the {core-functional-test-suite}[Functional Test Framework] doc
 * Try and write a new functional test which can send p2p messages between nodes
 +
 TIP: starting with `ping` and `pong` messages might be easiest

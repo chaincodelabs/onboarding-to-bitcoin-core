@@ -2,10 +2,10 @@
 :toc:
 :toclevels: 4
 :aantonop-decentralized-consensus: https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch10.asciidoc#decentralized-consensus
-:lsilva01-consensus: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#consensus_region
-:lsilva01-validation: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#validationhcpp
-:lsilva01-policy: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#policy_region
-:lsilva01-script-verification: https://github.com/adamjonas/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc#script-verification
+:lsilva01-consensus: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#consensus_region
+:lsilva01-validation: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#validationhcpp
+:lsilva01-policy: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#policy_region
+:lsilva01-script-verification: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc#script-verification
 :sdaftuar-se-answer: https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319
 :process-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L3667-L3701
 :check-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L3192-L3264
