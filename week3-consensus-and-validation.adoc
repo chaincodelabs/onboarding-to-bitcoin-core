@@ -110,22 +110,23 @@ Having considered both transactions that were already known about (in the mempoo
 
 ==== DER signature verification consensus bug
 
-Pieter Wuille {consensus-bug-BIP66}[disclosed the possibility of a consensus failure] due to DER signature verification when using OpenSSL.
-This is the result of OpenSSL accepting multiple serialization formats (for the same transaction) as valid.
-It means that a transaction ID can be changed because the signature contributes to the hash.
+Pieter Wuille {consensus-bug-BIP66}[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
+OpenSSL was accepting multiple serialization formats (for the same transaction) as valid.
+This meant that a transaction's ID (txid) can be changed because the signature contributes to the txid hash.
 
-There are two possible cases to consider:
+There were a few main cases to consider:
 
 . first party malleation: signature length descriptor is extended to 5 bytes
 . third party malleation: signatures are "slightly" tweaked (or padded)
+. third party malleation: negating the `S` value of the ECDSA signature
 
-In the first case (first party malleation) there is a higher risk of causing a consensus-related chainsplit.
+In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
 The first party (sender) can create a valid (normal length) signature which uses a 5 byte length descriptor, meaning that it might not be accepted by OpenSSL on all platforms.
 
-In the second case (third party malleation) there is a lesser risk of causing a consensus-related chainsplit.
+In the second case, of signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
 However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning), in the event that they are relying on txids to track transactions.
 
-Of interest might be the methodology behind this fix.
+It is interesting to consider the order of the steps taken to fix this potential vulnerability.
 First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings.
 This was executed in {der-signatures}[PR 2520].
 Following the policy change, the strict encoding rules were later enforced by consensus in {impl-bip66}[PR 5713].
@@ -137,7 +138,28 @@ Having OpenSSL as a consensus-critical dependency to the project was ultimately 
 
 ==== Multiple chains
 
+:assumeUTXO: https://bitcoinops.org/en/topics/assumeutxo/
+
 TODO: Reorgs, undo data, `DisconnectBlock`
+
+Bitcoin nodes should ultimately converge in consensus on the most-work chain.
+Being able to track and monitor multiple chain (tips) concurrently is a key requirement for this to take place.
+There are a number of different states which the client must be able to handle:
+
+. A single, most-work chain being followed
+. Stale blocks learned about but not used
+. Full reorganisation from one chain tip to another
+
+`BlockManager` is tasked with maintaining a tree of all blocks learned about, along with their total work so that the most-work chain can be quickly determined.
+
+`CChainState` is responsible for updating our local view of the best tip, including reading and writing blocks to disk, and updating the UTXO set.
+A single `BlockManager` is shared between all instances of `CChainState`.
+
+`ChainstateManager` is tasked with managing multiple ``CChainState``s.
+Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the {assumeUTXO}[assumeUTXO] project.
+
+When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.
+
 
 ==== Bitcoin Core database consensus
 
@@ -230,3 +252,4 @@ Once the signature has been changed, the transaction ID (hash) will also change.
 If the modified transaction is then included in a block, before the original, the effect is that the sender will still see the outgoing transaction as "unconfirmed" in their wallet.
 The sender wallet should however also see the accepted (modified) outgoing transaction, so their balance will be calculated correctly, only a "stuck doublespend" will pollute their wallet.
 The receiver will not perceive anything unordinary, unless they were tracking the incoming payment using the txid as given to them by the sender.
+
