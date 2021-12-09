@@ -9,6 +9,9 @@
 :amiti-onboarding-core: https://medium.com/@amitiu/onboarding-to-bitcoin-core-7c1a83b20365
 :jon-reviewing-prs: https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it
 :jimmy-intro-core-dev: https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8
+:doxygen: https://www.doxygen.nl/index.html
+:bitcoin-core-doxygen: https://doxygen.bitcoincore.org/
+:gen-doxygen: https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#generating-documentation
 :bitcoin-core-org: https://github.com/orgs/bitcoin/people
 :bitcoin-core-dev-ml: https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev
 :bitcoin-core-reviewers: https://github.com/bitcoin/bitcoin/blob/master/REVIEWERS 
@@ -61,6 +64,11 @@ It can be interesting to hear stories of how current contributors entered the sp
 * {amiti-onboarding-core}[Amiti Uttarwar -- Onboarding to Bitcoin Core]
 * {jon-reviewing-prs}[Jon Atack -- On Reviewing, and Helping Those Who Do It]
 * {jimmy-intro-core-dev}[Jimmy song -- A Gentle Introduction to Bitcoin Core Development]
+
+=== Doxygen
+
+Bitcoin Core uses {doxygen}[Doxygen] to generate developer documentation automatically from it's annotated C++ codebase.
+Developers can access documentation of the current release of Bitcoin Core online at {bitcoin-core-doxygen}[doxygen.bitcoincore.org], or alternatively can generate documentation for their current head using `make docs` (see {gen-doxygen}[Generating Documentaion] for more info).
 
 == Historical context & Research
 
