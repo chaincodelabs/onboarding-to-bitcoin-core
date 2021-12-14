@@ -1,42 +1,6 @@
 = Week 3 — Consensus & Validation
 :toc:
-:toclevels: 4
-:aantonop-decentralized-consensus: https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch10.asciidoc#decentralized-consensus
-:obc-consensus: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#consensus_region
-:obc-validation: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#validationhcpp
-:obc-policy: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc#policy_region
-:obc-script-verification: https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc#script-verification
-:sdaftuar-se-answer: https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319
-:process-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L3667-L3701
-:check-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L3192-L3264
-// TODO: keep this link up to date if/when PR merged
-:glozow-tx-mempool-validation: https://github.com/glozow/bitcoin-notes/blob/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool
-:glozow-block-validation: https://github.com/glozow/bitcoin-notes/blob/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation
-:recv-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001
-:broadcast-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29
-:recv-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529
-:utxo-set: https://github.com/bitcoin/bitcoin/pull/1677
-:total-sigop-cost: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935
-:duplicate-transactions: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866
-:timestamps: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179
-:witness-commitments: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255
-:block-subsidy-amount: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969
-:input-scripts: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946
-:work-queue: https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887
-:script-cache: https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430
-:recv-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001
-:broadcast-new-tx: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29
-:recv-new-block: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529
-:PR10279: https://github.com/bitcoin/bitcoin/pull/10279
-:PR20158: https://github.com/bitcoin/bitcoin/pull/20158
-:tx-in-range: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/consensus/tx_check.cpp#L25-L28
-:standard-tx-weight: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/policy/policy.cpp#L88
-:inputs-available: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L671-L692
-:BIP50: https://github.com/bitcoin/bips/blob/master/bip-0050.mediawiki
-:consensus-bug-BIP66: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html
-:libsecp256k1: https://github.com/bitcoin/bitcoin/pull/6954
-:der-signatures: https://github.com/bitcoin/bitcoin/pull/2520
-:impl-bip66: https://github.com/bitcoin/bitcoin/pull/5713
+:toclevels: 3
 
 == Concepts
 
@@ -53,64 +17,64 @@ One of the most fundamental concepts behind the bitcoin network is that nodes ar
 The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
 The secondary mechanism is that all nodes should follow the chain with the most cumulative proof-of-work.
 The product of following these two mechanisms is that all nodes in the network will _eventually_ converge onto a single canonical chain.
-For more information on how the bitcoin networks' decentralised consensus mechanism works see the Mastering Bitcoin section on {aantonop-decentralized-consensus}[decentralized consensus].
+For more information on how the bitcoin networks' decentralised consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
 
 ==== Consensus in Bitcoin Core
 
-Review of the architecture of Bitcoin Core from the previous weeks' material will naturally lead to a region in the project titled {obc-consensus}["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
+Review of the architecture of Bitcoin Core from the previous weeks' material will naturally lead to a region in the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
 However this is not entirely the case.
 
 _Aspects_ of consensus-enforcement code can be found across the Bitcoin Core codebase in a number of regions and files, including notably:
 
-* {obc-validation}[validation.{h|cpp}]
-* {obc-consensus}[consensus/]
-* {obc-policy}[policy/]
-* {obc-script-verification}[script verification]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#validationhcpp[validation.{h|cpp}]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#policy_region[policy/]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
 
 Why is such a critical function split up between many files, and how do they all interact?
-Part of the answer can be learned from sdaftuar's {sdaftuar-se-answer}[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
+Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
 
 The answer teaches us that policy checks are a superset of validation checks, that is to say that a transaction that passes policy checks has implicitly passed consensus checks, too.
 Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
-Many of the policy checks contained in {obc-policy}[policy/] are called from inside {obc-validation}[validation] in the context of adding a new transaction to the mempool.
+Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
 
 ==== Transaction validation
 
-We can follow most of the journey of a transaction through Bitcoin Core by following glozow's notes on transaction {glozow-tx-mempool-validation}[Validation and submission to the mempool].
+We can follow most of the journey of a transaction through Bitcoin Core by following glozow's notes on transaction https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[Validation and submission to the mempool].
 glozow details what different types of checks are run on a new transaction before it's accepted into the nodes local mempool -- consensus vs policy, script vs non-script, contextual vs context-free.
 
-glozow continues with sections on P2P transaction relay, orphans and mining, but more relevant to consensus is the following section, {glozow-block-validation}[Block Validation], which describes the consensus checks performed on newly-learned blocks, specifically:
+glozow continues with sections on P2P transaction relay, orphans and mining, but more relevant to consensus is the following section, https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[Block Validation], which describes the consensus checks performed on newly-learned blocks, specifically:
 
 [quote,glozow]
 ____
-Since v0.8, Bitcoin Core nodes have used a {utxo-set}[UTXO set] rather than blockchain lookups to represent state and validate transactions.
+Since v0.8, Bitcoin Core nodes have used a https://github.com/bitcoin/bitcoin/pull/1677[UTXO set] rather than blockchain lookups to represent state and validate transactions.
 To fully validate new blocks, nodes only need to consult their UTXO set and knowledge of the current consensus rules.
 Since consensus rules depend on block height and time (both of which can decrease in a reorg), they are recalculated for each block prior to validation.
 
-Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. {total-sigop-cost}[total sigop cost], {duplicate-transactions}[duplicate transactions], {timestamps}[timestamps], {witness-commitments}[witness commitments] {block-subsidy-amount}[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and {input-scripts}[input scripts]) for each block.
+Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935[total sigop cost], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866[duplicate transactions], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179[timestamps], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255[witness commitments] https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946[input scripts]) for each block.
 
-Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a {work-queue}[work queue] delegated to a set of threads while the main validation thread is working on other things.
+Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887[work queue] delegated to a set of threads while the main validation thread is working on other things.
 While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
 
-If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just {script-cache}[uses the script cache]!
+If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just }https://github.com/bitcoin/bitcoin/tree/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430[uses the script cache]!
 ____
 
-The section on {obc-script-verification}[script verification] also highlights how the script interpreter is called from at least 3 distinct sites within the codebase:
+The section on https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification] also highlights how the script interpreter is called from at least 3 distinct sites within the codebase:
 
 [quote]
 ____
-* when the node {recv-new-tx}[receives a new transaction].
+* when the node https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001[receives a new transaction].
 
-* when the {broadcast-new-tx}[node wants to broadcast a new transaction].
+* when the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29[node wants to broadcast a new transaction].
 
-* when {recv-new-block}[receiving a new block]
+* when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block]
 ____
 
 Having considered both transactions that were already known about (in the mempool), and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
 
 ==== DER signature verification consensus bug
 
-Pieter Wuille {consensus-bug-BIP66}[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
+Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
 OpenSSL was accepting multiple serialization formats (for the same transaction) as valid.
 This meant that a transaction's ID (txid) can be changed because the signature contributes to the txid hash.
 
@@ -128,17 +92,15 @@ However the ability of third parties to tamper with valid transactions may open 
 
 It is interesting to consider the order of the steps taken to fix this potential vulnerability.
 First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings.
-This was executed in {der-signatures}[PR 2520].
-Following the policy change, the strict encoding rules were later enforced by consensus in {impl-bip66}[PR 5713].
+This was executed in https://github.com/bitcoin/bitcoin/pull/2520[PR 2520].
+Following the policy change, the strict encoding rules were later enforced by consensus in https://github.com/bitcoin/bitcoin/pull/5713[PR 5713].
 
 Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
 In what circumstances might it not make sense?
 
-Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in {libsecp256k1}[PR 6954] which switched to using libsecp256k1 for signature verification.
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR 6954] which switched to using libsecp256k1 for signature verification.
 
 ==== Multiple chains
-
-:assumeUTXO: https://bitcoinops.org/en/topics/assumeutxo/
 
 TODO: Reorgs, undo data, `DisconnectBlock`
 
@@ -156,10 +118,9 @@ There are a number of different states which the client must be able to handle:
 A single `BlockManager` is shared between all instances of `CChainState`.
 
 `ChainstateManager` is tasked with managing multiple ``CChainState``s.
-Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the {assumeUTXO}[assumeUTXO] project.
+Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the https://bitcoinops.org/en/topics/assumeutxo/[assumeUTXO] project.
 
 When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.
-
 
 ==== Bitcoin Core database consensus
 
@@ -170,7 +131,7 @@ What developers at the time could not foresee is that nodes that were still usin
 BDB required a configuration setting for the total number of locks available to your database.
 Bitcoin Core was also interpreting failure to grab the required number of locks as the block being invalid -- a consensus failure.
 This combination caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus split.
-{BIP50}[BIP 50] provides further explanation on this incident.
+https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50] provides further explanation on this incident.
 
 Note that that database code is not found in, or in close proximity to, the `/src/consensus` region of the codebase.
 
@@ -188,11 +149,11 @@ What are some examples of each?::
 context-free:
 +
 . `tx.isCoinbase()`
-. {tx-in-range}[0 &#8804; tx_value &#8804; MAX_MONEY]
-. {standard-tx-weight}[tx not overweight]
+. https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/consensus/tx_check.cpp#L25-L28[0 &#8804; tx_value &#8804; MAX_MONEY]
+. https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/policy/policy.cpp#L88[tx not overweight]
 
 +
-contextual: {inputs-available}[check inputs are available]
+contextual: https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L671-L692[check inputs are available]
 
 In which function(s) do UTXO-related validity checks happen?::
 `ConnectBlock()`
@@ -210,7 +171,7 @@ Which functions are called when a longer chain is found that we need to re-org o
 TODO
 
 Are there any areas of the codebase where the same consensus or validation checks are performed twice?::
-Again see {glozow-tx-mempool-validation}[glozows notes] for examples
+Again see https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[glozows notes] for examples
 
 Why does `CheckInputsFromMempoolAndCache` exist?::
 To prevent us from re-checking the scripts of transactions already in our mempool during consensus validation on learning about a new block
@@ -220,7 +181,7 @@ Which function(s) are in charge of validating the merkle root of a block?::
 // TODO: Calculate the merkle root of a sample block
 
 Can you find any evidence (e.g. PRs) which have been made in an effort to modularize consensus code?::
-A few examples: {PR10279}[#10279], {PR20158}[#20158]
+A few examples: https://github.com/bitcoin/bitcoin/pull/10279[#10279], https://github.com/bitcoin/bitcoin/pull/20158[#20158]
 
 What is the function of `BlockManager()`?::
 It manages the current most-work chaintip and pruning of unneeded blocks (`\*.blk`) and associated undo (`*.rev`) files
