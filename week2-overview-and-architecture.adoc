@@ -13,16 +13,29 @@ The Bitcoin Core project itself contains two documents of particular interest to
 . https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md[CONTRIBUTING.md] -- How to get started contributing to the project.
 . https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md[developer-notes.md] -- Development guidelines, coding style etc.
 
+=== Reviews
+
 Jon Atack's article https://jonatack.github.io/articles/how-to-contribute-pull-requests-to-bitcoin-core[How To Contribute Pull Requests To Bitcoin Core] describes some less-obvious requirements that any pull request you make might be subjected to during peer review, for example that it needs an accompanying test, or that an intermediate commit on the branch doesn't compile.
 It also describes the uncodified expectation that contributors should not only be writing code, but more importantly be reviewing others' pull requests.
 Most developers enjoy writing their own code more than reviewing code from others, but the decentralised review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
 
 NOTE: Jon's estimates of  "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon personally feels would be best for the project. Don't be put off submitting a potentially valuable pull request just because "you have not completed enough reviews"!
 
+// TODO: Update link when merged
+// Archived @ https://archive.is/MyohE
+Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/review-checklist/review-checklist.md[review checklist] details what a 'good' review might look like along with some examples what she considers 'good' reviews.
+In addition to this, it details how potential reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review themselves.
+
+Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and needed documentation.
+
+=== Commit messages
+
 When writing commit messages be sure to have read Chris Beams' https://chris.beams.io/posts/git-commit/[How to Write a Git Commit Message] blog post.
 As described in CONTRIBUTING.md pull requests should be prefixed with the component or area the PR affects.
 Common areas are listed in CONTRIBUTING.md https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request].
 In addition to this, individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.
+
+=== Build issues
 
 Some compile-time issues can be caused by an unclean build directory.
 The comments in https://github.com/bitcoin/bitcoin/issues/19330[issue 19330] provide some clarifications and tips on how other contributors clean their directories, as well as some ideas for shell aliases to boost productivity.
