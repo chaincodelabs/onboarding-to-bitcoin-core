@@ -297,6 +297,62 @@ if (node.chainman) {
 // TODO: Find out why we flush again here?
 Finally the `stop` method is called on each member of `node.chain_clients` which is overridden by `StopWallets`, flushing again and this time calling `close` on the database file.
 
+=== Wallet Locks
+
+Grepping the _src/wallet_ directory for locks, conventionally of the form `cs_*`, yields 501 matches.
+For comparison the entire remainder of the codebase excluding _src/wallet/*_ yields 925 matches.
+Many of these matches are asserts and declarations, however this still illustrates that the wallet code is highly reliant on locks to perform atomic operations.
+
+==== The `cs_wallet` lock
+
+In order to not block the rest of the program during wallet operations, each `CWallet` has its own recursive mutex `cs_wallet`:
+Note that there is currently an https://github.com/bitcoin/bitcoin/issues/19303[issue] tracking replacement of RecursiveMutexes with Mutexes, to make locking logic easier to follow in the codebase.
+
+.src/wallet/wallet.h
+[source]
+----
+/*
+ * Main wallet lock.
+ * This lock protects all the fields added by CWallet.
+ */
+mutable RecursiveMutex cs_wallet;
+----
+
+Most wallet operations whether reading or writing data require the use of the lock so that atomicity can be guaranteed.
+Some examples of wallet operations requiring the lock include:
+
+. Creating transactions
+. Signing transactions
+. Broadcasting/committing transactions
+. Abandoning transactions
+. Bumping transaction (fees)
+. Checking `IsMine`
+. Creating new addresses
+. Calculating balances
+. Creating new wallets
+. Importing new {priv|pub}keys/addresses
+. Importing/dumping wallets
+
+In addition to these higher level functions, most of ``CWallet``'s private member functions also require a hold on `cs_wallet`.
+
+==== Other wallet locks
+
+. _src/wallet/bdb.cpp_, which is responsible for managing BDB wallet databases on disk, has it's own mutex `cs_db`.
+. If external signers have been enabled (via `./configure --enable-external-signer`) then they too have their own mutex `cs_desc_man` which is acquired when descriptors are being setup.
+. `BlockUntilSyncedToCurrentChain()` has a unique lock exclude placed on it to prevent the caller from holding `cs_main` during its execution, and therefore prevent a possible deadlock:
++
+.src/wallet/wallet.h
+[source]
+----
+/**
+ * Blocks until the wallet state is up-to-date to /at least/ the current
+ * chain at the time this function is entered
+ * Obviously holding cs_main/cs_wallet when going into this call may cause
+ * deadlock
+ */
+void BlockUntilSyncedToCurrentChain() const LOCKS_EXCLUDED(::cs_main) EXCLUSIVE_LOCKS_REQUIRED(!cs_wallet);
+----
+
 === Controlling the wallet
 
 As we can see wallet component startup and shutdown is largely driven from outside the wallet codebase from _src/init.cpp_.
