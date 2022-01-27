@@ -40,6 +40,17 @@ In addition to this, individual commit messages are also often given similar pre
 Some compile-time issues can be caused by an unclean build directory.
 The comments in https://github.com/bitcoin/bitcoin/issues/19330[issue 19330] provide some clarifications and tips on how other contributors clean their directories, as well as some ideas for shell aliases to boost productivity.
 
+=== Debugging Bitcoin Core
+
+// Archived @ https://archive.is/hRExH
+Fabian Jahr has created a guide, https://github.com/fjahr/debugging_bitcoin[Debugging Bitcoin Core], aimed at detailing the ways in which various Bitcoin Core components can be debugged, including the Bitcoin Core binary itself, unit tests, functional tests along with an introduction to core dumps and the Valgrind memory leak detection suite.
+
+Of particular note are the configure flags used to build Bitcoin Core without optimisations to permit effective debugging of the Bitcoin Core binary.
+
+Fabian has also presented on this topic a number of times:
+Firstly as part of his https://www.youtube.com/watch?v=6aPSCDAiqVI[ChainCode labs' residency].
+And later as part of https://www.youtube.com/watch?v=gr75ubfNQ20[Scaling Bitcoin 2019].
+
 == Bitcoin Core's architecture
 
 lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the bitcoin core onboarding documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
