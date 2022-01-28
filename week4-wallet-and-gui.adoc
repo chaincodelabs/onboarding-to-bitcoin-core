@@ -406,6 +406,91 @@ if (!wallet) {
 Further operation of the wallet RPCs are detailed in their man pages, but one thing to take note of is that whilst `loadwallet` (and `unloadwallet`) both take a `wallet_name` argument, the other wallet RPCs do not.
 Therefore in order to control a `bitcoin{d|-qt}` that has multiple wallets loaded simultaneously via RPC, bitcoin-cli must be called with the -rpcwallet argument, to specify the wallet which the action should be performed against, e.g. `bitcoin-cli --rpcwallet=your_wallet_name getbalance`
 
+=== CWallet
+
+`CWallet` is the fundamental wallet representation inside Bitcoin Core.
+Its job is to store transactions and balances and has the ability to create new transactions.
+It also contains references to the chain interface for the wallet along with storing wallet metadata such as `nWalletVersion`, wallet flags, wallet name and address book.
+
+=== CWallet creation
+
+The CWallet constructor takes a pointer to the chain interface for the wallet, a wallet name and a pointer to the underlying WalletDatabase:
+
+.src/wallet/wallet.h
+[source]
+----
+/** Construct wallet with specified name and database implementation. */
+CWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database)
+    : m_chain(chain),
+      m_name(name),
+      m_database(std::move(database))
+{
+}
+----
+
+The constructor is not called directly, but instead from the public function `CWallet::Create()`, which is in turn itself called from `LoadWallets`, `LoadWalletInternal` or `CreateWallet`.
+In addition to the arguments required by the constructor, `CWallet::Create()` also has a `wallet_flags` argument.
+Wallet flags are represented as a single `unit64_t` bit field:
+
+.src/wallet/walletutil.h
+[source]
+----
+enum WalletFlags : uint64_t {
+    WALLET_FLAG_AVOID_REUSE = (1ULL << 0),
+    WALLET_FLAG_KEY_ORIGIN_METADATA = (1ULL << 1),
+    WALLET_FLAG_DISABLE_PRIVATE_KEYS = (1ULL << 32),
+    WALLET_FLAG_BLANK_WALLET = (1ULL << 33),
+    WALLET_FLAG_DESCRIPTORS = (1ULL << 34),
+    WALLET_FLAG_EXTERNAL_SIGNER = (1ULL << 35),
+};
+----
+
+See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/walletutil.h#L35-L66[_src/wallet/walletutil.h_] for additional information on the meanings of the flags.
+
+`CWallet::Create()` will first attempt to create the `CWallet` object and load it, returning if any errors are encountered.
+If it's a new wallet on its 'first run', the wallet version and flags will be set, before (if private keys are not disabled) either `LegacyScriptPubkeyMan` or ``DescriptorScriptPubkeyMan``'s are setup, depending on whether a "legacy" or "descriptor" type wallet was selected.
+If the wallet has been created with the `WALLET_FLAG_DISABLE_PRIVATE_KEYS` set then neither no ScriptPubkeyMan's will be created.
+
+Following successful creation, various `bitcoind` program arguments are checked and applied to the wallet.
+These include options such as "-addresstype", "-changetype", "-mintxfee" and "-maxtxfee" amongst others.
+It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
+
+After the wallet is fully initialised and setup, its <<keypool, `KeyPool`>> will be topped up before it is locked and registered with the <<validation-interface,`validationinterface`>>, which will handle callback notifications generated during the optional upcoming chain rescan.
+The rescan is smart in detecting the wallet "birthday" using metadata stored in the ScriptPubKeyMan and won't scan blocks produced before this date:
+
+.src/wallet/wallet.cpp
+[source]
+----
+...
+
+chain.initMessage(_("Rescanning...").translated);
+walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
+
+// No need to read and scan block if block was created before
+// our wallet birthday (as adjusted for block time variability)
+std::optional<int64_t> time_first_key;
+for (auto spk_man : walletInstance->GetAllScriptPubKeyMans()) {
+    int64_t time = spk_man->GetTimeFirstKey();
+    if (!time_first_key || time < *time_first_key) time_first_key = time;
+}
+if (time_first_key) {
+    chain.findFirstBlockWithTimeAndHeight(*time_first_key - TIMESTAMP_WINDOW, rescan_height, FoundBlock().height(rescan_height));
+}
+
+{
+    WalletRescanReserver reserver(*walletInstance);
+    if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(chain.getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
+        error = _("Failed to rescan the wallet during initialization");
+        return nullptr;
+    }
+}
+
+...
+
+----
+
+Finally, the `walletinterface` is setup for the wallet before the `WalletInstance` is returned to the caller.
+
 === Key management
 
 ==== Generating keys with Descriptor wallets
