@@ -1,0 +1,1361 @@
+= Onboarding to Bitcoin Core
+:toc:
+:toclevels: 4
+:source-language: cpp
+:leveloffset: +1
+
+= Week 1: Getting started with Bitcoin Core
+:toc:
+:toclevels: 4
+:source-language: cpp
+
+== Building Bitcoin Core from source
+
+When building Bitcoin Core from source, there are some platform-dependant instructions to follow.
+
+To learn how to build for your platform, visit the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/master/doc[bitcoin/doc] directory, and read the file named "build-\*.md", where "*" is the name of your platform.
+For windows this is "build-windows.md", for macOS this is "build-osx.md" and for most linux distributions this is "build-unix.md".
+
+There is also a guide by Jon Atack about how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core].
+
+== Bitcoin developer journeys
+
+It can be interesting to hear stories of how current contributors entered the space to hear about the approach they took and things they found useful, but also about any pitfalls they identified along their way.
+
+https://github.com/amitiuttarwar[amitiuttarwar], https://github.com/jonatack[jonatack] and https://github.com/jimmysong[jimmysong] have kindly documented their experiences for others to read about and learn from.
+
+* https://medium.com/@amitiu/onboarding-to-bitcoin-core-7c1a83b20365[Amiti Uttarwar -- Onboarding to Bitcoin Core]
+* https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it[Jon Atack -- On Reviewing, and Helping Those Who Do It]
+* https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[Jimmy Song -- A Gentle Introduction to Bitcoin Core Development]
+
+== Doxygen documentation
+
+Bitcoin Core uses https://www.doxygen.nl/index.html[Doxygen] to generate developer documentation automatically from its annotated C++ codebase.
+Developers can access documentation of the current release of Bitcoin Core online at https://doxygen.bitcoincore.org/[doxygen.bitcoincore.org], or alternatively can generate documentation for their current head using `make docs` (see https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md#generating-documentation[Generating Documentation] for more info).
+
+== Bitcoin Core and GitHub
+
+Bitcoin Core uses a GitHub-based workflow for development.
+The primary function of GitHub in the workflow is to discuss patches and connect them with review comments.
+
+Whilst some other prominent projects, e.g. the Linux kernel use email for soliciting feedback and review, Bitcoin Core has used GitHub for many years.
+Initially Satoshi distributed the code through private emails and hosting source archives at bitcoin.org, and later by hosting on SourceForge (which used SVN but did not at that time have a pull request system like GitHub).
+The earliest reviewers submitted changes using patches either through email exchange with Satoshi, or by posting them on the bitcoin forum.
+
+In August 2009, the source code was moved to GitHub by Sirius and development has remained there and used the GitHub workflows ever since.
+
+=== Organisation & roles
+
+Anyone who contributes code to the codebase is labelled a "contributor" by GitHub (and the community).
+As of Version 22.0 of Bitcoin Core, there are ~820 individual contributors credited with changes.
+
+Some contributors are also labelled as "members" of the https://github.com/orgs/bitcoin/people[Bitcoin Core organisation].
+There are currently ~30 members of the organisation.
+These members are usually frequent contributors and have good technical knowledge of the codebase.
+Members also have some additional permissions over contributors, such as adding/removing tags on issues and pull requests, however being a member does not permit you to merge pull requests into the project.
+
+Some members are also project "maintainers".
+There are currently 7 maintainers on the Bitcoin Core project, with that number generally slowly increasing.
+Pull requests (PRs) can only be merged into the main project by "maintainers".
+Whilst this gives the illusion that maintainers are in "control" of the project, the maintainers' role dictates that they *should not* be unilaterally deciding what PRs are merged and which aren't.
+Instead they should be determining mergability of changes primarily based on the reviews and discussions of other contributors on the PR itself, on GitHub (or less commonly the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list).
+
+Working on that basis, the maintainers' role becomes largely "janitorial" in that they are simply executing the desires of the community review process; a community which is made up of a decentralised and diverse group of contributors.
+
+In addition to maintainers, there are certain contributors (usually members) who are listed as "suggested reviewers" for certain areas of the codebase.
+This is because they are deemed to have a deep technical and/or philosophical understanding of this area of the project.
+
+NOTE: In a normal workflow it is not necessary (or desirable) to request reviews from suggested reviewers, and in fact doing so without a "good reason" might be interpreted as being too pushy, having the opposite result than intended.
+
+A list of maintainers and suggested reviewers can be found in the https://github.com/bitcoin/bitcoin/tree/master/REVIEWERS[REVIEWERS] document.
+As the document states, these are NOT the only people who should be reviewing pull requests.
+The project needs as many reviews on each PR as possible, ideally from a diverse range of reviewers.
+
+The objective of the Bitcoin Core Organisation is therefore to represent an entity that is decentralised as much as practically possible, on a centralised platform.
+One where no single contributor, member or maintainer has unilateral control over what is/isn't merged into the project.
+Having multiple maintainers, members, contributors and reviewers gives this objective the best chance of being realised.
+
+==== Organisation fail-safes
+
+"Rogue" PRs are occasionally submitted by contributors, however they are almost certain to be detected as part of the community review process.
+There has recently been discussion on the mailing list about https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019490.html[purposefully testing malicious pull requests] to test this property of the review process even further.
+
+In the event that a _maintainer_ goes rogue and starts merging controversial code, or conversely not merging changes desired by the community at large, then there are two possible avenues of recourse for users:
+
+. Have the "lead maintainer" remove the malicious maintainer
+. In the case that the lead maintainer themselves is the "rogue" agent: fork the project to a new GitHub repository and continue development there without them.
+
+In the case that GitHub itself becomes the rogue entity, there have been numerous https://github.com/bitcoin/bitcoin/issues/20227[discussions about how to move away from GitHub], should the need ever arise.
+
+==== Github workflow
+
+The GitHub side of the Bitcoin Core workflow for contributors consists primarily of:
+
+* Issues
+* Pull Requests (PRs)
+* Reviews
+* Comments
+
+Generally, issues are used for two purposes:
+
+. Posting known issues with software, e.g. bug reports, crash logs
+. Soliciting feedback on potential changes without providing associated code, as would be required in a Pull Request.
+
+GitHub provides their own https://guides.github.com/features/issues/[guide on mastering issues] which is worth reading to understand the feature-set available when working with an issue.
+
+Pull requests are where contributors can submit their code against the main codebase and solicit feedback on _both_ the concept and the code implementation.
+Pull requests and issues are often linked to/from one another:
+
+[example]
+--
+One common workflow is when an issue is opened to report a bug.
+After replicating the issue, a contributor creates a patch and then opens a pull request with their proposed changes.
+
+In this case the contributor should, in addition to comments about the patch, reference that the patch fixes the issue.
+For a patch which fixes issue 22889 this would be done by writing "fixes #22889" in the PR description or in a commit message.
+In this case the syntax "fixes #issue-number" is caught by GitHub's https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue[pull request linker].
+--
+
+Another good use of issues is for getting feedback on ideas which might require *significant* changes.
+This helps free the project from having too many PRs open which aren't ready for review, and might waste reviewers' time.
+In addition this workflow can also save contributors their _own_ valuable time, as a idea might be identified as unlikely to be accepted before the contributor spends their time writing the code for it.
+
+Most code changes to bitcoin are proposed directly as pull requests -- there's no need to open an issue for every idea before implementing it, unless it will require significant changes.
+Additionally, other contributors (and would-be reviewers) will often agree with the approach of a change, but want to "see the implementation" before they can really pass judgement on it.
+
+Reviews help to store and track reviews to PRs in a public way.
+
+Comments (inside issues, PRs, discussions etc.) are where users can discuss relevant aspects of the item and have history of those discussions preserved for future reference.
+Often contributors having "informal" discussions about changes on e.g. IRC will be advised that they should echo the gist of their conversation as a comment so that the rationale behind changes can be determined in the future.
+
+== Research topics/questions
+
+* What stops a hacker hijacking the Bitcoin Core website and hosting malicious binaries?
+** How about malicious binaries hosted by linux package managers?
+* Where can you go for help if Bitcoin Core doesn't build on your machine?
+* Before you create a pull request to the main bitcoin core repo, what checks should you do locally?
+** Are there any additional checks you can think of which are only run in the bitcoin core repo (and not your fork)?
+
+== Solo work
+
+=== Git exercises
+
+* Understand lsilva01's https://github.com/lsilva01/operating-bitcoin-core-v1/blob/main/git-tutorial.md[git tutorial for Bitcoin Core]
+* https://chris.beams.io/posts/git-commit/[Write good commit messages]
+
+=== GitHub workflow basics
+
+* Fork the https://github.com/bitcoin/bitcoin[bitcoin core repository]
+** GitHub provides a guide on how to https://guides.github.com/activities/forking/[fork a project]
+* Download a clone of your fork of the bitcoin project to your local machine
+* Checkout a tag, branch or pull request
+
+=== Building bitcoin from source
+
+* Compile the source code you cloned
+* Run the tests
+. https://github.com/bitcoin/bitcoin/tree/master/test[Project test overview]
+. https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional test suite]
+. Also see https://github.com/bitcoin/bitcoin/tree/master/test#running-the-tests[Bitcoin Core, running the tests]
+. https://github.com/bitcoin/bitcoin/tree/master/src/test/README.md[Bitcoin Core, unit tests]
+
+=== Review a PR
+
+* Find a PR (which can be open or closed) on GitHub which looks interesting and/or accessible
+* Checkout the PR locally
+* Review the changes
+** Record any questions that arise during code review
+* Build the PR
+* Test the PR
+* Break a test / add a new test
+* Leave review feedback on GitHub, possibly including:
+** ACK/NACK
+** Approach
+** How you reviewed it
+** Your system specifications if relevant
+** Suggesting nits
+
+=== Create a test using test framework
+
+* You can refer to the }https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
+* Try and write a new functional test which can send p2p messages between nodes
++
+TIP: starting with `ping` and `pong` messages might be easiest
+* Try writing a more advanced test
+
+== Group work
+
+* Each submit a PR on a team member's fork of Bitcoin Core (not the main repo)
+* Review a different team member's PR
+* Submit your review of the PR as a GitHub comment on the PR
+
+== Removed text
+
+=== Goals
+
+* Learn how the Bitcoin Core project uses GitHub
+* Learn how to compile the code from source
+* Learn how to run the test suite
+* Learn about other developers journeys into bitcoin dev
+* PR review process
+
+=== Concepts
+
+* GitHub usage
+* Git usage
+* Building bitcoin from source code
+* Running the test suite
+
+= Week 2: Overview & architecture of Bitcoin Core
+:toc:
+:toclevels: 4
+:source-language: cpp
+
+== Decentralised development
+
+Olivia Lovenmark and Amiti Uttarwar describe in their blog post https://blog.okcoin.com/2020/09/15/developing-bitcoin/[Developing Bitcoin] how changes to bitcoin follow the pathway from proposal to being merged into the software, and finally adopted by users.
+
+== Bitcoin Core development process and documentation
+
+The Bitcoin Core project itself contains two documents of particular interest to contributors:
+
+. https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md[CONTRIBUTING.md] -- How to get started contributing to the project.
+. https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md[developer-notes.md] -- Development guidelines, coding style etc.
+
+=== Reviews
+
+Jon Atack's article https://jonatack.github.io/articles/how-to-contribute-pull-requests-to-bitcoin-core[How To Contribute Pull Requests To Bitcoin Core] describes some less-obvious requirements that any pull request you make might be subjected to during peer review, for example that it needs an accompanying test, or that an intermediate commit on the branch doesn't compile.
+It also describes the uncodified expectation that contributors should not only be writing code, but more importantly be reviewing others' pull requests.
+Most developers enjoy writing their own code more than reviewing code from others, but the decentralised review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
+
+NOTE: Jon's estimates of  "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon personally feels would be best for the project. Don't be put off submitting a potentially valuable pull request just because "you have not completed enough reviews"!
+
+// TODO: Update link when merged
+// Archived @ https://archive.is/MyohE
+Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/review-checklist/review-checklist.md[review checklist] details what a 'good' review might look like along with some examples what she considers 'good' reviews.
+In addition to this, it details how potential reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review themselves.
+
+Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and needed documentation.
+
+=== Commit messages
+
+When writing commit messages be sure to have read Chris Beams' https://chris.beams.io/posts/git-commit/[How to Write a Git Commit Message] blog post.
+As described in CONTRIBUTING.md pull requests should be prefixed with the component or area the PR affects.
+Common areas are listed in CONTRIBUTING.md https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request].
+In addition to this, individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.
+
+=== Build issues
+
+Some compile-time issues can be caused by an unclean build directory.
+The comments in https://github.com/bitcoin/bitcoin/issues/19330[issue 19330] provide some clarifications and tips on how other contributors clean their directories, as well as some ideas for shell aliases to boost productivity.
+
+=== Debugging Bitcoin Core
+
+// Archived @ https://archive.is/hRExH
+Fabian Jahr has created a guide, https://github.com/fjahr/debugging_bitcoin[Debugging Bitcoin Core], aimed at detailing the ways in which various Bitcoin Core components can be debugged, including the Bitcoin Core binary itself, unit tests, functional tests along with an introduction to core dumps and the Valgrind memory leak detection suite.
+
+Of particular note are the configure flags used to build Bitcoin Core without optimisations to permit effective debugging of the Bitcoin Core binary.
+
+Fabian has also presented on this topic a number of times:
+Firstly as part of his https://www.youtube.com/watch?v=6aPSCDAiqVI[ChainCode labs' residency].
+And later as part of https://www.youtube.com/watch?v=gr75ubfNQ20[Scaling Bitcoin 2019].
+
+== Bitcoin Cores architecture
+
+lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the bitcoin core onboarding documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
+
+Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality using the document https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions].
+
+James O'Beirne has recorded 3 videos which go into detail on how the codebase is laid out, how the build system works, what devtools there are, as well as what the primary function of many of the files are:
+
+. https://www.youtube.com/watch?v=J1Ru8V36z_Y[Architectural tour of Bitcoin Core (part 1 of 3)]
+. https://www.youtube.com/watch?v=RVWcUnpZX4E[Architectural tour of Bitcoin Core (part 2 of 3)]
+. https://www.youtube.com/watch?v=UiD5DZU9Zp4[Architectural tour of Bitcoin Core (part 3 of 3)]
+
+== Signet test network
+
+Signet is both a tool that allows developers to create their own networks for testing interactions between different Bitcoin software and the name of the most popular of these testing networks.
+Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP325].
+
+To connect to the "main" Signet network, simply start bitcoind with the signet flag, e.g. `bitcoind -signet`.
+Don't forget to also pass the signet flag to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet`.
+Instructions on how to setup your own Signet network can be found in the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/master/contrib/signet/README.md[Signet README.md].
+The https://en.bitcoin.it/wiki/Signet[Bitcoin wiki Signet page] provides additional background on Signet.
+
+== BIPs
+
+Bitcoin uses Bitcoin Improvement Proposals, or BIPs, as a design document for introducing new features or behaviour into bitcoin.
+Bitcoin magazine describes what a BIP is in their article https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
+
+The BIPs are hosted on GitHub and include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[BIP2] which self-describes the BIP process in more detail.
+Of particular interest might be the sections https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_types[BIP Types] and https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_workflow[BIP Workflow].
+
+=== The BIP process
+
+Bitcoin Core https://github.com/bitcoin/bitcoin/pull/22665[issue #22665] described how BIP125 was not being strictly adhered to by Bitcoin Core.
+This raised questions amongst developers about whether the code or the BIP should act as the specification, with most developers expressing that they felt that the code was the spec, and any BIP generated was merely a design document to aid with re-implementation by others.
+Note that this view was not completely unanimous in the community.
+
+For consensus-critical code most Bitcoin Core developers consider "the code is the spec" to be the ultimate source of truth.
+A knock-on effect of this was that there were calls for review on BIP2 itself, with newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posting his thoughts to the https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html[bitcoin-dev mailing list].
+
+== Getting started with development
+
+What are the best ways to get started with Bitcoin Core development?
+As mentioned earlier, one of the roles most in demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarised with the codebase too!
+Reviewing a few PRs, and importantly submitting your review to GitHub on the PR can be really valuable.
+This https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html[Google Code Health] blog post gives some good advice on how to go about code review and getting past "feeling that you're not as smart as the programmer who wrote the change".
+If you're going to ask some questions as part of review, try and keep questions https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html[respectful].
+
+Aside from review, there are 3 main avenues which might lead you to submitting your *own* pull request to the repository:
+
+. Finding a `good first issue`, as tagged in the https://github.com/bitcoin/bitcoin/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22[issue tracker]
+. Fixing a bug (you've found yourself?)
+. Adding a new feature (that you want for yourself?)
+
+Of these three, I'd highly recommend choosing a good first issue from an area of the codebase that seems interesting to you.
+The reason is that these have been somewhat implicitly "concept ACKed" by other contributors as "something that is likely worth working on".
+
+Hopefully now you have an idea of roughly what your PR is going to _do_; often this is the hardest part to getting started!
+If you don't have a bugfix or new feature in mind, and you're struggling to find a good first issue which looks suitable for you, don't panic.
+Instead keep reviewing other developers' PRs to continue improving your understanding of the process (and the codebase), while you watch the issue tracker for something which you like the look of.
+
+Now that you've decided what to work on it's time to take a look at the current behaviour of that part of the code and perhaps more importantly, try to understand _why_ this was originally implemented in this way.
+This process of code "archaeology" will prove invaluable in the future when you are trying to learn about other parts of the codebase on your own.
+
+==  Codebase archaeology
+
+When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally, if possible.
+One of the best ways to do this is by using a combination of git tools -- `git blame`, `git log -S`, and less commonly `git log -G` -- and the discussions on GitHub.
+
+=== `git blame`
+
+The git `blame` command will show you when and by who a particular line of code was last changed by.
+
+For example, if we checkout Bitcoin Core at https://github.com/bitcoin/bitcoin/tree/v22.0[v22.0] and we are planning to make a change related to the `m_addr_send_times_mutex` found in `src/net_processing.cpp`, we might want to find out more about its history before touching it.
+
+With `git `blame` we can find out the last person who touched this code:
+
+[source,bash,options="nowrap"]
+----
+# Find the line number for blame
+$ grep -n m_addr_send_times_mutex src/net_processing.cpp
+233:    mutable Mutex m_addr_send_times_mutex;
+235:    std::chrono::microseconds m_next_addr_send GUARDED_BY(m_addr_send_times_mutex){0};
+237:    std::chrono::microseconds m_next_local_addr_send GUARDED_BY(m_addr_send_times_mutex){0};
+4304:    LOCK(peer.m_addr_send_times_mutex);
+----
+
+[source,bash]
+----
+$ git blame -L233,233 src/net_processing.cpp
+
+76568a3351 (John Newbery 2020-07-10 16:29:57 +0100 233)     mutable Mutex m_addr_send_times_mutex;
+----
+
+With this information we can easily look up that commit to gain some additional context:
+
+[source,bash]
+----
+$ git show 76568a3351
+
+───────────────────────────────────────
+commit 76568a3351418c878d30ba0373cf76988f93f90e
+Author: John Newbery <john@johnnewbery.com>
+Date:   Fri Jul 10 16:29:57 2020 +0100
+
+    [net processing] Move addr relay data and logic into net processing
+
+----
+
+So we've learned now that this mutex was moved here by John from net.{cpp|h} in it's most recent touch.
+Let's see what else we can find out about it.
+
+=== `git log -S`
+
+`git log -S` allows us to search for commits where this line was modified (not where it was only moved, for that use `git log -G`).
+A 'modification' (vs. a 'move') in git terms implies that there are uneven instances of the search term in the commit diffs add/remove sections.
+
+[source,bash]
+----
+$ git log -S m_addr_send_times_mutex
+───────────────────────────────────────
+commit 76568a3351418c878d30ba0373cf76988f93f90e
+Author: John Newbery <john@johnnewbery.com>
+Date:   Fri Jul 10 16:29:57 2020 +0100
+
+    [net processing] Move addr relay data and logic into net processing
+
+───────────────────────────────────────
+commit ad719297f2ecdd2394eff668b3be7070bc9cb3e2
+Author: John Newbery <john@johnnewbery.com>
+Date:   Thu Jul 9 10:51:20 2020 +0100
+
+    [net processing] Extract `addr` send functionality into MaybeSendAddr()
+
+    Reviewer hint: review with
+
+     `git diff --color-moved=dimmed-zebra --ignore-all-space`
+
+───────────────────────────────────────
+commit 4ad4abcf07efefafd439b28679dff8d6bbf62943
+Author: John Newbery <john@johnnewbery.com>
+Date:   Mon Mar 29 11:36:19 2021 +0100
+
+    [net] Change addr send times fields to be guarded by new mutex
+
+----
+
+We can see that John also originally added this to `net.{cpp|h}`, before later moving it into `net_processing.{cpp|h}` as part of a push to separate out addr relay data and logic from `net.cpp`.
+
+=== PR discussion
+
+To get even more context we can take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
+To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top, e.g.:
+
+[source,bash]
+----
+$ git log --merges --reverse --oneline --ancestry-path 4ad4abcf07efefafd439b28679dff8d6bbf62943..upstream | head -n 1
+
+d3fa42c79 Merge bitcoin/bitcoin#21186: net/net processing: Move addr data into net_processing
+----
+
+Reading up on https://github.com/bitcoin/bitcoin/pull/21186[PR 21186] will hopefully provide us with even more context.
+For example we can see from the https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848[linked issue 19398] what the motivation for this move was.
+
+== Solo work
+
+:bip-extensions-mail: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html
+:core-dev-08-26: https://www.erisian.com.au/bitcoin-core-dev/log-2021-08-26.html
+
+* Read lsilva01's https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[1.0 Bitcoin Architecture]. Particularly sections:
+** Executables
+** https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Regions] (and all sub-sections)
+
+TODO: Add questions on current architecture of Core
+
+== Group work
+
+=== Signet
+
+Either:
+
+* One member of the group create a private signet as documented on the Bitcoin Wiki https://en.bitcoin.it/wiki/Signet#Custom_Signet[Custom Signet] page.
+* Distribute the `signetchallenge` value
+* One or all group members can act as Signet miners
+* Have all group members connect in to the custom signet
+
+OR:
+
+* Group members request some signet coins from the https://signet.bc-2.jp/[signet faucet] or using the https://github.com/bitcoin/bitcoin/tree/master/contrib/signet#getcoinspy[getcoins.py] script.
++
+NOTE: The Signet `getcoins.py` script may not work if a captcha has been added to the site.
+
+THEN:
+
+* Send coins around the group
+
+== Removed Text
+
+=== Goals
+
+* How are changes made to Bitcoin Core?
+* Development environment optimisations
+* How is Bitcoin Core source code organised
+* What's the BIP process?
+** What type of changes require a BIP?
+* Learn how to test changes on a live distributed test network
+
+=== Concepts
+
+* Decentralised Development
+* BIPs
+* Bitcoin Core development
+* Bitcoin Core architecture
+* Signet
+
+= Week 3: Consensus & Validation
+:toc:
+:toclevels: 4
+:source-language: cpp
+
+== Bitcoin consensus
+
+One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
+The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
+The secondary mechanism is that all nodes should follow the chain with the most cumulative proof-of-work.
+The product of following these two mechanisms is that all nodes in the network will _eventually_ converge onto a single canonical chain.
+For more information on how the bitcoin networks' decentralised consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
+
+=== Consensus in Bitcoin Core
+
+Review of the design of Bitcoin Core from xref:week2-overview-and-architecture.adoc[Overview and Architecture]  will naturally lead to a region of the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
+However this is not entirely the case...
+
+_Aspects_ of consensus-enforcement code can be found across the Bitcoin Core codebase in a number of regions and files, including notably:
+
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#validationhcpp[validation.{h|cpp}]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#policy_region[policy/]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
+
+[listing]
+----
+📂 bitcoin
+  📂 src
+    📂 consensus
+    📂 policy
+    📄 validation.h
+    📄 validation.cpp
+----
+
+Why is such a critical function split up between many files, and how do they all interact?
+Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
+
+The answer teaches us that policy checks are a superset of validation checks, that is to say that a transaction that passes policy checks has implicitly passed consensus checks too.
+Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
+Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
+
+=== Transaction validation
+
+We can follow most of the journey of a transaction through Bitcoin Core by following glozow's notes on transaction https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[Validation and submission to the mempool].
+glozow details what different types of checks are run on a new transaction before it's accepted into the nodes local mempool -- consensus vs policy, script vs non-script, contextual vs context-free.
+
+glozow continues with sections on P2P transaction relay, orphans and mining, but more relevant to consensus is the following section, https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[Block Validation], which describes the consensus checks performed on newly-learned blocks, specifically:
+
+[quote,glozow]
+____
+Since v0.8, Bitcoin Core nodes have used a https://github.com/bitcoin/bitcoin/pull/1677[UTXO set] rather than blockchain lookups to represent state and validate transactions.
+To fully validate new blocks nodes only need to consult their UTXO set and knowledge of the current consensus rules.
+Since consensus rules depend on block height and time (both of which can *decrease* during a reorg), they are recalculated for each block prior to validation.
+
+Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935[total sigop cost], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866[duplicate transactions], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179[timestamps], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255[witness commitments] https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946[input scripts]) for each block.
+
+Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887[work queue] delegated to a set of threads while the main validation thread is working on other things.
+While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
+
+If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just https://github.com/bitcoin/bitcoin/tree/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430[uses the script cache]!
+____
+
+The section on https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification] also highlights how the script interpreter is called from at least 3 distinct sites within the codebase:
+
+[quote]
+____
+* when the node https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001[receives a new transaction].
+
+* when the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29[node wants to broadcast a new transaction].
+
+* when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block]
+____
+
+Having considered both transactions that were already known about (in the mempool), and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
+
+=== Consensus bugs
+
+Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
+The issue was that OpenSSL was accepting *multiple* signature serialization formats (for the same transaction) as valid.
+This meant that a transaction's ID (txid) could be changed, because the signature contributes to the txid hash.
+
+There were a few main cases to consider:
+
+. first party malleation: signature length descriptor is extended to 5 bytes
+. third party malleation: signatures are "slightly" tweaked (or padded)
+. third party malleation: negating the `S` value of the ECDSA signature
+
+In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
+The first party (the sender) can create a valid (normal length) signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
+
+In the second case, of signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
+However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning) in the event that they are relying on txids to track transactions.
+
+It is interesting to consider the order of the steps taken to fix this potential vulnerability:
+
+. First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings. +
+This was carried out in PR https://github.com/bitcoin/bitcoin/pull/2520[#2520].
+. Following the policy change, the strict encoding rules were later enforced by consensus in PR https://github.com/bitcoin/bitcoin/pull/5713[#5713].
+
+Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
+In what circumstances might it not make sense?
+
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in PR https://github.com/bitcoin/bitcoin/pull/6954[#6954] which switched to using libsecp256k1 for signature verification.
+
+=== Multiple chains
+
+TODO: Reorgs, undo data, `DisconnectBlock`
+
+Bitcoin nodes should ultimately converge in consensus on the most-work chain.
+Being able to track and monitor multiple chain (tips) concurrently is a key requirement for this to take place.
+There are a number of different states which the client must be able to handle:
+
+. A single, most-work chain being followed
+. Stale blocks learned about but not used
+. Full reorganisation from one chain tip to another
+
+`BlockManager` is tasked with maintaining a tree of all blocks learned about, along with their total work so that the most-work chain can be quickly determined.
+
+`CChainState` is responsible for updating our local view of the best tip, including reading and writing blocks to disk, and updating the UTXO set.
+A single `BlockManager` is shared between all instances of `CChainState`.
+
+`ChainstateManager` is tasked with managing multiple ``CChainState``s.
+Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the https://bitcoinops.org/en/topics/assumeutxo/[assumeUTXO] project.
+
+When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.
+
+=== Bitcoin Core and database consensus
+
+Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indices.
+In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.
+What developers at the time could not foresee is that nodes that were still using BDB for these indices (all pre 0.8 nodes), were silently consensus-bound by a relatively obscure BDB-specific database lock counter...
+
+BDB required a configuration setting for the total number of locks available to your database.
+Bitcoin Core was also interpreting failure to grab the required number of locks as the block being invalid -- a consensus failure.
+This combination caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus split.
+https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50] provides further explanation on this incident.
+
+Note that that database code is not found in, or even in close proximity to, the `/src/consensus` region of the codebase.
+
+== Exercises
+
+[qanda]
+What is the difference between contextual and context-free validation checks?::
+Contextual checks require some knowledge of the current "state", e.g. ChainState, chain tip or UTXO set.
++
+Context-free checks only require the information required in the transaction itself.
++
+See {glozow-tx-mempool-validation}[glozow-tx-mempool-validation] for more info.
+
+What are some examples of each?::
+context-free:
++
+. `tx.isCoinbase()`
+. https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/consensus/tx_check.cpp#L25-L28[0 &#8804; tx_value &#8804; MAX_MONEY]
+. https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/policy/policy.cpp#L88[tx not overweight]
+
++
+contextual: https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L671-L692[check inputs are available]
+
+In which function(s) do UTXO-related validity checks happen?::
+`ConnectBlock()`
+
+What type of validation checks are `CheckBlockHeader()` and `CheckBlock()` performing?::
+context-free
+
+Which class is in charge of managing the current blockchain?::
+`ChainstateManager()`
+
+Which class is in charge of managing the UTXO set?::
+`CCoinsViews()`
+
+Which functions are called when a longer chain is found that we need to re-org onto?::
+TODO
+
+Are there any areas of the codebase where the same consensus or validation checks are performed twice?::
+Again see https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[glozows notes] for examples
+
+Why does `CheckInputsFromMempoolAndCache` exist?::
+To prevent us from re-checking the scripts of transactions already in our mempool during consensus validation on learning about a new block
+
+Which function(s) are in charge of validating the merkle root of a block?::
+`BlockMerkleRoot()` and `BlockWitnessMerkleRoot()` construct a vector of merkle leaves, which is then passed to `ComputeMerkleRoot()` for calculation.
+// TODO: Calculate the merkle root of a sample block
+
+Can you find any evidence (e.g. PRs) which have been made in an effort to modularize consensus code?::
+A few examples: https://github.com/bitcoin/bitcoin/pull/10279[#10279], https://github.com/bitcoin/bitcoin/pull/20158[#20158]
+
+What is the function of `BlockManager()`?::
+It manages the current most-work chaintip and pruning of unneeded blocks (`\*.blk`) and associated undo (`*.rev`) files
+
+What stops a malicious node from sending multiple invalid headers to try and use up a nodes' disk space? (hint: these might be stored in `BlockManager.m_failed_blocks`)::
+Even invalid headers would need a valid proof of work which would be too costly to construct for a spammer
+
+Which functions are responsible for writing consensus-valid blocks to disk?::
+TODO: answer
+
+Are there any other components to Bitcoin Core which, similarly to the block storage database, are not themselves performing validation but can still be consensus-critical?::
+Not sure myself, sounds like an interesting question though!
+
+In which module (and class) is signature verification handled?::
+`src/script/interpreter.cpp#BaseSignatureChecker`
+
+Which function is used to calculate the Merkle root of a block, and from where is it called?::
+`src/consensus/merkle.cpp#ComputeMerkleRoot` is used to compute the merkle root.
++
+It is called from `src/chainparams.cpp#CreateGenesisBlock`, `src/miner.cpp#IncrementExtraNonce` & `src/miner.cpp#RegenerateCommitments` and from `src/validation.cpp#CheckBlock` to validate incoming blocks.
+
+Practical question on Merkle root calculation::
+TODO, add exercise
+
+== Removed text
+
+The outline of the mechanism at work is that a node relaying a transaction can slightly modify the signature in a way which is still acceptable to the underlying OpenSSL module.
+Once the signature has been changed, the transaction ID (hash) will also change.
+If the modified transaction is then included in a block, before the original, the effect is that the sender will still see the outgoing transaction as "unconfirmed" in their wallet.
+The sender wallet should however also see the accepted (modified) outgoing transaction, so their balance will be calculated correctly, only a "stuck doublespend" will pollute their wallet.
+The receiver will not perceive anything unordinary, unless they were tracking the incoming payment using the txid as given to them by the sender.
+
+=== Concepts
+
+* Decentralised consensus
+* Transaction validation in Bitcoin Core
+* How do nodes stay in consensus on the network
+* Consensus vs policy (vs standardness)
+
+= Week 4: Wallet and GUI
+:toc:
+:toclevels: 4
+:source-language: cpp
+
+== Wallet
+
+=== Wallet architecture
+
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets.
+
+==== Separation of wallet and node functionality
+
+Both the `bitcoind` and `bitcoin-qt` programs use the same source code for wallet, networking, consensus etc.
+`bitcoin-qt` is not simply a wallet/gui "frontend" for `bitcoind` but a stand-alone binary which happens to share much of the same code.
+There has been discussion since at least as early as 2014 about https://github.com/bitcoin/bitcoin/issues/3882[splitting wallet code] out from the rest of the codebase, however this has not been completed yet.
+
+The https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Process-Separation[Process Separation] project is tracking development working towards separating out node, wallet and GUI code even further.
+In the mean time developers have preferred to focus on improving the organisation of the (wallet) source code within the project and to focus on making wallet code more asynchronous and independent of node code, to avoid locking the node while wallet code-paths are executing.
+
+==== Wallet interfaces
+
+In order to facilitate code separation, distinct interfaces between the node and the wallet have been created:
+
+* The node holds a https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/interfaces.cpp#L109[`WalletImpl`] interface to call functions on the wallet.
+* The wallet holds a https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/interfaces.cpp#L429[`ChainImpl`] interface to call functions on the node.
+* The node notifies the wallet about new transactions and blocks through the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/interfaces.cpp#L341[`CValidationInterface`].
+
+=== Overview
+
+. Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
+. These wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/doc/descriptors.md["descriptor"].
+. Wallets do *not* have to store the private keys associated with the addresses and public keys they are monitoring.
+. Wallets can be loaded at startup (by passing `-wallet=` or `-walletdir=` options to `bitcoind`/`bitcoin-qt`) or afterwards via RPC command.
+. Wallets are initialised as `CWallet` objects, and a pointer to their interface is stored in the global vector `vpwallets` which is guarded by the main wallet mutex, `cs_wallets`.
+. When performing wallet operations `GetWallet` (or `GetWallets`) is often called first with the wallet name as argument, and a `std::shared_ptr` to the desired `CWallet` is returned for the operation to be performed on.
++
+.src/wallet/wallet.cpp
+[source]
+----
+std::shared_ptr<CWallet> GetWallet(const std::string& name)
+{
+    LOCK(cs_wallets);
+    for (const std::shared_ptr<CWallet>& wallet : vpwallets) {
+        if (wallet->GetName() == name) return wallet;
+    }
+    return nullptr;
+}
+----
+
+=== Wallet component initialisation
+
+The wallet component is initialised via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/walletinitinterface.h#L11-L23[_src/walletinitinterface.h_].
+The member functions are marked as virtual in the `WalletInitInterface` definition, indicating that they are going to be overridden later by a derived class.
+
+.src/walletinitinterface.h
+[source]
+----
+class WalletInitInterface {
+public:
+    /** Is the wallet component enabled */
+    virtual bool HasWalletSupport() const = 0;
+    /** Get wallet help string */
+    virtual void AddWalletOptions(ArgsManager& argsman) const = 0;
+    /** Check wallet parameter interaction */
+    virtual bool ParameterInteraction() const = 0;
+    /** Add wallets that should be opened to list of chain clients. */
+    virtual void Construct(NodeContext& node) const = 0;
+
+    virtual ~WalletInitInterface() {}
+}
+----
+
+Both _walletinit.cpp_ and _dummywallet.cpp_ include derived classes which override the member functions of `WalletInitInterface`, depending on whether the wallet is being compiled in or not.
+
+The primary https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/Makefile.am#L362-L367[_src/Makefile.am_] describes which of these modules is chosen to override: if `./configure` has been run with the wallet feature enabled (default), then _wallet/init.cpp_ is added to the sources, otherwise (`./configure --disable-wallet`) _dummywallet.cpp_ is added.
+
+.src/Makefile.am
+[source, sh]
+----
+if ENABLE_WALLET
+libbitcoin_server_a_SOURCES += wallet/init.cpp
+endif
+if !ENABLE_WALLET
+libbitcoin_server_a_SOURCES += dummywallet.cpp
+endif
+----
+
+_src/walletinitinterface.h_ declares the global `g_wallet_init_interface`  which will handle the configured `WalletInitInterface`.
+
+The wallet interface is created when the `Construct()` method is called on the `g_wallet_init_interface` object by https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1180-L1189[`AppInitInterfaces()`] in _init.cpp_.
+`Construct` takes a reference to a `NodeContext` as argument, and then checks that the wallet has not been disabled by a runtime argument before calling `interfaces::MakeWalletClient()` on the node.
+This initialises a new `WalletClientImpl` object which is then added to the `node` object, both to the general list of `node.chain_clients` (wallet processes or other clients which want chain information from the node) in addition to being assigned as the unique `node.wallet_client` role, which specifies the particular `node.chain_client` that should be used to load or create wallets.
+
+.src/wallet/init.cpp
+[source]
+----
+void WalletInit::Construct(NodeContext& node) const
+{
+    ArgsManager& args = *Assert(node.args);
+    if (args.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
+        LogPrintf("Wallet disabled!\n");
+        return;
+    }
+    auto wallet_client = interfaces::MakeWalletClient(*node.chain, args);
+    node.wallet_client = wallet_client.get();
+    node.chain_clients.emplace_back(std::move(wallet_client));
+----
+
+The `NodeContext` struct is defined as the following:
+
+.src/node/context.h
+[quote]
+____
+...contains references to chain state and connection state.
+
+...used by init, rpc, and test code to pass object references around without needing to declare the same variables and parameters repeatedly, or to use globals...
+The struct isn't intended to have any member functions.
+It should just be a collection of references that can be used without pulling in unwanted dependencies or functionality.
+____
+
+=== Wallets and program initialisation
+
+Wallets can optionally be loaded as part of main program startup (i.e. from _src/init.cpp_).
+Any wallets loaded during the life cycle of the main program are also unloaded as part of program shutdown.
+
+==== Specifying wallets loaded at startup
+
+Wallet(s) to be loaded as part of program startup can be specified by passing `-wallet=` or `-walletdir=` arguments to `bitcoind`/`bitcoin-qt`.
+If the wallet has been compiled in but no `-wallet*=` arguments have been passed, then the default wallet directory (_$datadir/wallets_) will be checked as per `GetWalletDir()`:
+
+.src/wallet/walletutil.cpp
+[source]
+----
+fs::path GetWalletDir()
+{
+    fs::path path;
+
+    if (gArgs.IsArgSet("-walletdir")) {
+        path = gArgs.GetArg("-walletdir", "");
+        if (!fs::is_directory(path)) {
+            // If the path specified doesn't exist, we return the deliberately
+            // invalid empty string.
+            path = "";
+        }
+    } else {
+        path = GetDataDir();
+        // If a wallets directory exists, use that, otherwise default to GetDataDir
+        if (fs::is_directory(path / "wallets")) {
+            path /= "wallets";
+        }
+    }
+
+    return path;
+}
+----
+
+Wallets can also be loaded after program startup via the `loadwallet` RPC.
+
+==== VerifyWallets
+
+Wallet verification refers to verification of the `-wallet` arguments as well as the underlying wallet database(s) on disk.
+
+Wallets loaded via program arguments are first verified as part of `AppInitMain` which first https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1301-L1305[verifies wallet database integrity] by calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L19-L88[VerifyWallets] via the `WalletClientImpl` override of `client->verify`.
+
+`VerifyWallets` takes an `interfaces::Chain` object as argument, which is currently used primarily to send init and error messages (about wallet verification) back to the GUI.
+`VerifyWallets` starts by checking that the `walletdir` supplied by argument, or default of `""`, is valid.
+Next it loops through all wallets it finds in the `walletdir` and adds them to an `std::set` called `wallet_paths`, first deduplicating them by tracking their absolute paths, and then checking that  the `WalletDatabase` for each wallet exists (or is otherwise constructed successfully) and can be verified.
+
+.src/wallet/load.cpp#VerifyWallets
+[source]
+----
+// ...
+
+for (const auto& wallet_file : gArgs.GetArgs("-wallet")) {
+    const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), wallet_file);
+
+    if (!wallet_paths.insert(path).second) {
+        chain.initWarning(strprintf(_("Ignoring duplicate -wallet %s."), wallet_file));
+        continue;
+    }
+
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_existing = true;
+    options.verify = true;
+    bilingual_str error_string;
+    if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
+        if (status == DatabaseStatus::FAILED_NOT_FOUND) {
+            chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", error_string.original)));
+        } else {
+            chain.initError(error_string);
+            return false;
+        }
+    }
+}
+
+// ...
+----
+
+If this check passes for all wallets, then `VerifyWallets` is complete and will return `true` back to calling function `AppInitMain`, otherwise `false` will be returned.
+If `VerifyWallets` fails and returns `false` (due to a corrupted wallet database, but notably not due to an incorrect wallet path), the main program process `AppInit` will be immediately interrupted and shutdown.
+
+==== LoadWallets
+
+"Startup" wallet(s) are loaded  when `client->load` is called on each `node.chain_client` as part of https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1728-L1732[init.cpp].
+
+.src/init.cpp#AppInitMain
+[source]
+----
+for (const auto& client : node.chain_clients) {
+    if (!client->load()) {
+        return false;
+    }
+}
+----
+
+The call to  `load` on the wallet `chain_client` has again been overridden, this time by ``WalletClientImpl``'s https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L90-L121[`LoadWallets` method].
+This function works similarly to `VerifyWallets`, first creating the `WalletDatabase` (memory) object for each wallet, although this time skipping the verify step, before creating a `CWallet` object from the database and adding it to the global list of wallets, the vector `vpwallets`, by calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L114[`AddWallet`].
+
+.src/wallet/load.cpp#LoadWallets
+[source]
+----
+for (const std::string& name : gArgs.GetArgs("-wallet")) {
+    if (!wallet_paths.insert(name).second) {
+        continue;
+    }
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_existing = true;
+    options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
+    bilingual_str error;
+    std::vector<bilingual_str> warnings;
+    std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
+    if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
+        continue;
+    }
+    std::shared_ptr<CWallet> pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error, warnings) : nullptr;
+    if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
+    if (!pwallet) {
+        chain.initError(error);
+        return false;
+    }
+    AddWallet(pwallet);
+}
+----
+
+NOTE: There are a number of steps in `init.cpp` that happen before the wallet is loaded, notably the blockchain is synced first. +
+This is a safeguard which means that wallet operations cannot be called on a wallet which has been loaded against stale blockchain data.
+
+NOTE: _init.cpp_ is run on a single thread. +
+This means that calls to wallet code block further initialisation of the node.
+
+The `interfaces::Chain` object taken as argument by `LoadWallets()` is used to pass back any error messages, exactly as it was in `VerifyWallets()`.
+`AddWallet()` is defined in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L98-L108[_src/wallet.cpp_].
+
+==== StartWallets
+
+The wallet is finally ready when (all) `chain_clients` have been started in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1939-L1941[_init.cpp_] which calls the overridden `client->start` method from the `WalletClientImpl` class, resulting in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L123-L134[src/wallet/load.cpp#StartWallets] being called.
+
+This calls the `GetWallets` function which returns the vector of pointers to the interfaces for loaded `CWallet` objects, `vpwallets`.
+As part of startup `PostInitProcess` is called on each wallet which, after grabbing the main wallet lock `cs_wallet`, synchronises the wallet and mempool by adding wallet transactions not yet in a block to our mempool, and updating the wallet with any relevant transactions from the mempool.
+
+.src/wallet/wallet.cpp
+[source]
+----
+void CWallet::postInitProcess()
+{
+    LOCK(cs_wallet);
+
+    // Add wallet transactions that aren't already in a block to mempool
+    // Do this here as mempool requires genesis block to be loaded
+    ReacceptWalletTransactions();
+
+    // Update wallet transactions with current mempool transactions.
+    chain().requestMempoolTransactions(*this);
+}
+----
+
+Also, as part of `StartWallets`, `flushwallet` might be scheduled (if configured by argument) scheduling wallet transactions to be re-broadcast every second, although this interval is https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L2104-L2147[delayed upstream with a random timer].
+
+==== FlushWallets
+
+All wallets loaded into the program are "flushed" (to disk) before shutdown.
+As part of `init.cpp#Shutdown()` the `flush` method is called on each member of `node.chain_clients` in sequence.
+`WalletClientImpl` again overrides this method to call `wallet/load.cpp#FlushWallets()` which makes sure all wallet changes have been successfully flushed to the wallet database.
+
+.src/init.cpp#shutdown
+[source]
+----
+// FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
+if (node.chainman) {
+    LOCK(cs_main);
+    for (CChainState* chainstate : node.chainman->GetAll()) {
+        if (chainstate->CanFlushToDisk()) {
+            chainstate->ForceFlushStateToDisk();
+        }
+    }
+}
+----
+
+// TODO: Find out why we flush again here?
+Finally the `stop` method is called on each member of `node.chain_clients` which is overridden by `StopWallets`, flushing again and this time calling `close` on the database file.
+
+=== Wallet Locks
+
+Grepping the _src/wallet_ directory for locks, conventionally of the form `cs_*`, yields 501 matches.
+For comparison the entire remainder of the codebase excluding _src/wallet/*_ yields 925 matches.
+Many of these matches are asserts and declarations, however this still illustrates that the wallet code is highly reliant on locks to perform atomic operations.
+
+==== The `cs_wallet` lock
+
+In order to not block the rest of the program during wallet operations, each `CWallet` has its own recursive mutex `cs_wallet`:
+Note that there is currently an https://github.com/bitcoin/bitcoin/issues/19303[issue] tracking replacement of RecursiveMutexes with Mutexes, to make locking logic easier to follow in the codebase.
+
+.src/wallet/wallet.h
+[source]
+----
+/*
+ * Main wallet lock.
+ * This lock protects all the fields added by CWallet.
+ */
+mutable RecursiveMutex cs_wallet;
+----
+
+Most wallet operations whether reading or writing data require the use of the lock so that atomicity can be guaranteed.
+Some examples of wallet operations requiring the lock include:
+
+. Creating transactions
+. Signing transactions
+. Broadcasting/committing transactions
+. Abandoning transactions
+. Bumping transaction (fees)
+. Checking `IsMine`
+. Creating new addresses
+. Calculating balances
+. Creating new wallets
+. Importing new {priv|pub}keys/addresses
+. Importing/dumping wallets
+
+In addition to these higher level functions, most of ``CWallet``'s private member functions also require a hold on `cs_wallet`.
+
+==== Other wallet locks
+
+. _src/wallet/bdb.cpp_, which is responsible for managing BDB wallet databases on disk, has it's own mutex `cs_db`.
+. If external signers have been enabled (via `./configure --enable-external-signer`) then they too have their own mutex `cs_desc_man` which is acquired when descriptors are being setup.
+. `BlockUntilSyncedToCurrentChain()` has a unique lock exclude placed on it to prevent the caller from holding `cs_main` during its execution, and therefore prevent a possible deadlock:
++
+.src/wallet/wallet.h
+[source]
+----
+/**
+ * Blocks until the wallet state is up-to-date to /at least/ the current
+ * chain at the time this function is entered
+ * Obviously holding cs_main/cs_wallet when going into this call may cause
+ * deadlock
+ */
+void BlockUntilSyncedToCurrentChain() const LOCKS_EXCLUDED(::cs_main) EXCLUSIVE_LOCKS_REQUIRED(!cs_wallet);
+----
+
+=== Controlling the wallet
+
+As we can see wallet component startup and shutdown is largely driven from outside the wallet codebase from _src/init.cpp_.
+
+Once the wallet component is started, and any parametrised wallets have been verified and loaded, wallet functionality ceases to be called from _init.cpp_ and instead is controlled using external programs in a number of ways.
+The wallet can be controlled using `bitcoin-cli`, the `bitcoin-qt` GUI or the stand-alone `bitcoin-wallet` tool.
+
+Both `bitcoind` and `bitcoin-qt` run a (JSON) RPC server which is ready to service, amongst other things, commands to interact with wallets.
+The command line tool `bitcoin-cli` will allow interaction of any RPC server started by either `bitcoin` or `bitcoin-qt`.
+If using `bitcoin-qt` there is also an RPC console built into the GUI.
+If using the `bitcoin-qt` GUI itself then communication with the wallet is done directly via qt's https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/qt/walletmodel.h#L50-L242[`WalletModel` interface].
+
+Commands which can be used to control the wallet via RPC are listed in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L4584-L4657[_rpcwallet.cpp_].
+
+==== Wallet via RPC
+
+If we take a look at the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L2562-L2620[`loadwallet` RPC] we can see similarities to ``WalletClientImpl``'s `LoadWallets()` function.
+
+However this time the function will check the `WalletContext` to check that we have a wallet context (in this case a reference to a chain interface) loaded.
+Next it will call https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L237-L248[`wallet.cpp#LoadWallet`] which starts by grabbing `g_wallet_loading_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L207-L234[`LoadWalletInternal`] which adds the wallet to `vpwallets` and sets up various event notifications.
+
+.src/wallet/rpcwallet.cpp#loadwallet
+[source]
+----
+WalletContext& context = EnsureWalletContext(request.context);
+const std::string name(request.params[0].get_str());
+
+DatabaseOptions options;
+DatabaseStatus status;
+options.require_existing = true;
+bilingual_str error;
+std::vector<bilingual_str> warnings;
+std::optional<bool> load_on_start = request.params[1].isNull() ? std::nullopt : std::optional<bool>(request.params[1].get_bool());
+std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, load_on_start, options, status, error, warnings);
+if (!wallet) {
+    // Map bad format to not found, since bad format is returned when the
+    // wallet directory exists, but doesn't contain a data file.
+    RPCErrorCode code = RPC_WALLET_ERROR;
+    switch (status) {
+        case DatabaseStatus::FAILED_NOT_FOUND:
+        case DatabaseStatus::FAILED_BAD_FORMAT:
+            code = RPC_WALLET_NOT_FOUND;
+            break;
+        case DatabaseStatus::FAILED_ALREADY_LOADED:
+            code = RPC_WALLET_ALREADY_LOADED;
+            break;
+        default: // RPC_WALLET_ERROR is returned for all other cases.
+            break;
+----
+
+Further operation of the wallet RPCs are detailed in their man pages, but one thing to take note of is that whilst `loadwallet` (and `unloadwallet`) both take a `wallet_name` argument, the other wallet RPCs do not.
+Therefore in order to control a `bitcoin{d|-qt}` that has multiple wallets loaded simultaneously via RPC, bitcoin-cli must be called with the -rpcwallet argument, to specify the wallet which the action should be performed against, e.g. `bitcoin-cli --rpcwallet=your_wallet_name getbalance`
+
+=== CWallet
+
+The `CWallet` object is the fundamental wallet representation inside Bitcoin Core.
+CWallet stores transactions and balances and has the ability to create new transactions.
+CWallet also contains references to the chain interface for the wallet along with storing wallet metadata such as `nWalletVersion`, wallet flags, wallet name and address book.
+
+==== CWallet creation
+
+The CWallet constructor takes a pointer to the chain interface for the wallet, a wallet name and a pointer to the underlying WalletDatabase:
+
+.src/wallet/wallet.h
+[source]
+----
+/** Construct wallet with specified name and database implementation. */
+CWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database)
+    : m_chain(chain),
+      m_name(name),
+      m_database(std::move(database))
+{
+}
+----
+
+The constructor is not called directly, but instead from the public function `CWallet::Create()`, which is in turn itself called from `CreateWallet`, `LoadWallets` (or `TestLoadWallet`).
+In addition to the arguments required by the constructor, `CWallet::Create()` also has a `wallet_flags` argument.
+Wallet flags are represented as a single `unit64_t` bit field which encode certain wallet properties:
+
+.src/wallet/walletutil.h
+[source]
+----
+enum WalletFlags : uint64_t {
+    WALLET_FLAG_AVOID_REUSE = (1ULL << 0),
+    WALLET_FLAG_KEY_ORIGIN_METADATA = (1ULL << 1),
+    WALLET_FLAG_DISABLE_PRIVATE_KEYS = (1ULL << 32),
+    WALLET_FLAG_BLANK_WALLET = (1ULL << 33),
+    WALLET_FLAG_DESCRIPTORS = (1ULL << 34),
+    WALLET_FLAG_EXTERNAL_SIGNER = (1ULL << 35),
+};
+----
+
+See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/walletutil.h#L35-L66[_src/wallet/walletutil.h_] for additional information on the meanings of the wallet flags.
+
+`CWallet::Create()` will first attempt to create the `CWallet` object and load it, returning if any errors are encountered.
+If `CWallet::Create` is creating a new wallet -- on its 'first run' -- the wallet version and wallet flags will be set, before (if private keys are not disabled) either `LegacyScriptPubkeyMan` or ``DescriptorScriptPubkeyMan``'s are setup, depending on whether the `WALLET_FLAG_DESCRIPTORS` flag was set on the wallet.
+If the wallet has been created with the `WALLET_FLAG_DISABLE_PRIVATE_KEYS` wallet flag set, then neither type of `ScriptPubkeyMans` will be created.
+
+Following successful creation, various `bitcoind` program arguments are checked and applied to the wallet.
+These include options such as "-addresstype", "-changetype", "-mintxfee" and "-maxtxfee" amongst others.
+It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
+
+After the wallet is fully initialised and setup, its <<keypool, `KeyPool`>> will be topped up before the wallet is locked and registered with the <<validation-interface,`validationinterface`>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
+The rescan is smart in detecting the wallet "birthday" using metadata stored in the ScriptPubKeyMan and won't scan blocks produced before this date:
+
+.src/wallet/wallet.cpp
+[source]
+----
+...
+
+chain.initMessage(_("Rescanning...").translated);
+walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
+
+// No need to read and scan block if block was created before
+// our wallet birthday (as adjusted for block time variability)
+std::optional<int64_t> time_first_key;
+for (auto spk_man : walletInstance->GetAllScriptPubKeyMans()) {
+    int64_t time = spk_man->GetTimeFirstKey();
+    if (!time_first_key || time < *time_first_key) time_first_key = time;
+}
+if (time_first_key) {
+    chain.findFirstBlockWithTimeAndHeight(*time_first_key - TIMESTAMP_WINDOW, rescan_height, FoundBlock().height(rescan_height));
+}
+
+{
+    WalletRescanReserver reserver(*walletInstance);
+    if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(chain.getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
+        error = _("Failed to rescan the wallet during initialization");
+        return nullptr;
+    }
+}
+
+...
+
+----
+
+Finally, the `walletinterface` is setup for the wallet before the `WalletInstance` is returned to the caller.
+
+=== ScriptPubkeyManager
+
+Each wallet contains one or more https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/scriptpubkeyman.h#L169[``ScriptPubkeyManager``s], who are in control of storing the ``scriptPubkey``s managed by that wallet.
+
+A `CWallet` in the general sense therefore becomes "a collection of ``ScriptPubkeyManager``s", which are each managing an address type.
+In the current implementation, this means that a default (descriptor) wallet consists of 6 ``ScriptPubkeyManager``s, one for each of combination of {legacy | p2sh | bech32} for {receive | change} addresses.
+However note that as shown below in the setup function for Legacy (i.e. non-descriptor) wallets, that in reality they only have one SPK manager, which is then aliased and shared between all output types.
+
+.src/wallet/wallet.cpp
+[source]
+----
+void CWallet::SetupLegacyScriptPubKeyMan()
+{
+    if (!m_internal_spk_managers.empty() || !m_external_spk_managers.empty() || !m_spk_managers.empty() || IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
+        return;
+    }
+
+    auto spk_manager = std::unique_ptr<ScriptPubKeyMan>(new LegacyScriptPubKeyMan(*this));
+    for (const auto& type : OUTPUT_TYPES) {
+        m_internal_spk_managers[type] = spk_manager.get();
+        m_external_spk_managers[type] = spk_manager.get();
+    }
+    m_spk_managers[spk_manager->GetID()] = std::move(spk_manager);
+}
+----
+
+Compare this to the equivalent descriptor wallet code fragment which sets up an SPK Man for each output type:
+
+.src/wallet/wallet.cpp#SetupDescriptorScriptPubKeyMans
+[source]
+----
+...
+
+for (bool internal : {false, true}) {
+    for (OutputType t : OUTPUT_TYPES) {
+        auto spk_manager = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this, internal));
+        if (IsCrypted()) {
+            if (IsLocked()) {
+                throw std::runtime_error(std::string(__func__) + ": Wallet is locked, cannot setup new descriptors");
+            }
+            if (!spk_manager->CheckDecryptionKey(vMasterKey) && !spk_manager->Encrypt(vMasterKey, nullptr)) {
+                throw std::runtime_error(std::string(__func__) + ": Could not encrypt new descriptors");
+            }
+        }
+        spk_manager->SetupDescriptorGeneration(master_key, t);
+        uint256 id = spk_manager->GetID();
+        m_spk_managers[id] = std::move(spk_manager);
+        AddActiveScriptPubKeyMan(id, t, internal);
+    }
+}
+
+...
+----
+
+Script pubkey managers are stored inside `CWallet` in a map according to output type:
+
+.src/wallet/wallet.h
+[source]
+----
+class CWallet final : public WalletStorage, public interfaces::Chain::Notifications
+{
+private:
+
+// ...
+
+    std::map<OutputType, ScriptPubKeyMan*> m_external_spk_managers;
+    std::map<OutputType, ScriptPubKeyMan*> m_internal_spk_managers;
+
+// ...
+}
+----
+
+Note that "external" and "internal" (SPKMs) refer to whether the addresses generated are designated for giving out "externally" and receiving new payments to, or for "internal" change addresses.
+
+Prior to c729afd0a3b74a3943e4c359270beaf3e6ff8a7b the equivalent SPK manager functionality (fetching new addresses and signing transactions) was contained within `CWallet` itself, now being split out for better maintainability and upgradability brought by modularisation as per the https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Wallet-Class-Structure-Changes[wallet box class structure changes].
+The ultimate effect of this is that the `CWallet` object itself no longer handles keys and addresses.
+
+The change to a `CWallet` made up of (multiple) ``{Descriptor|Legacy}ScriptPubKeyMan``'s is also sometimes referred to as the "Wallet Box" model, where each SPK manager is thought of as a distinct (black?) "box" within the wallet, which can be called upon to perform new address generation and signing functions.
+
+==== Generating keys with Descriptor wallets
+
+===== Legacy wallets and KeyPool
+
+*Legacy wallets* used the "keypool" model which stored a bunch of keys.
+The wallet would then simply iterate over each public key and generate a create scriptPubKey (a.k.a. pubkey script) and address for each type of script the wallet supported.
+However this approach has a number of shortcomings (from least to most important):
+
+. One key could have multiple addresses
+. It was difficult to sign for multisig
+. Adding new script functionality required adding new hardcoded script types into the wallet code _for each new type of script_.
+
+Such an approach was not scalable in the long term and so a new format of wallet needed to be introduced.
+
+===== Descriptor Wallets
+
+*Descriptor wallets* instead store output script "descriptors".
+These descriptors can be of *any* script type, including arbitrary scripts (which might be "unknown" to the wallet), and mean that wallets can deterministically generate addresses for any type of valid descriptor, as desired by the user.
+
+Descriptors not only contain what is needed to generate an address, they also include all the data needed to "solve" (i.e. spend from) them, i.e. create a valid `scriptSig` (knowledge about which ``redeemScript``s and ``witnessScript``s needed).
+The document https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/doc/descriptors.md[Support for Output Descriptors in Bitcoin Core] provides more details and examples of these output descriptors.
+
+=== Validation Interface
+
+=== Key management
+
+==== IsMine
+
+The wallet needs a way to determine whether a transaction it learns about belongs to it.
+When a new transaction is learned about (either entering into the mempool or in a new block) the wallet is notified through the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/interfaces.cpp#L341[`CValidationInterface`].
+This will call the function https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L1182[`CWallet:SyncTransaction()`] which will in turn call https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L1015[`CWallet::AddToWalletIfInvolvingMe()`].
+`AddToWalletIfInvolvingMe` will then call `IsMine` on each output in the transaction, checking the return code to see if a transaction belongs to our wallet.
+
+=== Constructing transactions
+
+=== Multiwallet
+
+Work on the https://github.com/bitcoin/bitcoin/projects/2[multiwallet project] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
+
+== GUI
+
+* Has it's own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
+* There is useful documentation for developers looking to contribute to the QT side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
+
+== Relation to consensus soft forks
+
+Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not inside consensus code, but rather require improvements to the wallet.
+
+== Exercises
+
+[qanda]
+question:
+answer
+
+== Removed text
+
+* When adding new wallet features which will be included in the GUI, it can be good practice to first implement them as RPC commands because it's easier to create good test coverage for them.
+* Advanced transaction signature operations (e.g. signature aggregation, sighash flags) happen in the wallet code.
+
+=== Concepts
+
+* Wallet architecture
+* key management
+** HD wallets
+** Output script descriptors
+* Separation of wallet and node functionality
+* Key Management
+* Transaction Construction
+** Taproot
+** SegWit
+** Bech32
+** PSBT
+** Coin selection
+** CPFP
+** RBF
+** Transaction batching
+** Adaptor signatures
+* Multiwallet
+* Hardware wallet interface (HWI)
+* QT
+
+:leveloffset: -1

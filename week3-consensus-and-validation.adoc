@@ -1,8 +1,7 @@
-= Consensus & Validation
-:toc:
-:toclevels: 4
+= Week 3: Consensus & Validation
+include::settings.adoc[]
 
-== Bitcoin Consensus
+== Bitcoin consensus
 
 One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
 The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
@@ -21,6 +20,16 @@ _Aspects_ of consensus-enforcement code can be found across the Bitcoin Core cod
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#policy_region[policy/]
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
+
+[listing]
+----
+📂 bitcoin
+  📂 src
+    📂 consensus
+    📂 policy
+    📄 validation.h
+    📄 validation.cpp
+----
 
 Why is such a critical function split up between many files, and how do they all interact?
 Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
@@ -63,7 +72,7 @@ ____
 
 Having considered both transactions that were already known about (in the mempool), and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
 
-=== Consensus Bugs
+=== Consensus bugs
 
 Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
 The issue was that OpenSSL was accepting *multiple* signature serialization formats (for the same transaction) as valid.
@@ -114,7 +123,7 @@ Currently just a "regular" IBD chainstate and an optional snapshot chainstate, w
 
 When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.
 
-=== Bitcoin Core database consensus
+=== Bitcoin Core and database consensus
 
 Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indices.
 In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.

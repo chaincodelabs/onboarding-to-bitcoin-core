@@ -1,8 +1,7 @@
-= Getting started
-:toc:
-:toclevels: 4
+= Week 1: Getting started with Bitcoin Core
+include::settings.adoc[]
 
-== Building Bitcoin from source
+== Building Bitcoin Core from source
 
 When building Bitcoin Core from source, there are some platform-dependant instructions to follow.
 
@@ -11,7 +10,7 @@ For windows this is "build-windows.md", for macOS this is "build-osx.md" and for
 
 There is also a guide by Jon Atack about how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core].
 
-== Developer journeys
+== Bitcoin developer journeys
 
 It can be interesting to hear stories of how current contributors entered the space to hear about the approach they took and things they found useful, but also about any pitfalls they identified along their way.
 
@@ -21,14 +20,12 @@ https://github.com/amitiuttarwar[amitiuttarwar], https://github.com/jonatack[jon
 * https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it[Jon Atack -- On Reviewing, and Helping Those Who Do It]
 * https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[Jimmy Song -- A Gentle Introduction to Bitcoin Core Development]
 
-== Doxygen
+== Doxygen documentation
 
 Bitcoin Core uses https://www.doxygen.nl/index.html[Doxygen] to generate developer documentation automatically from its annotated C++ codebase.
 Developers can access documentation of the current release of Bitcoin Core online at https://doxygen.bitcoincore.org/[doxygen.bitcoincore.org], or alternatively can generate documentation for their current head using `make docs` (see https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md#generating-documentation[Generating Documentation] for more info).
 
-== Historical Context & Research
-
-=== How does the Bitcoin Core project use GitHub
+== Bitcoin Core and GitHub
 
 Bitcoin Core uses a GitHub-based workflow for development.
 The primary function of GitHub in the workflow is to discuss patches and connect them with review comments.
@@ -39,7 +36,7 @@ The earliest reviewers submitted changes using patches either through email exch
 
 In August 2009, the source code was moved to GitHub by Sirius and development has remained there and used the GitHub workflows ever since.
 
-==== Organisation & Roles
+=== Organisation & roles
 
 Anyone who contributes code to the codebase is labelled a "contributor" by GitHub (and the community).
 As of Version 22.0 of Bitcoin Core, there are ~820 individual contributors credited with changes.
@@ -82,7 +79,7 @@ In the event that a _maintainer_ goes rogue and starts merging controversial cod
 
 In the case that GitHub itself becomes the rogue entity, there have been numerous https://github.com/bitcoin/bitcoin/issues/20227[discussions about how to move away from GitHub], should the need ever arise.
 
-==== Github Workflow
+==== Github workflow
 
 The GitHub side of the Bitcoin Core workflow for contributors consists primarily of:
 
@@ -123,7 +120,7 @@ Reviews help to store and track reviews to PRs in a public way.
 Comments (inside issues, PRs, discussions etc.) are where users can discuss relevant aspects of the item and have history of those discussions preserved for future reference.
 Often contributors having "informal" discussions about changes on e.g. IRC will be advised that they should echo the gist of their conversation as a comment so that the rationale behind changes can be determined in the future.
 
-=== Research topics/questions
+== Research topics/questions
 
 * What stops a hacker hijacking the Bitcoin Core website and hosting malicious binaries?
 ** How about malicious binaries hosted by linux package managers?

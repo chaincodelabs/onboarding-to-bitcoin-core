@@ -1,6 +1,5 @@
-= Overview & Architecture
-:toc:
-:toclevels: 3
+= Week 2: Overview & architecture of Bitcoin Core
+include::settings.adoc[]
 
 == Decentralised development
 
@@ -51,7 +50,7 @@ Fabian has also presented on this topic a number of times:
 Firstly as part of his https://www.youtube.com/watch?v=6aPSCDAiqVI[ChainCode labs' residency].
 And later as part of https://www.youtube.com/watch?v=gr75ubfNQ20[Scaling Bitcoin 2019].
 
-== Bitcoin Core's architecture
+== Bitcoin Cores architecture
 
 lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the bitcoin core onboarding documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
 
@@ -63,7 +62,7 @@ James O'Beirne has recorded 3 videos which go into detail on how the codebase is
 . https://www.youtube.com/watch?v=RVWcUnpZX4E[Architectural tour of Bitcoin Core (part 2 of 3)]
 . https://www.youtube.com/watch?v=UiD5DZU9Zp4[Architectural tour of Bitcoin Core (part 3 of 3)]
 
-== Signet for testing
+== Signet test network
 
 Signet is both a tool that allows developers to create their own networks for testing interactions between different Bitcoin software and the name of the most popular of these testing networks.
 Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP325].
@@ -90,7 +89,7 @@ Note that this view was not completely unanimous in the community.
 For consensus-critical code most Bitcoin Core developers consider "the code is the spec" to be the ultimate source of truth.
 A knock-on effect of this was that there were calls for review on BIP2 itself, with newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posting his thoughts to the https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html[bitcoin-dev mailing list].
 
-== Getting Started
+== Getting started with development
 
 What are the best ways to get started with Bitcoin Core development?
 As mentioned earlier, one of the roles most in demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarised with the codebase too!
@@ -119,7 +118,7 @@ This process of code "archaeology" will prove invaluable in the future when you 
 When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally, if possible.
 One of the best ways to do this is by using a combination of git tools -- `git blame`, `git log -S`, and less commonly `git log -G` -- and the discussions on GitHub.
 
-=== git blame
+=== `git blame`
 
 The git `blame` command will show you when and by who a particular line of code was last changed by.
 
@@ -162,7 +161,7 @@ Date:   Fri Jul 10 16:29:57 2020 +0100
 So we've learned now that this mutex was moved here by John from net.{cpp|h} in it's most recent touch.
 Let's see what else we can find out about it.
 
-=== git log -S
+=== `git log -S`
 
 `git log -S` allows us to search for commits where this line was modified (not where it was only moved, for that use `git log -G`).
 A 'modification' (vs. a 'move') in git terms implies that there are uneven instances of the search term in the commit diffs add/remove sections.
