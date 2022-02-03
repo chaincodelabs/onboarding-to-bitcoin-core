@@ -3,6 +3,7 @@
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 :leveloffset: +1
 
 = Getting started with Bitcoin Core
@@ -10,6 +11,7 @@
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 
 == Building Bitcoin Core from source
 
@@ -214,6 +216,7 @@ TIP: starting with `ping` and `pong` messages might be easiest
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 
 == Decentralised development
 
@@ -484,6 +487,7 @@ THEN:
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 
 One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
 The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
@@ -567,6 +571,7 @@ Note that that database code is not found in, or even in close proximity to, the
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 
 == Transaction validation
 
@@ -709,6 +714,7 @@ The receiver will not perceive anything unordinary, unless they were tracking th
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 
 == Overview
 
@@ -1591,12 +1597,113 @@ Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not i
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
 
-* Has it's own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
-* There is useful documentation for developers looking to contribute to the QT side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
+The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
+Pull requests which primarily target the GUI should be made here, and then they will get merged into the primary repo.
+Developer Marco Falke created https://github.com/MarcoFalke/bitcoin-core/issues/26[an issue] in his fork which detailed some of the rationale for the split, but essentially it came down to:
+
+. Separate issue and patch management
+. More focused review and interests
+. Maintain high quality assurance
+
+He also stated that:
+
+[quote, Marco Falke]
+____
+Splitting up the GUI (and splitting out modules in general) has been brought up often in recent years. Now that the GUI is primarily connected through interfaces with a bitcoin node, it seems an appropriate time to revive this discussion.
+____
+
+https://github.com/bitcoin/bitcoin/pull/19071[PR 19071] contained the documentation change now contained in the Bitcoin Core primary repository, along with details of the monotree approach that was ultimately taken.
+The documentation change provides guidance on what a "GUI change" is:
+
+[quote, src/CONTRIBUTING.md]
+____
+As a rule of thumb, everything that only modifies `src/qt` is a GUI-only pull
+request. However:
+
+* For global refactoring or other transversal changes the node repository
+  should be used.
+* For GUI-related build system changes, the node repository should be used
+  because the change needs review by the build systems reviewers.
+* Changes in `src/interfaces` need to go to the node repository because they
+  might affect other components like the wallet.
+
+For large GUI changes that include build system and interface changes, it is
+recommended to first open a pull request against the GUI repository. When there
+is agreement to proceed with the changes, a pull request with the build system
+and interfaces changes can be submitted to the node repository.
+____
+
+On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue] was recently opened by Marco, to discuss the possibility of instituting the same monotree changes for wallet code.
+
+== Building the GUI
+
+`bitcoin-qt`, which is the GUI version of the node software, is built automatically when the build dependencies are met.
+Required packages can be found in the build instructions in _src/doc/build-*.md_ as appropriate for your platform.
+If you have the required packages installed but do not wish to build the `bitcoin-qt` then you must run `./configure` with the option `--with-gui=no`.
+
+[NOTE]
+====
+If the build is configured with `--enable-multiprocess` then additional binaries will be built:
+
+. `bitcoin-node`
+. `bitcoin-wallet`
+. `bitcoin-gui`
+====
 
 == QT
 
-TODO
+We can see how the QT directory is related to the rest of the codebase from its directory dependency graph:
+
+image::dir_f0c29a9f5764d78706f34c972e8114d8_dep.svg[]
+
+Developers would ideally like to reduce these dependencies even further.
+
+== QT documentation
+
+There is useful documentation for developers looking to contribute to the QT side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
+
+== Main GUI program
+
+The loading point for the GUI is _src/qt/main.cpp_.
+`main()` calls `GuiMain()` from _src/qt/bitcoin.cpp_, passing along any program arguments with it.
+`GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
+Note that `SetupEnvironment` is called from all major components:
+
+image::setup_environment.png[]
+
+Next an empty `NodeContext` is setup, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
+
+Various signal handlers are configured:
+
+* `ThreadSafeMessageBox_connect` enables a box to be shown to the user
+* `ThreadSafeQuestion_connect` enables a question to be asked to the user
+* `InitMessage_connect` shows a message during process initialisation
+
+These signals are defined via macro and we can see that after replacement, each signal is a reference to a `CClientUIInterface` signal:
+
+.src/node/ui_interface.cpp
+[source]
+----
+#define ADD_SIGNALS_IMPL_WRAPPER(signal_name)                                                                 \
+    boost::signals2::connection CClientUIInterface::signal_name##_connect(std::function<signal_name##Sig> fn) \
+    {                                                                                                         \
+        return g_ui_signals.signal_name.connect(fn);                                                          \
+    }
+
+ADD_SIGNALS_IMPL_WRAPPER(ThreadSafeMessageBox);
+ADD_SIGNALS_IMPL_WRAPPER(ThreadSafeQuestion);
+ADD_SIGNALS_IMPL_WRAPPER(InitMessage);
+ADD_SIGNALS_IMPL_WRAPPER(NotifyNumConnectionsChanged);
+ADD_SIGNALS_IMPL_WRAPPER(NotifyNetworkActiveChanged);
+ADD_SIGNALS_IMPL_WRAPPER(NotifyAlertChanged);
+ADD_SIGNALS_IMPL_WRAPPER(ShowProgress);
+ADD_SIGNALS_IMPL_WRAPPER(NotifyBlockTip);
+ADD_SIGNALS_IMPL_WRAPPER(NotifyHeaderTip);
+ADD_SIGNALS_IMPL_WRAPPER(BannedListChanged);
+----
+
+
 
 :leveloffset: -1

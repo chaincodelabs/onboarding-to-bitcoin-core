@@ -2,3 +2,4 @@
 :toclevels: 4
 :source-language: cpp
 :icons: font
+:imagesdir: images
