@@ -781,51 +781,50 @@ This is still an active area of research, with two possible coin selection solvi
 The branch and bound algorithm is well-documented in the codebase itself:
 
 .src/wallet/coinselection.cpp
-[quote]
-____
+[source]
+----
 /*
- * This is the Branch and Bound Coin Selection algorithm designed by Murch. It searches for an input
- * set that can pay for the spending target and does not exceed the spending target by more than the
- * cost of creating and spending a change output. The algorithm uses a depth-first search on a binary
- * tree. In the binary tree, each node corresponds to the inclusion or the omission of a UTXO. UTXOs
- * are sorted by their effective values and the trees is explored deterministically per the inclusion
- * branch first. At each node, the algorithm checks whether the selection is within the target range.
- * While the selection has not reached the target range, more UTXOs are included. When a selection's
- * value exceeds the target range, the complete subtree deriving from this selection can be omitted.
- * At that point, the last included UTXO is deselected and the corresponding omission branch explored
- * instead. The search ends after the complete tree has been searched or after a limited number of tries.
- *
- * The search continues to search for better solutions after one solution has been found. The best
- * solution is chosen by minimizing the waste metric. The waste metric is defined as the cost to
- * spend the current inputs at the given fee rate minus the long term expected cost to spend the
- * inputs, plus the amount the selection exceeds the spending target:
- *
- * waste = selectionTotal - target + inputs × (currentFeeRate - longTermFeeRate)
- *
- * The algorithm uses two additional optimizations. A lookahead keeps track of the total value of
- * the unexplored UTXOs. A subtree is not explored if the lookahead indicates that the target range
- * cannot be reached. Further, it is unnecessary to test equivalent combinations. This allows us
- * to skip testing the inclusion of UTXOs that match the effective value and waste of an omitted
- * predecessor.
- *
- * The Branch and Bound algorithm is described in detail in Murch's Master Thesis:
- * https://murch.one/wp-content/uploads/2016/11/erhardt2016coinselection.pdf
- *
- * @param const std::vector<CInputCoin>& utxo_pool The set of UTXOs that we are choosing from.
- *        These UTXOs will be sorted in descending order by effective value and the CInputCoins'
- *        values are their effective values.
- * @param const CAmount& target_value This is the value that we want to select. It is the lower
- *        bound of the range.
- * @param const CAmount& cost_of_change This is the cost of creating and spending a change output.
- *        This plus target_value is the upper bound of the range.
- * @param std::set<CInputCoin>& out_set -> This is an output parameter for the set of CInputCoins
- *        that have been selected.
- * @param CAmount& value_ret -> This is an output parameter for the total value of the CInputCoins
- *        that were selected.
- * @param CAmount not_input_fees -> The fees that need to be paid for the outputs and fixed size
- *        overhead (version, locktime, marker and flag)
- */
-____
+This is the Branch and Bound Coin Selection algorithm designed by Murch. It searches for an input
+set that can pay for the spending target and does not exceed the spending target by more than the
+cost of creating and spending a change output. The algorithm uses a depth-first search on a binary
+tree. In the binary tree, each node corresponds to the inclusion or the omission of a UTXO. UTXOs
+are sorted by their effective values and the trees is explored deterministically per the inclusion
+branch first. At each node, the algorithm checks whether the selection is within the target range.
+While the selection has not reached the target range, more UTXOs are included. When a selection's
+value exceeds the target range, the complete subtree deriving from this selection can be omitted.
+At that point, the last included UTXO is deselected and the corresponding omission branch explored
+instead. The search ends after the complete tree has been searched or after a limited number of tries.
+
+The search continues to search for better solutions after one solution has been found. The best
+solution is chosen by minimizing the waste metric. The waste metric is defined as the cost to
+spend the current inputs at the given fee rate minus the long term expected cost to spend the
+inputs, plus the amount the selection exceeds the spending target:
+
+waste = selectionTotal - target + inputs × (currentFeeRate - longTermFeeRate)
+
+The algorithm uses two additional optimizations. A lookahead keeps track of the total value of
+the unexplored UTXOs. A subtree is not explored if the lookahead indicates that the target range
+cannot be reached. Further, it is unnecessary to test equivalent combinations. This allows us
+to skip testing the inclusion of UTXOs that match the effective value and waste of an omitted
+predecessor.
+
+The Branch and Bound algorithm is described in detail in Murch's Master Thesis: https://murch.one/wp-content/uploads/2016/11/erhardt2016coinselection.pdf
+
+@param const std::vector<CInputCoin>& utxo_pool The set of UTXOs that we are choosing from.
+       These UTXOs will be sorted in descending order by effective value and the CInputCoins'
+       values are their effective values.
+@param const CAmount& target_value This is the value that we want to select. It is the lower
+       bound of the range.
+@param const CAmount& cost_of_change This is the cost of creating and spending a change output.
+       This plus target_value is the upper bound of the range.
+@param std::set<CInputCoin>& out_set -> This is an output parameter for the set of CInputCoins
+       that have been selected.
+@param CAmount& value_ret -> This is an output parameter for the total value of the CInputCoins
+       that were selected.
+@param CAmount not_input_fees -> The fees that need to be paid for the outputs and fixed size
+       overhead (version, locktime, marker and flag)
+*/
+----
 
 
 You can read a little more about the differences between these two coin selection algorithms on this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer].
