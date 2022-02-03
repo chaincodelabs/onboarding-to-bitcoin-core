@@ -2,12 +2,16 @@
 include::settings.adoc[]
 :leveloffset: +1
 
-include::week1-getting-started.adoc[]
+include::01_getting-started.adoc[]
 
-include::week2-overview-and-architecture.adoc[]
+include::02_overview-and-architecture.adoc[]
 
-include::week3-consensus-and-validation.adoc[]
+include::03_consensus.adoc[]
 
-include::week4-wallet-and-gui.adoc[]
+include::04_validation.adoc[]
+
+include::05_wallet.adoc[]
+
+include::06_gui.adoc[]
 
 :leveloffset: -1

@@ -1,44 +1,7 @@
-= Week 3: Consensus & Validation
+= Validation
 include::settings.adoc[]
 
-== Bitcoin consensus
-
-One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
-The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
-The secondary mechanism is that all nodes should follow the chain with the most cumulative proof-of-work.
-The product of following these two mechanisms is that all nodes in the network will _eventually_ converge onto a single canonical chain.
-For more information on how the bitcoin networks' decentralised consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
-
-=== Consensus in Bitcoin Core
-
-Review of the design of Bitcoin Core from xref:week2-overview-and-architecture.adoc[Overview and Architecture]  will naturally lead to a region of the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
-However this is not entirely the case...
-
-_Aspects_ of consensus-enforcement code can be found across the Bitcoin Core codebase in a number of regions and files, including notably:
-
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#validationhcpp[validation.{h|cpp}]
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#policy_region[policy/]
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
-
-[listing]
-----
-📂 bitcoin
-  📂 src
-    📂 consensus
-    📂 policy
-    📄 validation.h
-    📄 validation.cpp
-----
-
-Why is such a critical function split up between many files, and how do they all interact?
-Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
-
-The answer teaches us that policy checks are a superset of validation checks, that is to say that a transaction that passes policy checks has implicitly passed consensus checks too.
-Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
-Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
-
-=== Transaction validation
+== Transaction validation
 
 We can follow most of the journey of a transaction through Bitcoin Core by following glozow's notes on transaction https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[Validation and submission to the mempool].
 glozow details what different types of checks are run on a new transaction before it's accepted into the nodes local mempool -- consensus vs policy, script vs non-script, contextual vs context-free.
@@ -72,36 +35,7 @@ ____
 
 Having considered both transactions that were already known about (in the mempool), and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
 
-=== Consensus bugs
-
-Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
-The issue was that OpenSSL was accepting *multiple* signature serialization formats (for the same transaction) as valid.
-This meant that a transaction's ID (txid) could be changed, because the signature contributes to the txid hash.
-
-There were a few main cases to consider:
-
-. first party malleation: signature length descriptor is extended to 5 bytes
-. third party malleation: signatures are "slightly" tweaked (or padded)
-. third party malleation: negating the `S` value of the ECDSA signature
-
-In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
-The first party (the sender) can create a valid (normal length) signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
-
-In the second case, of signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
-However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning) in the event that they are relying on txids to track transactions.
-
-It is interesting to consider the order of the steps taken to fix this potential vulnerability:
-
-. First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings. +
-This was carried out in PR https://github.com/bitcoin/bitcoin/pull/2520[#2520].
-. Following the policy change, the strict encoding rules were later enforced by consensus in PR https://github.com/bitcoin/bitcoin/pull/5713[#5713].
-
-Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
-In what circumstances might it not make sense?
-
-Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in PR https://github.com/bitcoin/bitcoin/pull/6954[#6954] which switched to using libsecp256k1 for signature verification.
-
-=== Multiple chains
+== Multiple chains
 
 TODO: Reorgs, undo data, `DisconnectBlock`
 
@@ -122,19 +56,6 @@ A single `BlockManager` is shared between all instances of `CChainState`.
 Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the https://bitcoinops.org/en/topics/assumeutxo/[assumeUTXO] project.
 
 When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.
-
-=== Bitcoin Core and database consensus
-
-Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indices.
-In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.
-What developers at the time could not foresee is that nodes that were still using BDB for these indices (all pre 0.8 nodes), were silently consensus-bound by a relatively obscure BDB-specific database lock counter...
-
-BDB required a configuration setting for the total number of locks available to your database.
-Bitcoin Core was also interpreting failure to grab the required number of locks as the block being invalid -- a consensus failure.
-This combination caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus split.
-https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50] provides further explanation on this incident.
-
-Note that that database code is not found in, or even in close proximity to, the `/src/consensus` region of the codebase.
 
 == Exercises
 
@@ -214,11 +135,4 @@ Once the signature has been changed, the transaction ID (hash) will also change.
 If the modified transaction is then included in a block, before the original, the effect is that the sender will still see the outgoing transaction as "unconfirmed" in their wallet.
 The sender wallet should however also see the accepted (modified) outgoing transaction, so their balance will be calculated correctly, only a "stuck doublespend" will pollute their wallet.
 The receiver will not perceive anything unordinary, unless they were tracking the incoming payment using the txid as given to them by the sender.
-
-=== Concepts
-
-* Decentralised consensus
-* Transaction validation in Bitcoin Core
-* How do nodes stay in consensus on the network
-* Consensus vs policy (vs standardness)
 

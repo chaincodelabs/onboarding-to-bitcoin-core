@@ -1,4 +1,4 @@
-= Week 2: Overview & architecture of Bitcoin Core
+= Overview & architecture of Bitcoin Core
 include::settings.adoc[]
 
 == Decentralised development

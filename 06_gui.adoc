@@ -1,0 +1,9 @@
+= GUI
+include::settings.adoc[]
+
+* Has it's own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
+* There is useful documentation for developers looking to contribute to the QT side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
+
+== QT
+
+TODO

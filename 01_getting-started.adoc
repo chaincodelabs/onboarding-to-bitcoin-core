@@ -1,4 +1,4 @@
-= Week 1: Getting started with Bitcoin Core
+= Getting started with Bitcoin Core
 include::settings.adoc[]
 
 == Building Bitcoin Core from source
