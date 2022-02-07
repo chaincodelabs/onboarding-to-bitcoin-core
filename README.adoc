@@ -1663,28 +1663,30 @@ If the build is configured with `--enable-multiprocess` then additional binaries
 . `bitcoin-gui`
 ====
 
-== QT
+== Qt
 
-We can see how the QT directory is related to the rest of the codebase from its directory dependency graph:
+We can see how the Qt directory is related to the rest of the codebase from its directory dependency graph:
 
 image::dir_f0c29a9f5764d78706f34c972e8114d8_dep.svg[]
 
 Developers would ideally like to reduce these dependencies even further.
 
-== QT documentation
+== Qt documentation
 
-There is useful documentation for developers looking to contribute to the QT side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
+There is useful documentation for developers looking to contribute to the Qt side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
 
 == Main GUI program
 
 The loading point for the GUI is _src/qt/main.cpp_.
 `main()` calls `GuiMain()` from _src/qt/bitcoin.cpp_, passing along any program arguments with it.
 `GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
-Note that `SetupEnvironment` is called from all major components:
+Note that `SetupEnvironment` is a common function and is called from all major components:
 
 image::setup_environment.png[]
 
 Next an empty `NodeContext` is setup, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
+Recall that in xref:05_wallet.adoc#Wallet-component-initialisation[Wallet component initialisation] we also saw the wallet utilising a `NodeContext` as part of its `WalletInitInterface`.
+In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
 
 Various signal handlers are configured:
 
@@ -1715,6 +1717,71 @@ ADD_SIGNALS_IMPL_WRAPPER(NotifyHeaderTip);
 ADD_SIGNALS_IMPL_WRAPPER(BannedListChanged);
 ----
 
+After some QT setup, command-line and application arguments are parsed.
+What follows can be outlined from the code comments:
+
+[start=3]
+. Application identification
+. Initialization of translations, so that intro dialog is in user's language
+. Now that settings and translations are available, ask user for data directory
+. Determine availability of data directory and parse bitcoin.conf
+. Determine network (and switch to network specific options)
+. URI IPC sending
+. Main GUI initialization
+
+== GUI initialisation
+
+After configuration the GUI is initialised.
+Here the `Node` object created earlier is passed to `app.SetNode()` before a window is created and the application executed.
+
+.src/qt/bitcoin.cpp
+[source]
+----
+    app.setNode(*node);
+
+    int rv = EXIT_SUCCESS;
+    try
+    {
+        app.createWindow(networkStyle.data());
+        // Perform base initialization before spinning up initialization/shutdown thread
+        // This is acceptable because this function only contains steps that are quick to execute,
+        // so the GUI thread won't be held up.
+        if (app.baseInitialize()) {
+            app.requestInitialize();
+#if defined(Q_OS_WIN)
+            WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(PACKAGE_NAME), (HWND)app.getMainWinId());
+#endif
+            app.exec();
+            app.requestShutdown();
+            app.exec();
+            rv = app.getReturnValue();
+        } else {
+            // A dialog with detailed error will have been shown by InitError()
+            rv = EXIT_FAILURE;
+        }
+    } catch (const std::exception& e) {
+        PrintExceptionContinue(&e, "Runaway exception");
+        app.handleRunawayException(QString::fromStdString(app.node().getWarnings().translated));
+    } catch (...) {
+        PrintExceptionContinue(nullptr, "Runaway exception");
+        app.handleRunawayException(QString::fromStdString(app.node().getWarnings().translated));
+    }
+    return rv;
+----
+
+The bulk of the Qt GUI classes are defined in _src/qt/bitcoingui.{h|cpp}_.
+
+== QML GUI
+
+Since writing this documentation (at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6]) much focus has been put on re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML] framework.
+This will allow developers to create visually-superior, and easier to write and reason-about GUI code, whilst also lowering the barriers to entry for potential new developers who want to be able to focus on GUI code.
+
+The recommendation therefore is to familiarise yourself with Qt QML and review the current codebase for the latest developments.
+You can follow along with the latest QML work in the specific https://github.com/bitcoin-core/gui-qml/blob/main/src/qml/README.md[bitcoin-core/qml-gui] repo.
+
+== Bitcoin design
+
+The https://bitcoin.design/guide/[Bitcoin design guide] provides some guidance on common pitfalls that Bitcoin GUI designers should look out for when designing apps (like `bitcoin-qt`).
 
 
 :leveloffset: -1
