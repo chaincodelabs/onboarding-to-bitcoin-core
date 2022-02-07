@@ -1,6 +1,8 @@
 = Validation
 include::settings.adoc[]
 
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+
 == Transaction validation
 
 We can follow most of the journey of a transaction through Bitcoin Core by following glozow's notes on transaction https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[Validation and submission to the mempool].

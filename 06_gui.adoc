@@ -1,6 +1,8 @@
 = GUI
 include::settings.adoc[]
 
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+
 The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
 Pull requests which primarily target the GUI should be made here, and then they will get merged into the primary repo.
 Developer Marco Falke created https://github.com/MarcoFalke/bitcoin-core/issues/26[an issue] in his fork which detailed some of the rationale for the split, but essentially it came down to:

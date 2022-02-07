@@ -13,6 +13,8 @@
 :icons: font
 :imagesdir: images
 
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+
 == Building Bitcoin Core from source
 
 When building Bitcoin Core from source, there are some platform-dependant instructions to follow.
@@ -217,6 +219,8 @@ TIP: starting with `ping` and `pong` messages might be easiest
 :source-language: cpp
 :icons: font
 :imagesdir: images
+
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
 
 == Decentralised development
 
@@ -489,6 +493,8 @@ THEN:
 :icons: font
 :imagesdir: images
 
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+
 One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
 The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
 The secondary mechanism is that all nodes should follow the chain with the most cumulative proof-of-work.
@@ -572,6 +578,8 @@ Note that that database code is not found in, or even in close proximity to, the
 :source-language: cpp
 :icons: font
 :imagesdir: images
+
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
 
 == Transaction validation
 
@@ -715,6 +723,8 @@ The receiver will not perceive anything unordinary, unless they were tracking th
 :source-language: cpp
 :icons: font
 :imagesdir: images
+
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
 
 == Overview
 
@@ -1597,6 +1607,8 @@ Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not i
 :source-language: cpp
 :icons: font
 :imagesdir: images
+
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
 
 The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
 Pull requests which primarily target the GUI should be made here, and then they will get merged into the primary repo.

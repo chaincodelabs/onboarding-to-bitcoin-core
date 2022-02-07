@@ -1,6 +1,8 @@
 = Consensus
 include::settings.adoc[]
 
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+
 One of the most fundamental concepts behind the bitcoin network is that nodes are able to maintain decentralised consensus with each other.
 The primary mechanism behind this relies on all nodes validating each transaction and block they learn about against their own copy of the (consensus) rules.
 The secondary mechanism is that all nodes should follow the chain with the most cumulative proof-of-work.
