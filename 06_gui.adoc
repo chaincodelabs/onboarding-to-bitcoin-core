@@ -73,42 +73,10 @@ There is useful documentation for developers looking to contribute to the Qt sid
 The loading point for the GUI is _src/qt/main.cpp_.
 `main()` calls `GuiMain()` from _src/qt/bitcoin.cpp_, passing along any program arguments with it.
 `GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
-Note that `SetupEnvironment` is a common function and is called from all major components:
-
-image::setup_environment.png[]
 
 Next an empty `NodeContext` is setup, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
 Recall that in xref:05_wallet.adoc#Wallet-component-initialisation[Wallet component initialisation] we also saw the wallet utilising a `NodeContext` as part of its `WalletInitInterface`.
 In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
-
-Various signal handlers are configured:
-
-* `ThreadSafeMessageBox_connect` enables a box to be shown to the user
-* `ThreadSafeQuestion_connect` enables a question to be asked to the user
-* `InitMessage_connect` shows a message during process initialisation
-
-These signals are defined via macro and we can see that after replacement, each signal is a reference to a `CClientUIInterface` signal:
-
-.src/node/ui_interface.cpp
-[source]
-----
-#define ADD_SIGNALS_IMPL_WRAPPER(signal_name)                                                                 \
-    boost::signals2::connection CClientUIInterface::signal_name##_connect(std::function<signal_name##Sig> fn) \
-    {                                                                                                         \
-        return g_ui_signals.signal_name.connect(fn);                                                          \
-    }
-
-ADD_SIGNALS_IMPL_WRAPPER(ThreadSafeMessageBox);
-ADD_SIGNALS_IMPL_WRAPPER(ThreadSafeQuestion);
-ADD_SIGNALS_IMPL_WRAPPER(InitMessage);
-ADD_SIGNALS_IMPL_WRAPPER(NotifyNumConnectionsChanged);
-ADD_SIGNALS_IMPL_WRAPPER(NotifyNetworkActiveChanged);
-ADD_SIGNALS_IMPL_WRAPPER(NotifyAlertChanged);
-ADD_SIGNALS_IMPL_WRAPPER(ShowProgress);
-ADD_SIGNALS_IMPL_WRAPPER(NotifyBlockTip);
-ADD_SIGNALS_IMPL_WRAPPER(NotifyHeaderTip);
-ADD_SIGNALS_IMPL_WRAPPER(BannedListChanged);
-----
 
 After some QT setup, command-line and application arguments are parsed.
 What follows can be outlined from the code comments:
@@ -127,46 +95,11 @@ What follows can be outlined from the code comments:
 After configuration the GUI is initialised.
 Here the `Node` object created earlier is passed to `app.SetNode()` before a window is created and the application executed.
 
-.src/qt/bitcoin.cpp
-[source]
-----
-    app.setNode(*node);
-
-    int rv = EXIT_SUCCESS;
-    try
-    {
-        app.createWindow(networkStyle.data());
-        // Perform base initialization before spinning up initialization/shutdown thread
-        // This is acceptable because this function only contains steps that are quick to execute,
-        // so the GUI thread won't be held up.
-        if (app.baseInitialize()) {
-            app.requestInitialize();
-#if defined(Q_OS_WIN)
-            WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(PACKAGE_NAME), (HWND)app.getMainWinId());
-#endif
-            app.exec();
-            app.requestShutdown();
-            app.exec();
-            rv = app.getReturnValue();
-        } else {
-            // A dialog with detailed error will have been shown by InitError()
-            rv = EXIT_FAILURE;
-        }
-    } catch (const std::exception& e) {
-        PrintExceptionContinue(&e, "Runaway exception");
-        app.handleRunawayException(QString::fromStdString(app.node().getWarnings().translated));
-    } catch (...) {
-        PrintExceptionContinue(nullptr, "Runaway exception");
-        app.handleRunawayException(QString::fromStdString(app.node().getWarnings().translated));
-    }
-    return rv;
-----
-
 The bulk of the Qt GUI classes are defined in _src/qt/bitcoingui.{h|cpp}_.
 
 == QML GUI
 
-Since writing this documentation (at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6]) much focus has been put on re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML] framework.
+Since writing this documentation focus has been directed towards re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML] framework.
 This will allow developers to create visually-superior, and easier to write and reason-about GUI code, whilst also lowering the barriers to entry for potential new developers who want to be able to focus on GUI code.
 
 The recommendation therefore is to familiarise yourself with Qt QML and review the current codebase for the latest developments.
