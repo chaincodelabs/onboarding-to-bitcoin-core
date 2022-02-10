@@ -3,3 +3,5 @@
 :source-language: cpp
 :icons: font
 :imagesdir: images
+:repo: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/
+:PR: https://github.com/bitcoin/bitcoin/pull/ 

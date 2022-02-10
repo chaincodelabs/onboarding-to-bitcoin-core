@@ -771,7 +771,7 @@ The wallet component is initialised via the `WalletInitInterface` class as speci
 The member functions are marked as virtual in the `WalletInitInterface` definition, indicating that they are going to be overridden later by a derived class.
 
 .src/walletinitinterface.h
-[source]
+[source, cpp]
 ----
 class WalletInitInterface {
 public:
@@ -810,7 +810,7 @@ The wallet interface is created when the `Construct()` method is called on the `
 This initialises a new `WalletClientImpl` object which is then added to the `node` object, both to the general list of `node.chain_clients` (wallet processes or other clients which want chain information from the node) in addition to being assigned as the unique `node.wallet_client` role, which specifies the particular `node.chain_client` that should be used to load or create wallets.
 
 .src/wallet/init.cpp
-[source]
+[source, cpp]
 ----
 void WalletInit::Construct(NodeContext& node) const
 {
@@ -847,7 +847,7 @@ Wallet(s) to be loaded as part of program startup can be specified by passing `-
 If the wallet has been compiled in but no `-wallet*=` arguments have been passed, then the default wallet directory (_$datadir/wallets_) will be checked as per `GetWalletDir()`:
 
 .src/wallet/walletutil.cpp#GetWalletDir()
-[source]
+[source, cpp]
 ----
 fs::path GetWalletDir()
 {
@@ -885,7 +885,7 @@ Wallets loaded via program arguments are first verified as part of `AppInitMain(
 Next it loops through all wallets it finds in the `walletdir` and adds them to an `std::set` called `wallet_paths`, first deduplicating them by tracking their absolute paths, and then checking that  the `WalletDatabase` for each wallet exists (or is otherwise constructed successfully) and can be verified.
 
 .src/wallet/load.cpp#VerifyWallets()
-[source]
+[source, cpp]
 ----
 // ...
 
@@ -923,7 +923,7 @@ If `VerifyWallets()` fails and returns `false` (due to a corrupted wallet databa
 "Startup" wallet(s) are loaded  when `client->load()` is called on each `node.chain_client` as part of https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1728-L1732[init.cpp].
 
 .src/init.cpp#AppInitMain()
-[source]
+[source, cpp]
 ----
 for (const auto& client : node.chain_clients) {
     if (!client->load()) {
@@ -936,7 +936,7 @@ The call to  `load()` on the wallet `chain_client` has again been overridden, th
 This function works similarly to `VerifyWallets()`, first creating the `WalletDatabase` (memory) object for each wallet, although this time skipping the verify step, before creating a `CWallet` object from the database and adding it to the global list of wallets, the vector `vpwallets`, by calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L114[`AddWallet()`].
 
 .src/wallet/load.cpp#LoadWallets()
-[source]
+[source, cpp]
 ----
 for (const std::string& name : gArgs.GetArgs("-wallet")) {
     if (!wallet_paths.insert(name).second) {
@@ -985,7 +985,7 @@ This calls the `GetWallets()` function which returns the vector of pointers to t
 As part of startup `PostInitProcess()` is called on each wallet which, after grabbing the main wallet lock `cs_wallet`, synchronises the wallet and mempool by adding wallet transactions not yet in a block to our mempool, and updating the wallet with any relevant transactions from the mempool.
 
 .src/wallet/wallet.cpp#CWallet::PostInitProcess()
-[source]
+[source, cpp]
 ----
 void CWallet::postInitProcess()
 {
@@ -1009,7 +1009,7 @@ As part of `init.cpp#Shutdown()` the `flush()` method is called on each member o
 `WalletClientImpl` again overrides this method to call `wallet/load.cpp#FlushWallets()` which makes sure all wallet changes have been successfully flushed to the wallet database.
 
 .src/init.cpp#shutdown()
-[source]
+[source, cpp]
 ----
 // FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
 if (node.chainman) {
@@ -1038,7 +1038,7 @@ In order to not block the rest of the program during wallet operations, each `CW
 NOTE: There is currently an https://github.com/bitcoin/bitcoin/issues/19303[issue] tracking replacement of RecursiveMutexes with Mutexes, to make locking logic easier to follow in the codebase.
 
 .src/wallet/wallet.h
-[source]
+[source, cpp]
 ----
 /*
  * Main wallet lock.
@@ -1071,7 +1071,7 @@ In addition to these higher level functions, most of ``CWallet``'s private membe
 . `BlockUntilSyncedToCurrentChain()` has a unique lock exclude placed on it to prevent the caller from holding `cs_main` during its execution, and therefore prevent a possible deadlock:
 +
 .src/wallet/wallet.h
-[source]
+[source, cpp]
 ----
 /**
  * Blocks until the wallet state is up-to-date to /at least/ the current
@@ -1106,7 +1106,7 @@ However this time the function will check the `WalletContext` to check that we h
 Next it will call https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L237-L248[`wallet.cpp#LoadWallet`] which starts by grabbing `g_wallet_loading_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L207-L234[`LoadWalletInternal`] which adds the wallet to `vpwallets` and sets up various event notifications.
 
 .src/wallet/rpcwallet.cpp#loadwallet()
-[source]
+[source, cpp]
 ----
 WalletContext& context = EnsureWalletContext(request.context);
 const std::string name(request.params[0].get_str());
@@ -1148,7 +1148,7 @@ CWallet also contains references to the chain interface for the wallet along wit
 The CWallet constructor takes a pointer to the chain interface for the wallet, a wallet name and a pointer to the underlying WalletDatabase:
 
 .src/wallet/wallet.h
-[source]
+[source, cpp]
 ----
 /** Construct wallet with specified name and database implementation. */
 CWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database)
@@ -1164,7 +1164,7 @@ In addition to the arguments required by the constructor, `CWallet::Create()` al
 Wallet flags are represented as a single `unit64_t` bit field which encode certain wallet properties:
 
 .src/wallet/walletutil.h
-[source]
+[source, cpp]
 ----
 enum WalletFlags : uint64_t {
     WALLET_FLAG_AVOID_REUSE = (1ULL << 0),
@@ -1189,7 +1189,7 @@ After the wallet is fully initialised and setup, its keypool will be topped up b
 The rescan is smart in detecting the wallet "birthday" using metadata stored in the ScriptPubKeyMan and won't scan blocks produced before this date:
 
 .src/wallet/wallet.cpp#CWallet::Create()
-[source]
+[source, cpp]
 ----
 ...
 
@@ -1229,7 +1229,7 @@ A `CWallet` in the general sense therefore becomes "a collection of ``ScriptPubK
 In the current implementation, this means that a default (descriptor) wallet consists of 6 ``ScriptPubKeyManager``s, one for each of combination of {legacy | p2sh | bech32} for {receive | change} addresses.
 
 .src/wallet/wallet.cpp#SetupLegacyScriptPubKeyMan()
-[source]
+[source, cpp]
 ----
 void CWallet::SetupLegacyScriptPubKeyMan()
 {
@@ -1251,7 +1251,7 @@ TIP: `SetupLegacyScriptPubKeyMan()` as shown above really only has a single SPKM
 Compare this to the equivalent descriptor wallet code fragment which sets up an SPKM for each output type:
 
 .src/wallet/wallet.cpp#SetupDescriptorScriptPubKeyMans()
-[source]
+[source, cpp]
 ----
 ...
 
@@ -1279,7 +1279,7 @@ for (bool internal : {false, true}) {
 Script pubkey managers are stored inside `CWallet` in a map according to output type:
 
 .src/wallet/wallet.h
-[source]
+[source, cpp]
 ----
 class CWallet final : public WalletStorage, public interfaces::Chain::Notifications
 {
@@ -1345,7 +1345,7 @@ In order to construct a transaction the wallet will validate the outputs, before
 This involves multiple steps and we can follow an outline of the process by walking through the https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L429-L529[`sendtoaddress` RPC command], which returns by calling `SendMoney()`, shown below:
 
 .src/wallet/rpcwallet.cpp#SendMoney()
-[source]
+[source, cpp]
 ----
 UniValue SendMoney(CWallet& wallet, const CCoinControl &coin_control, std::vector<CRecipient> &recipients, mapValue_t map_value, bool verbose)
 {
@@ -1395,7 +1395,7 @@ Next some basic checks on the requested transaction parameters are carried out (
 After initializing a new transaction (`txNew`), a fee calculation (`feeCalc`) and variables for the transaction size, we enter into a new code block where the `cs_wallet` lock is acquired and the `nLockTime` for the transaction is set:
 
 .src/wallet/wallet.cpp#CWallet::CreateTransactionInternal()
-[source]
+[source, cpp]
 ----
 ...
 
@@ -1440,7 +1440,7 @@ This call to `AvailableCoins()` is our first reference back to the underlying ``
 The function iterates over all coins belonging to us -- found in the `CWallet.mapWallet` mapping -- checking coin availability before querying for a `SolvingProvider` (ultimately calling `GetSigningProvider()`): essentially querying whether the active `CWallet` has a `ScriptPubKeyMan` which can sign for the given output.
 
 .src/wallet/wallet.cpp#CWallet::GetSolvingProvider()
-[source]
+[source, cpp]
 ----
 std::unique_ptr<SigningProvider> CWallet::GetSolvingProvider(const CScript& script, SignatureData& sigdata) const
 {
@@ -1466,7 +1466,7 @@ Finally after we have determined solvablility, "spendability" is calculated for 
 
 .src/wallet/wallet.cpp#AvailableCoins()
 
-[source]
+[source, cpp]
 ----
     ...
 
@@ -1518,7 +1518,7 @@ This is still an active area of research, with two possible coin selection solvi
 The branch and bound algorithm is well-documented in the codebase itself:
 
 .src/wallet/coinselection.cpp
-[source]
+[source, cpp]
 ----
 /*
 This is the Branch and Bound Coin Selection algorithm designed by Murch. It searches for an input
