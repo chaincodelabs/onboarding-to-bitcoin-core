@@ -1776,6 +1776,9 @@ The Bitcoin network uses `addr` messages to communicate (node) network addresses
 See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation] for more details.
 Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
 
+Every time a node hears about another node in the network, it adds/updates a record in its `AddrMan` (Address Manager).
+This is where all the data about nodes in the network is stored, and this is where a `GETADDR` receiver looks to construct an `ADDR` response to the requester.
+
 Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
 When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards them to 1 or 2 peers, selected at random.
 If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network.
@@ -1792,12 +1795,11 @@ https://github.com/bitcoin/bitcoin/issues/17326[Issue 17326] proposed persisting
 It's worth reading the full discussion in that issue, since there are a lot of subtle points around which peers should be persisted.
 
 Block-relay-only connections are a type of connection where nodes do not participate in transaction or address relay and only relay blocks. An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks.
-Block-relay-only connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[#15759]. After these changes, nodes by default open two outbound block-relay-only connections on startup.
+Block-relay-only connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR 15759]. After these changes, nodes by default open two outbound block-relay-only connections on startup.
 https://github.com/bitcoin/bitcoin/pull/17428[PR 17428] added functionality to preserve outbound block-relay-only connections during restart.
 
 https://github.com/bitcoin/bitcoin/pull/19858[PR 19858] proposes a more advanced use of block-relay-only connections to further mitigate eclipse attacks.
 After this PR, the node will periodically initiate an additional block-relay-only connection, and then sync headers to try to learn about new blocks.
-After the node opens an additional block-relay-only connection to a peer, it begins to sync headers.
 If this reveals new blocks, the eviction logic will rotate out an existing block-relay-only connection.
 If no new blocks are discovered, the connection is closed.
 It's important for this eviction logic to be carefully reviewed.
@@ -1807,9 +1809,6 @@ It's important for this eviction logic to be carefully reviewed.
 The concepts involved in how address-based (eclipse) attacks work, how Bitcoin Core manages and tries connections to new (node) addresses, countermeasures deployed to try and prevent naive eclipse attacks, some partially-deployed countermeasures and currently-open research questions can be found in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks].
 
 === `Addr` privacy
-
-Every time a node hears about another node in the network, it adds/updates a record in its `AddrMan` (Address Manager).
-This is where all the data about nodes in the network is stored, and this is where a `GETADDR` receiver looks to construct an `ADDR` response to the requester.
 
 It turns out that it's possible for a spy node to easily scrape the full contents of any reachable node's `AddrMan`.
 The spy just has to connect to a victim node multiple times and execute `GETADDR`.
@@ -1837,6 +1836,26 @@ Why is this?
 {PR}19109[PR 19109] further reduces the possible attack surface.
 It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
 When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
+
+=== Addr black holes
+
+We know that some nodes on the network do _not_ relay `addr` messages that they receive.
+Two known cases are block-relay-only connections from Bitcoin Core nodes, and connections from certain light clients.
+We refer to these connections as `addr` black holes.
+`addr` messages go in, but they never escape!
+
+If a large portion of the connections on the network are `addr` black holes, then `addr` propagation is impacted.
+Self-announcements won't reach a majority of nodes on the network.
+It'd be better if we could somehow avoid picking black holes as the 1 or 2 peers that we select for relaying `addr` messages to.
+
+{PR}21528[PR 21528] defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`).
+The node uses the presence of `m_addr_known` to decide whether the peer is a candidate for relaying `addr` messages received from the network.
+
+=== addrv2
+
+https://github.com/bitcoin/bitcoin/pull/19031[PR 19031] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155] `addrv2` message, a new p2p message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
+
+The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses], the https://geti2p.net[Invisible Internet Project (I2P)], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
 
 == Connections overview
 
@@ -1969,7 +1988,7 @@ It might appear that DNS seeds are being tried before both manual connections an
 //   (done in ThreadOpenConnections)
 ----
 
-We see in that function if we have > 1000 peers (`DNSSEEDS_DELAY_PEER_THRESHOLD`) we will sleep for 5 minutes (`DNSSEEDS_DELAY_MANY_PEERS`) before querying the DNS seeds, but if we have fewer than 1000 peers then we will only sleep for 11 seconds (`DNSSEEDS_DELAY_FEW_PEERS`):
+We see in that function if we have > 1000 peers in our `addrman` (`DNSSEEDS_DELAY_PEER_THRESHOLD`) we will sleep for 5 minutes (`DNSSEEDS_DELAY_MANY_PEERS`) before querying the DNS seeds, but if we know about fewer than 1000 peers then we will only sleep for 11 seconds (`DNSSEEDS_DELAY_FEW_PEERS`):
 
 .src/net.cpp#CConnman::ThreadDNSAddressSeed
 [source, cpp]
@@ -1977,7 +1996,7 @@ We see in that function if we have > 1000 peers (`DNSSEEDS_DELAY_PEER_THRESHOLD`
 const std::chrono::seconds seeds_wait_time = (addrman.size() >= DNSSEEDS_DELAY_PEER_THRESHOLD ? DNSSEEDS_DELAY_MANY_PEERS : DNSSEEDS_DELAY_FEW_PEERS);
 ----
 
-A risk exists where a malicious DNS seeder eclipses a node by returning an enormous number of IP addresses.
+As described in <<Eclipse attacks>> a risk exists where a malicious DNS seeder eclipses a node by returning an enormous number of IP addresses.
 We mitigate this risk by limiting the number of IP addresses addrman learns to 256 per DNS seeder.
 Further down in `ThreadDNSAddressSeed()` we see such a magic number:
 
@@ -1987,12 +2006,30 @@ Further down in `ThreadDNSAddressSeed()` we see such a magic number:
 unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
 ----
 
+== P2P violations
 
-== Misc P2P
+* {PR}20079[PR 20079]
+** Bitcoin Core has several options for how to treat peers that violate the rules of the P2P protocol:
+*** ignore the individual message, but continue processing other messages from that peer;
+*** increment the peer's "misbehavior" score, and punish the peer once its score goes above a certain amount
+*** disconnect from the peer
+*** disconnect from the peer and prevent any later connections from that peer's address (discouragement)
 
-* Can be very difficult to test P2P changes as tooling and functional tests for them lacking. Often devs simply setup a new node with the patch and leave it for some time!?
-* P2P messages are currently all unencrypted which can potentially open up vulnerabilities: https://gist.github.com/jonasschnelli/c530ea8421b8d0e80c51486325587c52
-* Entropy for the RNG is often harvested from network connections: +
+== Testing P2P changes
+
+It can be very difficult to test P2P changes as tooling and functional tests for them lacking.
+Often devs simply setup a new node with the patch and leave it for some time!?
+
+Is there fuzzing for P2P messages yet?
+
+== P2P message encryption
+
+P2P messages are currently all unencrypted which can potentially open up vulnerabilities: https://gist.github.com/jonasschnelli/c530ea8421b8d0e80c51486325587c52
+
+=== Networking contribution to node RNG entropy
+
+Entropy for the RNG is often harvested from network connections:
+
 .src/net.cpp
 [source, cpp]
 ----
@@ -2010,32 +2047,8 @@ net.cpp
 1162-    RandAddEvent((uint32_t)id);
 ----
 
-* PR 21528
-** The Bitcoin network uses `addr` messages to communicate network addresses (the locations of nodes). See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation] for more details.
-** Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
-** Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
-** When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards them to 1 or 2 peers, selected at random. If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network.
-** However, we know that some nodes on the network do _not_ relay `addr` messages that they receive. Two known cases are block-relay-only connections from Bitcoin Core nodes, and connections from certain light clients. We refer to these connections as `addr` black holes. `addr` messages go in, but they never escape!
-** If a large portion of the connections on the network are `addr` black holes, then `addr` propagation is impacted. Self-announcements won't reach a majority of nodes on the network. It'd be better if we could somehow avoid picking black holes as the 1 or 2 peers that we select for relaying `addr` messages to.
-** This PR defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`). The node uses the presence of `m_addr_known` to decide whether the peer is a candidate for relaying `addr` messages received from the network.
+== Misc P2P
 
-* https://github.com/bitcoin/bitcoin/pull/19031[PR 19031]
-** a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155] `addrv2` message, a new p2p message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
-** The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses], the https://geti2p.net[Invisible Internet Project (I2P)], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
-
-* PR 20079
-** Bitcoin Core has several options for how to treat peers that violate the rules of the P2P protocol:
-*** ignore the individual message, but continue processing other messages from that peer;
-*** increment the peer's "misbehavior" score, and punish the peer once its score goes above a certain amount
-*** disconnect from the peer
-*** disconnect from the peer and prevent any later connections from that peer's address (discouragement)
-
-* PR 19109
-** If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
-** To avoid that privacy leak, we try to be intentional about how we relay and request transactions. We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
-** https://github.com/bitcoin/bitcoin/pull/18861[PR 18861] improved transaction-origin privacy. The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfill any `GETDATA` requests for that transaction from that peer. The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction. While this helps in many cases, it is an imperfect heuristic. Think about why that is (see question 3 below).
-** This PR further reduces the possible attack surface. It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer. When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
-
-
+* empty
 
 :leveloffset: -1
