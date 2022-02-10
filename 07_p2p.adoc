@@ -147,6 +147,34 @@ The `addrv2` message is required to support https://trac.torproject.org/projects
 
 Outbound connections from Bitcoin Core are initiated as part of startup from within https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1841-L1932[_src/init.cpp_] after the connection manager, `CConnman`, is started via `node.connman->Start()`.
 
+== CConnman
+
+https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L803[`CConnman`] is the class in net that opens, maintains and closes connections to peers, manages sockets, and reads/writes messages on the network.
+
+Within `CConnman`, we maintain https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1137[vNodes], a vector of connections to other nodes.
+That vector is updated and accessed by various nodes, including:
+
+. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1578[socket handler thread], which is responsible for reading data from the sockets into receive buffers, and also for accepting new incoming connections.
+. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1780[open connections thread], which is responsible for opening new connections to peers on the network.
+. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L2181[message handler thread], which is responsible for reading messages from the receive buffer and passing them up to net_processing.
+
+Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1139[cs_vNodes].
+
+// For operations that are done on each connection in turn (e.g. reading from each socket in the socket handler thread, or passing messages to net_processing in the message handler thread), the common pattern is to:
+// 
+// . lock `cs_vNodes`
+// . make a copy of the `vNodes` vector
+// . for each `CNode` object, increment an internal https://github.com/bitcoin/bitcoin/blob/92758699/src/net.h#L454[nRefCount] atomic counter.
+// . release `cs_vNodes`
+// . operate on each of the `CNode` objects in the `vNodes` copy in turn
+// . decrement the `nRefCount` counter for each `CNode`
+// 
+// This PR proposes to extract that pattern into an https://en.cppreference.com/w/cpp/language/raii[RAII] object called `NodesSnapshot`.
+// It also changes the order of some logic in the socket handler thread.
+// The motivation is to reduce https://stackoverflow.com/questions/1970345/what-is-thread-contention[lock contentions].
+
+=== Making connections
+
 `CConnman::Start()` will first attempt to bind to any specified bind (and whitebind) addresses (and onion services), along with optional i2p interface setup:
 
 .src/net.cpp#CConnman::Start
@@ -383,6 +411,15 @@ Currently, block-relay-only connections are established indirectly:
 Therefore, nodes currently don't have a notion which of their incoming peers see the connection as block-relay-only and don't have any logic attached to it.
 
 https://github.com/bitcoin/bitcoin/pull/20726[PR #20726], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP338], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
+
+=== Peer state in the codebase
+
+There are two main data structures that handle peer state: `CNode` (defined in `net.h` and covered by `cs_vNodes`) and `CNodeState` (defined in _netprocessing.cpp_ and covered by `cs_main`).
+Roughly speaking, `CNode` is concerned with the _connection_ to the peer, and `CNodeState` is concerned with _application state_ of the peer.
+However, there is still some _application state_ contained in `CNode` for historic reasons.
+//TODO: has this now been moved?
+This should be moved out of `CNode` eventually.
+An example of the _application state_ data that is contained in `CNode` is the inventory data protected by `cs_inventory` (see https://github.com/bitcoin/bitcoin/blob/adff8fe32101b2c007a85415c3ec565a7f137252/src/net.h#L716).
 
 == P2P violations
 
