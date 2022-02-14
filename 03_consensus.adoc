@@ -59,12 +59,12 @@ However the ability of third parties to tamper with valid transactions may open 
 It is interesting to consider the order of the steps taken to fix this potential vulnerability:
 
 . First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings. +
-This was carried out in PR https://github.com/bitcoin/bitcoin/pull/2520[#2520].
-. Following the policy change, the strict encoding rules were later enforced by consensus in PR https://github.com/bitcoin/bitcoin/pull/5713[#5713].
+This was carried out in https://github.com/bitcoin/bitcoin/pull/2520[PR#2520].
+. Following the policy change, the strict encoding rules were later enforced by consensus in https://github.com/bitcoin/bitcoin/pull/5713[PR#5713].
 
 Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
 In what circumstances might it not make sense?
-Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in PR https://github.com/bitcoin/bitcoin/pull/6954[#6954] which switched to using libsecp256k1 for signature verification.
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
 
 == Database consensus
 

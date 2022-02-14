@@ -105,7 +105,7 @@ Which function(s) are in charge of validating the merkle root of a block?::
 // TODO: Calculate the merkle root of a sample block
 
 Can you find any evidence (e.g. PRs) which have been made in an effort to modularize consensus code?::
-A few examples: https://github.com/bitcoin/bitcoin/pull/10279[#10279], https://github.com/bitcoin/bitcoin/pull/20158[#20158]
+A few examples: https://github.com/bitcoin/bitcoin/pull/10279[PR#10279], https://github.com/bitcoin/bitcoin/pull/20158[PR#20158]
 
 What is the function of `BlockManager()`?::
 It manages the current most-work chaintip and pruning of unneeded blocks (`\*.blk`) and associated undo (`*.rev`) files

@@ -67,7 +67,7 @@ James O'Beirne has recorded 3 videos which go into detail on how the codebase is
 == Signet test network
 
 Signet is both a tool that allows developers to create their own networks for testing interactions between different Bitcoin software and the name of the most popular of these testing networks.
-Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP325].
+Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP 325].
 
 To connect to the "main" Signet network, simply start bitcoind with the signet flag, e.g. `bitcoind -signet`.
 Don't forget to also pass the signet flag to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet`.
@@ -79,7 +79,7 @@ The https://en.bitcoin.it/wiki/Signet[Bitcoin wiki Signet page] provides additio
 Bitcoin uses Bitcoin Improvement Proposals, or BIPs, as a design document for introducing new features or behaviour into bitcoin. 
 Bitcoin magazine describes what a BIP is in their article https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
 
-The BIPs are hosted on GitHub and include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[BIP2] which self-describes the BIP process in more detail.
+The BIPs are hosted on GitHub and include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[BIP 2] which self-describes the BIP process in more detail.
 Of particular interest might be the sections https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_types[BIP Types] and https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_workflow[BIP Workflow].
 
 === The BIP process
@@ -212,8 +212,8 @@ $ git log --merges --reverse --oneline --ancestry-path 4ad4abcf07efefafd439b2867
 d3fa42c79 Merge bitcoin/bitcoin#21186: net/net processing: Move addr data into net_processing
 ----
 
-Reading up on https://github.com/bitcoin/bitcoin/pull/21186[PR 21186] will hopefully provide us with even more context.
-For example we can see from the https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848[linked issue 19398] what the motivation for this move was.
+Reading up on https://github.com/bitcoin/bitcoin/pull/21186[PR#21186] will hopefully provide us with even more context.
+For example we can see from the linked https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848[issue 19398] what the motivation for this move was.
 
 == Solo work
 

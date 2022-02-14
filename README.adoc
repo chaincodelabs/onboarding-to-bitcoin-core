@@ -292,7 +292,7 @@ James O'Beirne has recorded 3 videos which go into detail on how the codebase is
 == Signet test network
 
 Signet is both a tool that allows developers to create their own networks for testing interactions between different Bitcoin software and the name of the most popular of these testing networks.
-Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP325].
+Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP 325].
 
 To connect to the "main" Signet network, simply start bitcoind with the signet flag, e.g. `bitcoind -signet`.
 Don't forget to also pass the signet flag to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet`.
@@ -304,7 +304,7 @@ The https://en.bitcoin.it/wiki/Signet[Bitcoin wiki Signet page] provides additio
 Bitcoin uses Bitcoin Improvement Proposals, or BIPs, as a design document for introducing new features or behaviour into bitcoin.
 Bitcoin magazine describes what a BIP is in their article https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
 
-The BIPs are hosted on GitHub and include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[BIP2] which self-describes the BIP process in more detail.
+The BIPs are hosted on GitHub and include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[BIP 2] which self-describes the BIP process in more detail.
 Of particular interest might be the sections https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_types[BIP Types] and https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_workflow[BIP Workflow].
 
 === The BIP process
@@ -437,8 +437,8 @@ $ git log --merges --reverse --oneline --ancestry-path 4ad4abcf07efefafd439b2867
 d3fa42c79 Merge bitcoin/bitcoin#21186: net/net processing: Move addr data into net_processing
 ----
 
-Reading up on https://github.com/bitcoin/bitcoin/pull/21186[PR 21186] will hopefully provide us with even more context.
-For example we can see from the https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848[linked issue 19398] what the motivation for this move was.
+Reading up on https://github.com/bitcoin/bitcoin/pull/21186[PR#21186] will hopefully provide us with even more context.
+For example we can see from the linked https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848[issue 19398] what the motivation for this move was.
 
 == Solo work
 
@@ -559,12 +559,12 @@ However the ability of third parties to tamper with valid transactions may open 
 It is interesting to consider the order of the steps taken to fix this potential vulnerability:
 
 . First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings. +
-This was carried out in PR https://github.com/bitcoin/bitcoin/pull/2520[#2520].
-. Following the policy change, the strict encoding rules were later enforced by consensus in PR https://github.com/bitcoin/bitcoin/pull/5713[#5713].
+This was carried out in https://github.com/bitcoin/bitcoin/pull/2520[PR#2520].
+. Following the policy change, the strict encoding rules were later enforced by consensus in https://github.com/bitcoin/bitcoin/pull/5713[PR#5713].
 
 Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
 In what circumstances might it not make sense?
-Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in PR https://github.com/bitcoin/bitcoin/pull/6954[#6954] which switched to using libsecp256k1 for signature verification.
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
 
 == Database consensus
 
@@ -693,7 +693,7 @@ Which function(s) are in charge of validating the merkle root of a block?::
 // TODO: Calculate the merkle root of a sample block
 
 Can you find any evidence (e.g. PRs) which have been made in an effort to modularize consensus code?::
-A few examples: https://github.com/bitcoin/bitcoin/pull/10279[#10279], https://github.com/bitcoin/bitcoin/pull/20158[#20158]
+A few examples: https://github.com/bitcoin/bitcoin/pull/10279[PR#10279], https://github.com/bitcoin/bitcoin/pull/20158[PR#20158]
 
 What is the function of `BlockManager()`?::
 It manages the current most-work chaintip and pruning of unneeded blocks (`\*.blk`) and associated undo (`*.rev`) files
@@ -1639,7 +1639,7 @@ ____
 Splitting up the GUI (and splitting out modules in general) has been brought up often in recent years. Now that the GUI is primarily connected through interfaces with a bitcoin node, it seems an appropriate time to revive this discussion.
 ____
 
-https://github.com/bitcoin/bitcoin/pull/19071[PR 19071] contained the documentation change now contained in the Bitcoin Core primary repository, along with details of the monotree approach that was ultimately taken.
+https://github.com/bitcoin/bitcoin/pull/19071[PR#19071] contained the documentation change now contained in the Bitcoin Core primary repository, along with details of the monotree approach that was ultimately taken.
 The documentation change provides guidance on what a "GUI change" is:
 
 [quote, src/CONTRIBUTING.md]
@@ -2136,7 +2136,7 @@ Blocksonly nodes currently use compact block relaying to download blocks even th
 
 https://github.com/bitcoin/bitcoin/pull/22340[PR#22340] makes blocksonly nodes use legacy relaying to download new blocks.
 
-As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR #15759]), disables both transaction and address relay.
+As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759]), disables both transaction and address relay.
 Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see <<Eclipse attacks>> for more use cases of these connections).
 
 === Notifying peers of relay preferences
@@ -2144,12 +2144,12 @@ Bitcoin Core nodes per default settings make two *outbound* block-relay-only con
 Currently, block-relay-only connections are established indirectly:
 
 * When making an outbound block-relay-only connection, a node sets the boolean flag `fRelay` in the version message to `false`.
-* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP37]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
+* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
 * `fRelay=false` is also used in *-blocksonly* mode, a low-bandwidth option in which a node does not want to receive transactions from *any peer*, but does participate in address relay.
 
 Therefore, nodes currently don't have a notion which of their incoming peers see the connection as block-relay-only and don't have any logic attached to it.
 
-https://github.com/bitcoin/bitcoin/pull/20726[PR #20726], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP338], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
+https://github.com/bitcoin/bitcoin/pull/20726[PR#20726], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP 338], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
 
 === Peer state in the codebase
 
@@ -2189,8 +2189,8 @@ Prior to activation, some very careful testing was carried out to verify differe
 . How do upgraded nodes find other upgraded nodes to connect to?
 . If a node is un-upgraded at activation time and subsequently upgrades, how does it ensure that the blocks that it previously validated (without segwit rules) are valid according to segwit rules?
 
-To enable this kind of testing, https://github.com/bitcoin/bitcoin/pull/8418[PR 8418] made it possible to configure the segwit activation parameters using a `-bip9params` configuration option.
-That configuration option was later renamed to `-vbparams` in https://github.com/bitcoin/bitcoin/pull/10463[PR 10463], and replaced with `-segwitheight` in https://github.com/bitcoin/bitcoin/pull/16060[PR 16060].
+To enable this kind of testing, https://github.com/bitcoin/bitcoin/pull/8418[PR#8418] made it possible to configure the segwit activation parameters using a `-bip9params` configuration option.
+That configuration option was later renamed to `-vbparams` in https://github.com/bitcoin/bitcoin/pull/10463[PR#10463], and replaced with `-segwitheight` in https://github.com/bitcoin/bitcoin/pull/16060[PR#16060].
 
 Those options allowed starting a node which would never activate segwit by passing `-vbparams=segwit:0:0` (or later, `-segwitheight=-1`).
 This was used in the functional tests to test the node's behaviour across activation.
