@@ -109,3 +109,7 @@ You can follow along with the latest QML work in the specific https://github.com
 
 The https://bitcoin.design/guide/[Bitcoin design guide] provides some guidance on common pitfalls that Bitcoin GUI designers should look out for when designing apps (like `bitcoin-qt`).
 
+== Testing QT
+
+Currently, although several QT tests exist in _src/qt/test_, there is no good way to test QT changes except by hand.
+A good way to try and have QT code included in the test framework is to target having the RPC layer be a thin as possible, so more code can be re-used between RPC and GUI.
