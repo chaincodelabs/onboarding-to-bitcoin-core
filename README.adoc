@@ -2256,11 +2256,16 @@ This document was created from Bitcoin Core at commit https://github.com/bitcoin
 
 . The mempool is designed to hold a list of unconfirmed but valid-according to the current best-chain transactions that the node knows about.
 . Transactions will not be added to the mempool if they do not meet fee requirements, are non-standard or double-spend an input of a transaction already in the mempool (excluding BIP 125 RBF transactions).
+. Transactions have to pass all policy and validation checks before being allowed to enter the mempool.
 . Miners will select transactions from the mempool, along with any other (private) sources they may have, for inclusion into a new block template for mining.
 
-We treat entry into the mempool as acceptance that a transaction is valid.
-Both consensus and policy checks are performed on entering transactions.
-This allows us to skip transaction validation on those transactions we see in a new block, which are already in our mempool.
+We treat entry into the mempool as acceptance that a transaction would be valid in the next block.
+
+There is also a bitcoin-devwiki page on https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Mempool-and-mining[Mempool and mining] which includes some additional mempool philosophy.
+
+== Stated mempool policy goals
+
+The documentation subfolder https://github.com/bitcoin/bitcoin/tree/master/doc/policy[doc/policy] contains up-to-date information on some of the current mempool policy rules.
 
 == Life cycle
 
@@ -2320,12 +2325,12 @@ If a mempool from a previous program run exists (saved in `mempool.dat`), "Step 
 
 This is run in its own thread so that (potentially) slow disk I/O has a minimal impact on startup times, and the remainder of startup execution can be continued.
 
-`ThreadImport` actually runs a few jobs sequentially, first it does a reindex (if necessary), followed by loading block files from disk, a check that we are still activated on the best chain, according to the blocks we just loaded from disk, and then finally loading the mempool with `chainman.ActiveChainstate().LoadMempool(args);`.
+`ThreadImport` actually runs a few jobs sequentially, first it does a reindex (if necessary), followed by loading block files from disk, a check that we are still activated on the best chain according to the blocks we just loaded from disk, and then finally loading the mempool with `chainman.ActiveChainstate().LoadMempool(args);`.
 
 `validation.cpp#LoadMempool()` is pretty much a mirror of `DumpMempool()` described in more detail below in <<Shutdown>>:
-First we read the version and count of serialised transactions to follow, then we test each one for expiry before submitting it to <<`AcceptToMemoryPool`>>, read any remaining `mapDeltas` and `unbroadcast_txids`.
+First we read the version and count of serialised transactions to follow, then we test each one for expiry before submitting it to <<AcceptToMemoryPool>>, and finally read any remaining `mapDeltas` and `unbroadcast_txids` from the file.
 
-A notable difference between `DumpMempool()` is that upon loading we test each transaction for expiry:
+A note that upon loading we test each transaction for expiry before loading to the in-memory mempool model:
 
 .validation.cpp#LoadMempool()
 [source,cpp]
@@ -2353,7 +2358,7 @@ A notable difference between `DumpMempool()` is that upon loading we test each t
 ----
 
 This is related to a default setting not to keep transactions in the mempool longer than 336 hours, i.e. two weeks.
-The default value comes from the constant `DEFAULT_MEMPOOL_EXPIRE`.
+The default value comes from the constant `DEFAULT_MEMPOOL_EXPIRE` which can be overridden by the user with the `-mempoolexpiry` option.
 Loading (and validating) a mempool of transactions this old is likely a waste of time and resources.
 
 ____
@@ -2364,8 +2369,10 @@ ____
 === Runtime execution
 
 While the node is running the mempool is persisted in memory.
-By default the mempool is limited to 300MB.
-The `CTxMemPool` contains a number of data members which store current usage metrics e.g. `uint64_t cachedInnerUsage GUARDED_BY(cs);`.
+By default the mempool is limited to 300MB as specified by `DEFAULT_MAX_MEMPOOL_SIZE`.
+This can be overridden by the program option `maxmempoolsize`.
+
+See <<CTxMemPoolEntry>> for more information on what data counts towards this limit, or review the `CTxMemPool` data members which store current usage metrics e.g. `CTxMemPool::cachedInnerUsage` and the implementation of e.g. `CTxMemPool::DynamicMemoryUsage()`.
 
 === Shutdown
 
@@ -2381,7 +2388,7 @@ When the node is shut down its mempool is (by default) persisted to disk called 
 
 A pointer to the mempool object is passed to `DumpMempool()`, which begins by locking the mempool mutex, `pool.cs`, before creating a duplicate of its `mapDeltas` member.
 // TODO: Why is this duplicated?
-`mapDeltas` is used by miners to apply prioritisation to certain transactions when creating new block templates.
+`mapDeltas` is used by miners to apply (fee) prioritisation to certain transactions when creating new block templates.
 Information on each transaction is stored in a vector of `CTxMempoolInfo` objects called `vinfo`.
 
 .validation.cpp#DumpMempool()
@@ -2409,9 +2416,9 @@ bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool s
 ----
 
 Next a new (temporary) file is opened and some metadata related to mempool version and size is written to the front.
-Afterwards we loop through `vinfo` writing the transaction, the time it entered the mempool and the fee delta (prioritisation) to the file, before deleting it's entry from our `mapDeltas` mirror.
+Afterwards we loop through `vinfo` writing the transaction, the time it entered the mempool and the fee delta (prioritisation) to the file, before deleting its entry from our `mapDeltas` mirror.
 
-Finally, any transactions remaining in `mapDeltas`, which is now effectively the set of unbroadcasted transactions, have their deltas appended to the file.
+Finally, any transactions remaining in `mapDeltas`, which is now effectively the set of unbroadcasted transactions, are appended to the file.
 
 .validation.cpp#DumpMempool()
 [source,cpp]
@@ -2478,13 +2485,13 @@ public:
 };
 ----
 
-The same is true for (de)serialisation of `std::set<uint256> unbroadcast_txids;` later in the function.
+The same is true for serialisation of `std::set<uint256> unbroadcast_txids;` later in the function.
 
 Finally, if writing the elements to the temporary file was successful, we close the file and rename it to `mempool.dat`.
 
-== `CTxMempool::mapTx`
+== `CTxMemPool::mapTx`
 
-A lot of the mempool magic -- how fee-efficient block templates can be swiftly generated from chains of potentially-complex transactions -- comes down to ``CTxMempool``'s index `maptx` which is able to store transactions in an index against multiple criteria, as described in the documentation:
+A lot of the mempool magic -- how fee-efficient block templates can be swiftly generated from chains of potentially-complex transactions -- comes down to ``CTxMempool``'s special `boost::multi_index` `maptx` which is able to natively store transactions in an index against multiple criteria, as described in the https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/index.html[documentation] and code comments:
 
 .txmempool.h#CTxMempool
 [source, cpp]
@@ -2584,7 +2591,57 @@ This includes adding and removing transactions from the mempool, requesting and 
 
 == `CTXMemPoolEntry`
 
-These describe mempool entries
+These describe mempool entries (i.e. transactions) in the mempool.
+They store not only transaction information, but also pre-computed information about ancestors.
+
+.txmempool.h
+[source,cpp]
+----
+
+class CTxMemPoolEntry
+{
+public:
+    typedef std::reference_wrapper<const CTxMemPoolEntry> CTxMemPoolEntryRef;
+    // two aliases, should the types ever diverge
+    typedef std::set<CTxMemPoolEntryRef, CompareIteratorByHash> Parents;
+    typedef std::set<CTxMemPoolEntryRef, CompareIteratorByHash> Children;
+
+private:
+    const CTransactionRef tx;
+    mutable Parents m_parents;
+    mutable Children m_children;
+    const CAmount nFee;             //!< Cached to avoid expensive parent-transaction lookups
+    const size_t nTxWeight;         //!< ... and avoid recomputing tx weight (also used for GetTxSize())
+    const size_t nUsageSize;        //!< ... and total memory usage
+    const int64_t nTime;            //!< Local time when entering the mempool
+    const unsigned int entryHeight; //!< Chain height when entering the mempool
+    const bool spendsCoinbase;      //!< keep track of transactions that spend a coinbase
+    const int64_t sigOpCost;        //!< Total sigop cost
+    int64_t feeDelta;          //!< Used for determining the priority of the transaction for mining in a block
+    LockPoints lockPoints;     //!< Track the height and time at which tx was final
+
+    // Information about descendants of this transaction that are in the
+    // mempool; if we remove this transaction we must remove all of these
+    // descendants as well.
+    uint64_t nCountWithDescendants;  //!< number of descendant transactions
+    uint64_t nSizeWithDescendants;   //!< ... and size
+    CAmount nModFeesWithDescendants; //!< ... and total fees (all including us)
+
+    // Analogous statistics for ancestor transactions
+    uint64_t nCountWithAncestors;
+    uint64_t nSizeWithAncestors;
+    CAmount nModFeesWithAncestors;
+    int64_t nSigOpCostWithAncestors;
+
+    // ...
+----
+
+The advantage to having pre-computed data on descendants and ancestors stored with each transaction in the mempool is that operations involving adding and removing transactions can be performed faster.
+When we add a transaction to the mempool we must update the descendant data for all ancestor ``CTxMemPoolEntry``'s.
+Conversely if we remove a transaction from the mempool, we must also remove all of its descendants.
+A particular area where speed can be critical is in block assembly.
+
+Another point to note is that some of this extra transaction metadata *does* count towards the mempool's maximum size, therefore a default mempool of 300MB will contain less than 300MB of serialised transactions.
 
 == Adding transactions to the mempool
 
@@ -2646,6 +2703,112 @@ NOTE: `while` in the diagram stems from the `ThreadMessageHandler()` loop.
 == `AcceptToMemoryPool`
 
 This function accepts a new transaction into the mempool.
+
+`AcceptToMemoryPool()` is a wrapper around `AcceptToMemoryPoolWithTime`, where the `time` refers to only accepting transactions which can be mined in the next block (or sooner), set by their `nLockTime`.
+
+If we look at the signature of `AcceptToMemoryPoolWithTime` we can see that it requires an exclusive lock on the primary program mutex, `cs_main`.
+This is to ensure that adding to the mempool is atomic:
+
+.validation.cpp
+[source,cpp]
+----
+/** (try to) add transaction to memory pool with a specified acceptance time **/
+static MempoolAcceptResult AcceptToMemoryPoolWithTime(const CChainParams& chainparams, CTxMemPool& pool,
+                                                      CChainState& active_chainstate,
+                                                      const CTransactionRef &tx, int64_t nAcceptTime,
+                                                      bool bypass_limits, bool test_accept)
+                                                      EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+----
+
+In the body of the function we can see the call to `MempoolAccept().AcceptSingleTransaction()` which is where the brunt of transaction validation occurs.
+If this validation is successful, the "coin" will be added to the mempool:
+
+.validation.cpp#AcceptToMemoryPoolWithTime()
+[source,cpp]
+----
+{
+    std::vector<COutPoint> coins_to_uncache;
+    MemPoolAccept::ATMPArgs args { chainparams, nAcceptTime, bypass_limits, coins_to_uncache, test_accept };
+
+    assert(std::addressof(::ChainstateActive()) == std::addressof(active_chainstate));
+    const MempoolAcceptResult result = MemPoolAccept(pool, active_chainstate).AcceptSingleTransaction(tx, args);
+    if (result.m_result_type != MempoolAcceptResult::ResultType::VALID) {
+        // Remove coins that were not present in the coins cache before calling
+        // AcceptSingleTransaction(); this is to prevent memory DoS in case we receive a large
+        // number of invalid transactions that attempt to overrun the in-memory coins cache
+        // (`CCoinsViewCache::cacheCoins`).
+
+        for (const COutPoint& hashTx : coins_to_uncache)
+            active_chainstate.CoinsTip().Uncache(hashTx);
+    }
+    // After we've (potentially) uncached entries, ensure our coins cache is still within its size limits
+    BlockValidationState state_dummy;
+    active_chainstate.FlushStateToDisk(chainparams, state_dummy, FlushStateMode::PERIODIC);
+    return result;
+}
+----
+
+=== `AcceptSingleTransaction`
+
+Digging further into `MemPoolAccept::AcceptSingleTransaction()` we can see where the primary policy and validation checks on transactions occur before the enter the mempool.
+First we run https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L524-L528[PreChecks], followed by https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L530-L532[PolicyScriptChecks] and finally https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L534-L538[ConsensusScriptChecks].
+
+As the comments on those functions allude to, we purposefully run the checks in that order so that the least computationally-expensive checks are fun first.
+
+.validation.cpp
+[source,cpp]
+----
+MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
+{
+    AssertLockHeld(cs_main);
+    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
+
+    Workspace ws(ptx);
+
+    if (!PreChecks(args, ws)) return MempoolAcceptResult(ws.m_state);
+
+    // Only compute the precomputed transaction data if we need to verify
+    // scripts (ie, other policy checks pass). We perform the inexpensive
+    // checks first and avoid hashing and signature verification unless those
+    // checks pass, to mitigate CPU exhaustion denial-of-service attacks.
+    PrecomputedTransactionData txdata;
+
+    if (!PolicyScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
+
+    if (!ConsensusScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
+
+    // Tx was accepted, but not added
+    if (args.m_test_accept) {
+        return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
+    }
+
+    if (!Finalize(args, ws)) return MempoolAcceptResult(ws.m_state);
+
+    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
+
+    return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
+}
+----
+
+If the various checks pass, and this was not a test `MemPoolAccept`, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, trimming the mempool size and updating and affected RBF transactions as required.
+
+=== Package relay
+
+Since the commit this documentation is based on, the concept of "package relay" has been introduced to Bitcoin Core.
+glozow describes the rationale behind the package relay proposal in her gist https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[Package mempool accept].
+
+This began with a refactoring which saw the following lines into the `MempoolAccept::AcceptSingleTransaction()` function we looked at above:
+
+.valiation.cpp#MempoolAccept::AcceptSingleTransaction()
+[source,cpp]
+----
+    if (m_rbf && !ReplacementChecks(ws)) return MempoolAcceptResult::Failure(ws.m_state);
+----
+
+The refactoring was done in commit https://github.com/bitcoin/bitcoin/commit/c9b1439ca9ab691f4672d2cbf33d9381f2985466[c9b1439] as part of https://github.com/bitcoin/bitcoin/pull/23381[PR#23381].
+Following this https://github.com/bitcoin/bitcoin/pull/22674[PR#22674] introduced single child packages into the mempool acceptance flow.
+
+The document https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md] contains current information on the stated package acceptance rules.
 
 == Diagram test
 

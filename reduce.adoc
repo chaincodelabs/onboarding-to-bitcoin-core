@@ -16,4 +16,6 @@ include::06_gui.adoc[]
 
 include::07_p2p.adoc[]
 
+include::08_mempool.adoc[]
+
 :leveloffset: -1
