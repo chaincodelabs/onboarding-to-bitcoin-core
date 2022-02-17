@@ -1,0 +1,48 @@
+= Use of asciidoc in the documentation
+
+The https://asciidoctor.org/[asciidoc] format has been used for this documentation.
+GitHub supports natively rendering asciidoc files, much like `*.md`, although in a slightly limited-feature capacity.
+
+To use asciidoc format, ensure that the `asciidoctor` tool is installed (and on your system $PATH).
+Also, it can be useful to ensure your editor understands the filetype, e.g. for Vim you can install https://github.com/habamax/vim-asciidoctor[vim-asciidoctor].
+
+== Flattened documentation
+
+In order to "flatten" multiple `*.adoc` documents into a single `README.adoc` the file `reduce.adoc` is used as a processor.
+
+Note that natively this is not required in asciidoc documentation, however GitHub's implementation of showing a preview of `README.adoc` requires that all asciidoc is contained within a single source file, and not dynamically imported.
+
+If this was fixed by GitHub, `README.adoc` would simply resemble `reduce.adoc`.
+However, an intermediate step and tool are, unfortunately, currently required.
+
+=== `asciidoctor-reducer`
+
+The tool https://github.com/asciidoctor/asciidoctor-reducer[asciidoctor-reducer] will read a `*.adoc` file containing imports and write the entire contents of each import to an output file.
+
+We therefore create intermediate file `reduce.adoc`, which we use to layout sub-documents, and run `asciidoctor-reducer` against it, outputting to `README.adoc`, thus presenting an up-to-date `README.adoc` to the user when they view documentation on GitHub.com.
+
+An example of the command to run after changes have been made would be, from the project root directory:
+
+[source,bash]
+----
+asciidoctor-reducer -o README.adoc reduce.adoc
+----
+
+=== Reduce as a pre-commit hook
+
+To avoid forgetting to update the flattened `README.adoc` file after changes, you can write a simple pre-commit hook, which will be run before you commit changes.
+
+An example of this might be:
+
+.$PROJECT_ROOT/.git/hooks/pre-commit
+[source,text]
+----
+#!/bin/sh
+
+asciidoctor-reducer -o README.adoc reduce.adoc
+
+git add README.adoc
+
+----
+
+This simply runs the `asciidoctor-reducer` command, followed by automatically adding the updated `README.adoc` file into the commit.
