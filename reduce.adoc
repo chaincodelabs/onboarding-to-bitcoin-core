@@ -18,4 +18,6 @@ include::07_p2p.adoc[]
 
 include::08_mempool.adoc[]
 
+include::09_script.adoc[]
+
 :leveloffset: -1

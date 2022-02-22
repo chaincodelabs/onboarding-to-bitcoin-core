@@ -2824,4 +2824,557 @@ The document https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.
       Miner-->Block;
 ....
 
+= Script
+:toc:
+:toclevels: 4
+:source-language: cpp
+:icons: font
+:imagesdir: images
+:repo: https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/
+:PR: https://github.com/bitcoin/bitcoin/pull/
+
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+
+== What is script
+
+Bitcoin "addresses" that "store" funds are in reality cryptographic challenges that, in order to be spent, need to be solved by providing a solution whilst adhering to the rules of the system.
+The simplest example of this is a public key address, for which the challenge contains a public key and an `OP_CHECKSIG`, and simply requires as its solution a signature from the private key corresponding to the public key.
+
+The way that Bitcoin decided to implement such a challenge-response system was by using a script-based language -- called "Bitcoin Script" -- which could be used to both present the challenges, and through which to compose the solutions.
+
+[quote, Satoshi Nakamoto]
+____
+The script is actually a predicate. It’s just an equation that evaluates to true or false. Predicate is a long and unfamiliar word so I called it script.
+____
+
+Usually we refer to the _challenge_ as a "locking script", or in the codebase `ScriptPubKey`, and the _solution_ as the "unlocking script" or `scriptSig`.
+Often the locking script itself is hashed before being represented as an address and therefore the full "redeem script" must be retained by the party that generated the address (the receiver), because they will need to provide a full copy of the script along with it's satisfaction in order to spend the coins in the future.
+
+Learn Me a Bitcoin has a webpage which demonstrates some common script types, https://learnmeabitcoin.com/technical/script[Learn Me a Bitcoin - Script], as well as including a run-down of how script is crafted and interpreted.
+
+== What is a script made of
+
+Bitcoin script consists of two components:
+
+. Data
+. OPCODES
+
+A full list of available (and disabled) OPCODES can be found in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/script/script.h#L64-L205[script.h].
+
+== Where does script come from
+
+We can generate new scripts ourself when creating a new address.
+We can also learn about scripts when we hear about a new transaction, either from the P2P network, or from a newly-connected block.
+Serialised transactions contain, amongst other fields:
+
+* A vector of inputs (`CTxIn`)
+* A vector of outputs (`CTxOut`)
+
+Each `CTxIn` contains:
+
+* `COutPoint prevout;`
+* `CScript scriptSig;`
+* `uint32_t nSequence;`
+* `CScriptWitness scriptWitness;`
+
+TIP: the `scriptWitness` is the redeem script referred to above
+
+Each `CTxOut` contains:
+
+* `CAmount nValue;`
+* `CScript scriptPubKey;`
+
+Transactions are stored in memory by the program as `CTransactions` and defined in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/primitives/transaction.h#L256-L341[src/primitives/transaction.h#CTransaction].
+
+== Building a transaction
+
+When we want to construct a transaction in Bitcoin Core, the general process (excluding fee constraints and coin selection) is as follows.
+
+=== Constructing a transaction
+
+We begin by initialising a new `CMutableTransaction` which we will use to build the transaction.
+We use the mutable version of the transaction object as transaction assembly might require adding or removing inputs to satisfy fee constraints, as well as re-ordering of in- and outputs to throw off heuristics related to change addresses.
+
+.primitives/transaction.h
+[source,cpp]
+----
+/** A mutable version of CTransaction. */
+struct CMutableTransaction
+{
+    std::vector<CTxIn> vin;
+    std::vector<CTxOut> vout;
+    int32_t nVersion;
+    uint32_t nLockTime;
+
+    // ...
+----
+
+Next we create a vector of ``COutput``s (UTXOs) available for the wallet to select from as transaction inputs, followed by creating a vector of ``CRecipient``s to use as the transaction outputs, which notably includes the `scriptPubKey` for each recipient:
+
+[source,cpp]
+----
+struct CRecipient
+{
+    CScript scriptPubKey;
+    CAmount nAmount;
+    bool fSubtractFeeFromAmount;
+};
+----
+
+For each recipient we then create a new `CTxOut` object with the `amount` and `scriptPubkey` and append this to our `CMutableTransaction.vout` vector.
+
+(Optional): Create a change address script for ourselves of the appropriate type.
+
+==== Coin selection
+
+If coin selection is not being used (manual selection of input coins), we select coins to reach the required `amount` from our vector of ``COutput``s (UTXOs) and add them to a set of ``CInputCoin``s.
+
+.wallet/coinselection.h
+[source,cpp]
+----
+class CInputCoin {
+public:
+    // ..
+    COutPoint outpoint;
+    CTxOut txout;
+    CAmount effective_value;
+    CAmount m_fee{0};
+    CAmount m_long_term_fee{0};
+    // ..
+----
+
+Next we add each selected coin to `CMutableTransaction.vin` as a `CTxIn` and shuffle the `vin` coin order, then lock the wallet and begin to sign the transaction with `CWallet::SignTransaction()`.
+
+=== Signing setup
+
+In order to have our `{Descriptor|Legacy}ScriptPubKeyMan` sign the transaction, we need to pass it a mapping from ``COutput``s to ``Coin``s, in the form: `std::map<COutpoint, Coin>`.
+
+We generate this mapping inside `CWallet::SignTransaction()` which, when called with a `CMutableTransaction` as argument, begins by iterating the vector of ``vin``s in the transaction, using `mapWallet.find()` to locate the previous transaction and return it as a `CWalletTx`, which we use to initialise each `Coin`.
+
+.src/wallet/wallet.cpp
+[source,cpp]
+----
+bool CWallet::SignTransaction(CMutableTransaction& tx) const
+{
+    AssertLockHeld(cs_wallet);
+
+    // Build coins map
+    std::map<COutPoint, Coin> coins;
+    for (auto& input : tx.vin) {
+        std::map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(input.prevout.hash);
+        if(mi == mapWallet.end() || input.prevout.n >= mi->second.tx->vout.size()) {
+            return false;
+        }
+        const CWalletTx& wtx = mi->second;
+        coins[input.prevout] = Coin(wtx.tx->vout[input.prevout.n], wtx.m_confirm.block_height, wtx.IsCoinBase());
+    }
+    std::map<int, std::string> input_errors;
+    return SignTransaction(tx, coins, SIGHASH_ALL, input_errors);
+}
+----
+
+With our coin map we can loop through every ScriptPubKeyMan available to us and call its `{Descriptor|Legacy}ScriptPubKeyMan->SignTransaction()` function on the coin map.
+This has the effect of trying to sign each coin with all available ScriptPubKeyMans in a single pass.
+This is actioned by calling `CWallet::SignTransaction()` again, this time including the coin map and sighash type as arguments which calls a different function `SignTransaction()` specialization:
+
+.src/wallet/wallet.cpp
+[source,cpp]
+----
+bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const
+{
+    // Try to sign with all ScriptPubKeyMans
+    for (ScriptPubKeyMan* spk_man : GetAllScriptPubKeyMans()) {
+        // spk_man->SignTransaction will return true if the transaction is complete,
+        // so we can exit early and return true if that happens
+        if (spk_man->SignTransaction(tx, coins, sighash, input_errors)) {
+            return true;
+        }
+    }
+
+    // At this point, one input was not fully signed otherwise we would have exited already
+    return false;
+}
+----
+
+The ScriptPubKeyMan will first collect the relevant keys for each coin into a `FlatSigningProvider` and will call `script/sign.cpp#SignTransaction()` on the transaction, passing along the `FlatSigningProvider`.
+
+./wallet/scriptpubkeyman.cpp
+[source,cpp]
+----
+bool DescriptorScriptPubKeyMan::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const
+{
+    std::unique_ptr<FlatSigningProvider> keys = std::make_unique<FlatSigningProvider>();
+    for (const auto& coin_pair : coins) {
+        std::unique_ptr<FlatSigningProvider> coin_keys = GetSigningProvider(coin_pair.second.out.scriptPubKey, true);
+        if (!coin_keys) {
+            continue;
+        }
+        *keys = Merge(*keys, *coin_keys);
+    }
+
+    return ::SignTransaction(tx, keys.get(), coins, sighash, input_errors);
+}
+----
+
+== Signing a transaction
+
+`script/sign.cpp#SignTransaction()` will sign the transaction one input at a time, by looping through the ``vin``s of the `CMutableTransaction` it has been passed.
+
+The critical section of the `SignTransaction()` loop is shown below:
+
+.src/script/sign.cpp#SignTransaction()
+[source,cpp]
+----
+    for (unsigned int i = 0; i < mtx.vin.size(); i++) {
+        CTxIn& txin = mtx.vin[i];
+        auto coin = coins.find(txin.prevout);
+        if (coin == coins.end() || coin->second.IsSpent()) {
+            input_errors[i] = "Input not found or already spent";
+            continue;
+        }
+        const CScript& prevPubKey = coin->second.out.scriptPubKey;
+        const CAmount& amount = coin->second.out.nValue;
+
+        SignatureData sigdata = DataFromTransaction(mtx, i, coin->second.out);
+        // Only sign SIGHASH_SINGLE if there's a corresponding output:
+        if (!fHashSingle || (i < mtx.vout.size())) {
+            ProduceSignature(*keystore, MutableTransactionSignatureCreator(&mtx, i, amount, nHashType), prevPubKey, sigdata);
+        }
+
+        UpdateInput(txin, sigdata);
+----
+
+The Pubkey and amount for each coin are retrieved, along with signature data for the coin.
+`DataFromTransaction()` returns all the information needed to produce a signature for that coin as a `SignatureData` struct:
+
+.src/script/sign.h#SignatureData
+[source,cpp]
+----
+// This struct contains information from a transaction input and also contains signatures for that input.
+// The information contained here can be used to create a signature and is also filled by ProduceSignature
+// in order to construct final scriptSigs and scriptWitnesses.
+struct SignatureData {
+    bool complete = false; ///< Stores whether the scriptSig and scriptWitness are complete
+    bool witness = false; ///< Stores whether the input this SigData corresponds to is a witness input
+    CScript scriptSig; ///< The scriptSig of an input. Contains complete signatures or the traditional partial signatures format
+    CScript redeem_script; ///< The redeemScript (if any) for the input
+    CScript witness_script; ///< The witnessScript (if any) for the input. witnessScripts are used in P2WSH outputs.
+    CScriptWitness scriptWitness; ///< The scriptWitness of an input. Contains complete signatures or the traditional partial signatures format. scriptWitness is part of a transaction input per BIP 144.
+    std::map<CKeyID, SigPair> signatures; ///< BIP 174 style partial signatures for the input. May contain all signatures necessary for producing a final scriptSig or scriptWitness.
+    std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>> misc_pubkeys;
+    std::vector<CKeyID> missing_pubkeys; ///< KeyIDs of pubkeys which could not be found
+    std::vector<CKeyID> missing_sigs; ///< KeyIDs of pubkeys for signatures which could not be found
+    uint160 missing_redeem_script; ///< ScriptID of the missing redeemScript (if any)
+    uint256 missing_witness_script; ///< SHA256 of the missing witnessScript (if any)
+
+    SignatureData() {}
+    explicit SignatureData(const CScript& script) : scriptSig(script) {}
+    void MergeSignatureData(SignatureData sigdata);
+};
+----
+
+With the signing `SigningProvider`, `scriptPubKey` and `sigdata` we are able to call `script/sign.cpp#ProduceSignature()` for signing on each individual input.
+// TODO: Fact check!
+Inputs by default will signed with a sighash of `SIGHASH_ALL`, but this can be re-configured as appropriate.
+
+=== Producing a signature
+
+Taking a look inside `ProduceSignature()` we can see how this works.
+
+.src/script/sign.cpp
+[source,cpp]
+----
+bool ProduceSignature(const SigningProvider& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
+{
+    if (sigdata.complete) return true;
+
+    std::vector<valtype> result;
+    TxoutType whichType;
+    bool solved = SignStep(provider, creator, fromPubKey, result, whichType, SigVersion::BASE, sigdata);
+    bool P2SH = false;
+    CScript subscript;
+    sigdata.scriptWitness.stack.clear();
+
+    // ...
+}
+----
+
+The function performs some initialisations before calling `script/sign.cpp#SignStep()` for the first time, with the `SigVersion` `SIGVERSION::BASE`.
+`SignStep()` in turn calls `Solver()`, which is a function designed to detect the script type encoding of the `scriptPubKey`, and then return the detected type along with the parsed ``scriptPubKey``s/hashes.
+
+If it is successful, `SignStep` continues by switching over the script type and, depending on the script type, calling the required signing operation and pushing the required elements onto the `sigdata` variable.
+
+.script/sign.cpp
+[source,cpp]
+----
+static bool SignStep(const SigningProvider& provider, const BaseSignatureCreator& creator, const CScript& scriptPubKey,
+                     std::vector<valtype>& ret, TxoutType& whichTypeRet, SigVersion sigversion, SignatureData& sigdata)
+{
+    // ...
+    whichTypeRet = Solver(scriptPubKey, vSolutions);
+
+    switch (whichTypeRet) {
+    case TxoutType::NONSTANDARD:
+    case TxoutType::NULL_DATA:
+    case TxoutType::WITNESS_UNKNOWN:
+    case TxoutType::WITNESS_V1_TAPROOT:
+        // ...
+    case TxoutType::PUBKEY:
+        // ...
+    case TxoutType::PUBKEYHASH:
+        // ...
+    case TxoutType::SCRIPTHASH:
+        // ...
+    case TxoutType::MULTISIG:
+        // ...
+    case TxoutType::WITNESS_V0_KEYHASH:
+        // ...
+    case TxoutType::WITNESS_V0_SCRIPTHASH:
+        // ...
+    }
+    // ...
+}
+----
+
+Once `SignStep()` returns to `ProduceSignature()`, a second switch takes place.
+If we are trying to produce a signature for P2SH, P2WPKH or P2WSH then the first pass from `SignStep()` will have been enough to detect the `TxOutType` and assemble the (redeem/witness) scripts, but not yet generate the entire signature in required format.
+In order to get this signature, `SignStep()` is called again, this time with the assembled redeem/witness script and the appropriate `TxOutType`.
+
+TIP: This recursion makes sense if you consider that, in order to sign for these script-encumbered inputs, we don't want to sign for the `scriptPubKey` that we are starting with but for the {redeem|witness} script instead.
+
+We can see this switch in `ProduceSignature()`:
+
+.src/script/sign.cpp#ProduceSignature()
+[source,cpp]
+----
+    if (solved && whichType == TxoutType::SCRIPTHASH)
+    {
+        // Solver returns the subscript that needs to be evaluated;
+        // the final scriptSig is the signatures from that
+        // and then the serialized subscript:
+        subscript = CScript(result[0].begin(), result[0].end());
+        sigdata.redeem_script = subscript;
+        solved = solved && SignStep(provider, creator, subscript, result, whichType, SigVersion::BASE, sigdata) && whichType != TxoutType::SCRIPTHASH;
+        P2SH = true;
+    }
+
+    if (solved && whichType == TxoutType::WITNESS_V0_KEYHASH)
+    {
+        CScript witnessscript;
+        // This puts the parsed pubkeys from the first pass into the witness script
+        witnessscript << OP_DUP << OP_HASH160 << ToByteVector(result[0]) << OP_EQUALVERIFY << OP_CHECKSIG;
+        TxoutType subType;
+        solved = solved && SignStep(provider, creator, witnessscript, result, subType, SigVersion::WITNESS_V0, sigdata);
+        sigdata.scriptWitness.stack = result;
+        sigdata.witness = true;
+        result.clear();
+    }
+    else if (solved && whichType == TxoutType::WITNESS_V0_SCRIPTHASH)
+    {
+        CScript witnessscript(result[0].begin(), result[0].end());
+        sigdata.witness_script = witnessscript;
+        TxoutType subType;
+        solved = solved && SignStep(provider, creator, witnessscript, result, subType, SigVersion::WITNESS_V0, sigdata) && subType != TxoutType::SCRIPTHASH && subType != TxoutType::WITNESS_V0_SCRIPTHASH && subType != TxoutType::WITNESS_V0_KEYHASH;
+        result.push_back(std::vector<unsigned char>(witnessscript.begin(), witnessscript.end()));
+        sigdata.scriptWitness.stack = result;
+        sigdata.witness = true;
+        result.clear();
+    } else if (solved && whichType == TxoutType::WITNESS_UNKNOWN) {
+        sigdata.witness = true;
+    }
+----
+
+Finally, if all went well the signature is checked with `VerifyScript()`.
+
+=== Creating a signature
+
+TODO: dig into `CreateSig()`
+
+=== Verifying a signature
+
+TODO: dig into `VerifyScript()`.
+
+=== Executing scripts
+
+Bitcoin differs from most other cryptocurrencies by not including the script with the unspent transaction output on the blockchain, only the scriptPubKey is publicly viewable until spending time.
+The practical effects of this are:
+
+* Users wishing to sign transactions which are locked using locking scripts require *two* pieces of information:
+.. The relevant private key(s)
+.. The `redeemScript`, i.e. the contract of the script itself.
+
+Scripts are executed by first evaluating the unlocking script, then evaluating the locking script on the same stack.
+If both of these steps result in a `1` (or any other non-zero value) being the only item on the stack, the script is verified as `true`.
+
+TODO: Not true exactly:
+https://bitcoin.stackexchange.com/questions/112439/how-can-the-genesis-block-contain-arbitrary-data-on-it-if-the-script-is-invalid
+
+If any of the following are true, the script will evaluate to `false`:
+
+* The final stack is empty
+* The top element on the stack is `0`
+* There is more than one element remaining on the stack
+* The script returns prematurely
+
+There are a number of other ways which scripts can fail TODO
+
+== Removed text
+
+=== Signing scripts
+
+In order to sign for a script we are going to call `SignTransaction()` which has the following signature:
+
+.script/sign.cpp#SignTransaction()
+[source,cpp]
+----
+bool SignTransaction(CMutableTransaction& mtx, const SigningProvider* keystore, const std::map<COutPoint, Coin>& coins, int nHashType, std::map<int, std::string>& input_errors)
+----
+
+This function gets called either via the RPC (`signrawtransactionwithkey`) or from within the wallet, via either `LegacyScriptPubKeyMan` or `DescriptorScriptPubKeyMan` which are ultimately called as part of `CWallet::CreateTransactionInternal()`.
+As we can see it takes a `CMutableTransaction` (a mutable version of a `CTransaction`), a  `SigningProvider`, a map of ``COutPoint``s and ``Coin``s and a `sighash`.
+
+In order to sign for the script, we need to be able to "solve" the `ScriptPubKey` on the UTXOs being selected.
+This is achieved internally by looping over each coin selected as input, setting `prevPubkey` to the coins `scriptPubkey`, retrieving the `SignatureData` from the coin (signatures and scripts) via `DataFromTransaction()` and then calling `ProduceSignature()`, passing in this information along with with an instance of `MutableTransactionSignatureCreator` as the signature creator, on each coin.
+
+The remainder of the loop then verifies the produced signature using the cached version of the `CTransaction`, `txConst` so as not to repeat potentially expensive signature calculations.
+
+.script/sign.cpp#SignTransaction()
+[source,cpp]
+----
+    // ...
+
+    bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
+
+    // Use CTransaction for the constant parts of the
+    // transaction to avoid rehashing.
+    const CTransaction txConst(mtx);
+    // Sign what we can:
+    for (unsigned int i = 0; i < mtx.vin.size(); i++) {
+        CTxIn& txin = mtx.vin[i];
+        auto coin = coins.find(txin.prevout);
+        if (coin == coins.end() || coin->second.IsSpent()) {
+            input_errors[i] = "Input not found or already spent";
+            continue;
+        }
+        const CScript& prevPubKey = coin->second.out.scriptPubKey;
+        const CAmount& amount = coin->second.out.nValue;
+
+        SignatureData sigdata = DataFromTransaction(mtx, i, coin->second.out);
+        // Only sign SIGHASH_SINGLE if there's a corresponding output:
+        if (!fHashSingle || (i < mtx.vout.size())) {
+            ProduceSignature(*keystore, MutableTransactionSignatureCreator(&mtx, i, amount, nHashType), prevPubKey, sigdata);
+        }
+
+        UpdateInput(txin, sigdata);
+
+        // amount must be specified for valid segwit signature
+        if (amount == MAX_MONEY && !txin.scriptWitness.IsNull()) {
+            input_errors[i] = "Missing amount";
+            continue;
+        }
+
+        ScriptError serror = SCRIPT_ERR_OK;
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i, amount, MissingDataBehavior::FAIL), &serror)) {
+            if (serror == SCRIPT_ERR_INVALID_STACK_OPERATION) {
+                // Unable to sign input and verification failed (possible attempt to partially sign).
+                input_errors[i] = "Unable to sign input, invalid stack size (possibly missing key)";
+            } else if (serror == SCRIPT_ERR_SIG_NULLFAIL) {
+                // Verification failed (possibly due to insufficient signatures).
+                input_errors[i] = "CHECK(MULTI)SIG failing with non-zero signature (possibly need more signatures)";
+            } else {
+                input_errors[i] = ScriptErrorString(serror);
+            }
+        } else {
+            // If this input succeeds, make sure there is no error set for it
+            input_errors.erase(i);
+        }
+    }
+    return input_errors.empty();
+----
+
+Not every input will be signed for during this loop -- an obvious example would be a multi-signature transaction involving multiple keystores, therefore this function is robust against failing to sign for an input, but everything that this keystore can sign for is, and is also verified.
+
+=== Verifying scripts
+
+=== Standardness
+
+=== Descriptors
+
+Have a descriptor cache for descriptors in _src_script_descriptor.h_:
+
+.src/script/descriptor.h
+[source,cpp]
+----
+
+/** \brief Interface for parsed descriptor objects.
+ *
+ * Descriptors are strings that describe a set of scriptPubKeys, together with
+ * all information necessary to solve them. By combining all information into
+ * one, they avoid the need to separately import keys and scripts.
+ *
+ * Descriptors may be ranged, which occurs when the public keys inside are
+ * specified in the form of HD chains (xpubs).
+ *
+ * Descriptors always represent public information - public keys and scripts -
+ * but in cases where private keys need to be conveyed along with a descriptor,
+ * they can be included inside by changing public keys to private keys (WIF
+ * format), and changing xpubs by xprvs.
+ *
+ * Reference documentation about the descriptor language can be found in
+ * doc/descriptors.md.
+ */
+
+----
+
+Special functions to parse a get checksums for descriptors.
+
+=== Interpreting scripts
+
+_src/script/interpreter.h_
+
+`BaseSignatureChecker` class is used to check signatures and has functions for the various different signature types allowed:
+
+.src/script/interpreter.h
+[source,cpp]
+----
+class BaseSignatureChecker
+{
+public:
+    virtual bool CheckECDSASignature(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
+    {
+        return false;
+    }
+
+    virtual bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion sigversion, const ScriptExecutionData& execdata, ScriptError* serror = nullptr) const
+    {
+        return false;
+    }
+
+    virtual bool CheckLockTime(const CScriptNum& nLockTime) const
+    {
+         return false;
+    }
+
+    virtual bool CheckSequence(const CScriptNum& nSequence) const
+    {
+         return false;
+    }
+
+    virtual ~BaseSignatureChecker() {}
+};
+----
+
+This class gets overridden by the `GenericSignatureChecker` or `DeferringSignatureChecker`.
+
+=== Building blocks
+==== Keys
+==== Redeem script
+==== OPCODES
+==== Interpreter
+==== SIGHASH flags
+==== Script verification flags
+In _src/script/bitcoinconsensus.h_
+==== Script cache
+==== Sig cache
+
 :leveloffset: -1
