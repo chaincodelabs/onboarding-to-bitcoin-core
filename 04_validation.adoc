@@ -1,7 +1,4 @@
 = Validation
-include::settings.adoc[]
-
-This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
 
 == Transaction validation
 
