@@ -3,7 +3,7 @@
 This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
 
 The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
-Pull requests which primarily target the GUI should be made here, and then they will get merged into the primary repo.
+PRs which primarily target the GUI should be made here, and then they will get merged into the primary repo.
 Developer Marco Falke created https://github.com/MarcoFalke/bitcoin-core/issues/26[an issue] in his fork which detailed some of the rationale for the split, but essentially it came down to:
 
 . Separate issue and patch management
@@ -33,8 +33,8 @@ request. However:
   might affect other components like the wallet.
 
 For large GUI changes that include build system and interface changes, it is
-recommended to first open a pull request against the GUI repository. When there
-is agreement to proceed with the changes, a pull request with the build system
+recommended to first open a PR against the GUI repository. When there
+is agreement to proceed with the changes, a PR with the build system
 and interfaces changes can be submitted to the node repository.
 ____
 
@@ -74,7 +74,7 @@ The loading point for the GUI is _src/qt/main.cpp_.
 `GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
 
 Next an empty `NodeContext` is setup, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
-Recall that in xref:05_wallet.adoc#Wallet-component-initialisation[Wallet component initialisation] we also saw the wallet utilising a `NodeContext` as part of its `WalletInitInterface`.
+Recall that in <<Wallet component initialisation>> we also saw the wallet utilising a `NodeContext` as part of its `WalletInitInterface`.
 In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
 
 After some QT setup, command-line and application arguments are parsed.

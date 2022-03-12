@@ -447,7 +447,7 @@ Following successful creation, various `bitcoind` program arguments are checked 
 These include options such as "-addresstype", "-changetype", "-mintxfee" and "-maxtxfee" amongst others.
 It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
 
-After the wallet is fully initialised and setup, its keypool will be topped up before the wallet is locked and registered with the <<validation-interface,`validationinterface`>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
+After the wallet is fully initialised and setup, its keypool will be topped up before the wallet is locked and registered with the <<Validation interface>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
 The rescan is smart in detecting the wallet "birthday" using metadata stored in the `ScriptPubKeyMan` and won't scan blocks produced before this date:
 
 .src/wallet/wallet.cpp#CWallet::Create()
@@ -833,7 +833,7 @@ Coin selection is performed as a loop, as it may take multiple iterations to sel
 
 Work on the https://github.com/bitcoin/bitcoin/projects/2[multiwallet project] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
 
-== Validation Interface
+== Validation interface
 
 TODO
 

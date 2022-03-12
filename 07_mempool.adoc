@@ -53,9 +53,10 @@ And the initialisation from _init.cpp_:
     node.mempool = std::make_unique<CTxMemPool>(node.fee_estimator.get(), check_ratio);
 ----
 
-[note]
+[NOTE]
 ====
 The `check_ratio`, used to determine sanity checks, defaults to 0 for all networks except regtest, unless the `checkmempool` program option has been specified.
+
 Sanity checking here refers to checking the consistency of the entire mempool every time a new transaction has been added, so is computationally expensive to have enabled.
 ====
 
@@ -120,7 +121,7 @@ While the node is running the mempool is persisted in memory.
 By default the mempool is limited to 300MB as specified by `DEFAULT_MAX_MEMPOOL_SIZE`.
 This can be overridden by the program option `maxmempoolsize`.
 
-See <<CTxMemPoolEntry>> for more information on what data counts towards this limit, or review the `CTxMemPool` data members which store current usage metrics e.g. `CTxMemPool::cachedInnerUsage` and the implementation of e.g. `CTxMemPool::DynamicMemoryUsage()`.
+See <<Transaction format in the mempool>> for more information on what data counts towards this limit, or review the `CTxMemPool` data members which store current usage metrics e.g. `CTxMemPool::cachedInnerUsage` and the implementation of e.g. `CTxMemPool::DynamicMemoryUsage()`.
 
 === Shutdown
 
@@ -199,7 +200,8 @@ Finally, any transactions remaining in `mapDeltas`, which is now effectively the
 }
 ----
 
-Note that we are able to write (and later read) `mapDeltas` to the file only using the `<<` operator.
+****
+We are able to write (and later read) `mapDeltas` to the file only using the `<<` operator.
 This is due to the operator overload on the `CAutoFile` class found in _streams.h_:
 
 .streams.h
@@ -235,9 +237,11 @@ public:
 
 The same is true for serialisation of `std::set<uint256> unbroadcast_txids;` later in the function.
 
+****
+
 Finally, if writing the elements to the temporary file was successful, we close the file and rename it to `mempool.dat`.
 
-== `CTxMemPool::mapTx`
+== Mapping transactions in the mempool
 
 A lot of the mempool magic -- how fee-efficient block templates can be swiftly generated from chains of potentially-complex transactions -- comes down to ``CTxMempool``'s special `boost::multi_index` `maptx` which is able to natively store transactions in an index against multiple criteria, as described in the https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/index.html[documentation] and code comments:
 
@@ -337,9 +341,9 @@ public:
 The default index is used in most places that `mapTx` is found.
 This includes adding and removing transactions from the mempool, requesting and looking up mempool transactions (by txid) and checking whether RBF is enabled to list a few.
 
-== `CTXMemPoolEntry`
+== Transaction format in the mempool
 
-These describe mempool entries (i.e. transactions) in the mempool.
+``CTXMemPoolEntry``s describe mempool entries (i.e. transactions) in the mempool.
 They store not only transaction information, but also pre-computed information about ancestors.
 
 .txmempool.h
@@ -389,7 +393,7 @@ When we add a transaction to the mempool we must update the descendant data for 
 Conversely if we remove a transaction from the mempool, we must also remove all of its descendants.
 A particular area where speed can be critical is in block assembly.
 
-Another point to note is that some of this extra transaction metadata *does* count towards the mempool's maximum size, therefore a default mempool of 300MB will contain less than 300MB of serialised transactions.
+Some of this extra transaction metadata however *does* count towards the mempool's maximum size, therefore a default mempool of 300MB will contain less than 300MB of serialised transactions.
 
 == Adding transactions to the mempool
 
@@ -444,13 +448,13 @@ For a transaction received over the P2P protocol, the call to ATMP is found in _
 ...whereas for locally-generated transactions the call to ATMP comes from `node/transaction.cpp::BroadcastTransaction()`, which is called from the `sendrawtransaction` RPC and from various wallet functions.
 We can see this in the call-graph for `AcceptToMemoryPool`:
 
-images::atmp_call_graph.svg[]
+image::atmp_call_graph.svg[]
 
 NOTE: `while` in the diagram stems from the `ThreadMessageHandler()` loop.
 
-== `AcceptToMemoryPool`
+== AcceptToMemoryPool
 
-This function accepts a new transaction into the mempool.
+The `AcceptToMemoryPool()` function accepts a new transaction into the mempool.
 
 `AcceptToMemoryPool()` is a wrapper around `AcceptToMemoryPoolWithTime`, where the `time` refers to only accepting transactions which can be mined in the next block (or sooner), set by their `nLockTime`.
 
@@ -496,49 +500,7 @@ If this validation is successful, the "coin" will be added to the mempool:
 }
 ----
 
-=== `AcceptSingleTransaction`
-
-Digging further into `MemPoolAccept::AcceptSingleTransaction()` we can see where the primary policy and validation checks on transactions occur before the enter the mempool.
-First we run https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L524-L528[PreChecks], followed by https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L530-L532[PolicyScriptChecks] and finally https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L534-L538[ConsensusScriptChecks].
-
-As the comments on those functions allude to, we purposefully run the checks in that order so that the least computationally-expensive checks are fun first.
-
-.validation.cpp
-[source,cpp]
-----
-MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
-{
-    AssertLockHeld(cs_main);
-    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
-
-    Workspace ws(ptx);
-
-    if (!PreChecks(args, ws)) return MempoolAcceptResult(ws.m_state);
-
-    // Only compute the precomputed transaction data if we need to verify
-    // scripts (ie, other policy checks pass). We perform the inexpensive
-    // checks first and avoid hashing and signature verification unless those
-    // checks pass, to mitigate CPU exhaustion denial-of-service attacks.
-    PrecomputedTransactionData txdata;
-
-    if (!PolicyScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
-
-    if (!ConsensusScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
-
-    // Tx was accepted, but not added
-    if (args.m_test_accept) {
-        return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
-    }
-
-    if (!Finalize(args, ws)) return MempoolAcceptResult(ws.m_state);
-
-    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
-
-    return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
-}
-----
-
-If the various checks pass, and this was not a test `MemPoolAccept`, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, trimming the mempool size and updating and affected RBF transactions as required.
+More information on this function can be found in <<AcceptSingleTransaction>>.
 
 === Package relay
 
@@ -558,19 +520,3 @@ Following this https://github.com/bitcoin/bitcoin/pull/22674[PR#22674] introduce
 
 The document https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md] contains current information on the stated package acceptance rules.
 
-== Diagram test
-
-// If we are on github, display the image
-ifdef::env-github[image::block.svg[]]
-
-// Otherwise use generation code
-ifndef::env-github[]
-[mermaid,block,svg]
-....
-  graph TD;
-      Tx-->Mempool;
-      Tx-->Miner;
-      Mempool-->Block;
-      Miner-->Block;
-....
-endif::[]

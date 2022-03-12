@@ -6,18 +6,16 @@ include::01_getting-started.adoc[]
 
 include::02_overview-and-architecture.adoc[]
 
-include::03_consensus.adoc[]
+include::03_consensus-and-validation.adoc[]
 
-include::04_validation.adoc[]
+include::04_wallet.adoc[]
 
-include::05_wallet.adoc[]
+include::05_gui.adoc[]
 
-include::06_gui.adoc[]
+include::06_p2p.adoc[]
 
-include::07_p2p.adoc[]
+include::07_mempool.adoc[]
 
-include::08_mempool.adoc[]
-
-include::09_script.adoc[]
+include::08_script.adoc[]
 
 :leveloffset: -1

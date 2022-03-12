@@ -1,10 +1,11 @@
 // Position toc on left and only display 4 deep
 :toc:
-:toclevels: 4
+:toclevels: 3
 :toc: left
-// Use highlight.js for source highlighting (shame it's not very good)
+// Use pygments.rb for source highlighting, emacs style
 :source-language: cpp
-:source-highlighter: highlight.js
+:source-highlighter: pygments
+:pygments-style: emacs
 // Use fancy icons for admonition boxes
 :icons: font
 // Add section links to HTML

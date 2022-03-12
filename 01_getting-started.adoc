@@ -11,15 +11,13 @@ For windows this is "build-windows.md", for macOS this is "build-osx.md" and for
 
 There is also a guide by Jon Atack about how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core].
 
-== Bitcoin developer journeys
+== Bitcoin contributor journeys
 
-It can be interesting to hear stories of how current contributors entered the space to hear about the approach they took and things they found useful, but also about any pitfalls they identified along their way.
+Some contributors have documented their journeys into the space which let's us learn about approaches they found useful, but also any pitfalls and things they found difficult along the way.
 
-https://github.com/amitiuttarwar[amitiuttarwar], https://github.com/jonatack[jonatack] and https://github.com/jimmysong[jimmysong] have kindly documented their experiences for others to read about and learn from.
-
-* https://medium.com/@amitiu/onboarding-to-bitcoin-core-7c1a83b20365[Amiti Uttarwar -- Onboarding to Bitcoin Core]
-* https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it[Jon Atack -- On Reviewing, and Helping Those Who Do It]
-* https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[Jimmy Song -- A Gentle Introduction to Bitcoin Core Development]
+* https://github.com/amitiuttarwar[Amiti Uttarwar] - https://medium.com/@amitiu/onboarding-to-bitcoin-core-7c1a83b20365[Onboarding to Bitcoin Core]
+* https://github.com/jonatack[Jon Atack] - https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it[On Reviewing, and Helping Those Who Do It]
+* https://github.com/jimmysong[Jimmy Song] - https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[A Gentle Introduction to Bitcoin Core Development]
 
 == Doxygen documentation
 
@@ -45,23 +43,21 @@ As of Version 22.0 of Bitcoin Core, there are ~820 individual contributors credi
 Some contributors are also labelled as "members" of the https://github.com/orgs/bitcoin/people[Bitcoin Core organisation].
 There are currently ~30 members of the organisation.
 These members are usually frequent contributors and have good technical knowledge of the codebase.
-Members also have some additional permissions over contributors, such as adding/removing tags on issues and pull requests, however being a member does not permit you to merge pull requests into the project.
+Members also have some additional permissions over contributors, such as adding/removing tags on issues and PRs, however being a member does not permit you to merge PRs into the project.
+Members can also be assigned sections of the codebase (where they might have expertise and) where they can be more easily requested for review as "suggested reviewers", by PR authors.
+
+NOTE: In a normal workflow it is not necessary (or desirable) to request reviews from suggested reviewers, and in fact doing so without a "good reason" might be interpreted as being too pushy, having the opposite result than intended.
 
 Some members are also project "maintainers".
-There are currently 7 maintainers on the Bitcoin Core project, with that number generally slowly increasing.
-Pull requests (PRs) can only be merged into the main project by "maintainers".
-Whilst this gives the illusion that maintainers are in "control" of the project, the maintainers' role dictates that they *should not* be unilaterally deciding what PRs are merged and which aren't.
+There are currently 7 maintainers on the Bitcoin Core project, but this number is arbitrary and is subject to change as people join and leave the project.
+PRs can only be merged into the main project by "maintainers".
+Whilst this might give the illusion that maintainers are in "control" of the project, the maintainers' role dictates that they *should not* be unilaterally deciding what PRs are merged and which aren't.
 Instead they should be determining mergability of changes primarily based on the reviews and discussions of other contributors on the PR itself, on GitHub (or less commonly the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list).
 
 Working on that basis, the maintainers' role becomes largely "janitorial" in that they are simply executing the desires of the community review process; a community which is made up of a decentralised and diverse group of contributors.
 
-In addition to maintainers, there are certain contributors (usually members) who are listed as "suggested reviewers" for certain areas of the codebase.
-This is because they are deemed to have a deep technical and/or philosophical understanding of this area of the project.
-
-NOTE: In a normal workflow it is not necessary (or desirable) to request reviews from suggested reviewers, and in fact doing so without a "good reason" might be interpreted as being too pushy, having the opposite result than intended.
-
 A list of maintainers and suggested reviewers can be found in the https://github.com/bitcoin/bitcoin/tree/master/REVIEWERS[REVIEWERS] document.
-As the document states, these are NOT the only people who should be reviewing pull requests.
+As the document states, these are NOT the only people who should be reviewing PRs.
 The project needs as many reviews on each PR as possible, ideally from a diverse range of reviewers.
 
 The objective of the Bitcoin Core Organisation is therefore to represent an entity that is decentralised as much as practically possible, on a centralised platform.
@@ -70,50 +66,51 @@ Having multiple maintainers, members, contributors and reviewers gives this obje
 
 ==== Organisation fail-safes
 
-"Rogue" PRs are occasionally submitted by contributors, however they are almost certain to be detected as part of the community review process.
-There has recently been discussion on the mailing list about https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019490.html[purposefully testing malicious pull requests] to test this property of the review process even further.
+It is possible for a "rogue" PR to be submitted by a contributor, however we rely on the thorough peer review process to catch these.
+There has recently been discussion on the mailing list about https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019490.html[purposefully testing malicious PRs] to test this property of the review process even further.
 
-In the event that a _maintainer_ goes rogue and starts merging controversial code, or conversely not merging changes desired by the community at large, then there are two possible avenues of recourse for users:
+In the event that a maintainer goes rogue and starts merging controversial code, or conversely _not_ merging changes which are desired by the community at large, then there are two possible avenues of recourse for users:
 
 . Have the "lead maintainer" remove the malicious maintainer
-. In the case that the lead maintainer themselves is the "rogue" agent: fork the project to a new GitHub repository and continue development there without them.
+. In the case that the lead maintainer themselves is considered to be the "rogue" agent: fork the project to a new location and continue development there.
 
 In the case that GitHub itself becomes the rogue entity, there have been numerous https://github.com/bitcoin/bitcoin/issues/20227[discussions about how to move away from GitHub], should the need ever arise.
 
-==== Github workflow
+=== Github workflow
 
 The GitHub side of the Bitcoin Core workflow for contributors consists primarily of:
 
 * Issues
-* Pull Requests (PRs)
+* PRs
 * Reviews
 * Comments
 
 Generally, issues are used for two purposes:
 
 . Posting known issues with software, e.g. bug reports, crash logs
-. Soliciting feedback on potential changes without providing associated code, as would be required in a Pull Request.
+. Soliciting feedback on potential changes without providing associated code, as would be required in a PR.
 
 GitHub provides their own https://guides.github.com/features/issues/[guide on mastering issues] which is worth reading to understand the feature-set available when working with an issue.
 
-Pull requests are where contributors can submit their code against the main codebase and solicit feedback on _both_ the concept and the code implementation.
-Pull requests and issues are often linked to/from one another:
+PRs are where contributors can submit their code against the main codebase and solicit feedback on the concept, the approach taken for the implementation, and the actual implementation itself.
+
+PRs and issues are often linked to/from one another:
 
 [example]
---
+====
 One common workflow is when an issue is opened to report a bug.
-After replicating the issue, a contributor creates a patch and then opens a pull request with their proposed changes.
+After replicating the issue, a contributor creates a patch and then opens a PR with their proposed changes.
 
 In this case the contributor should, in addition to comments about the patch, reference that the patch fixes the issue.
 For a patch which fixes issue 22889 this would be done by writing "fixes #22889" in the PR description or in a commit message.
 In this case the syntax "fixes #issue-number" is caught by GitHub's https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue[pull request linker].
---
+====
 
-Another good use of issues is for getting feedback on ideas which might require *significant* changes.
+Another use of issues is for getting feedback on ideas which might require *significant* changes.
 This helps free the project from having too many PRs open which aren't ready for review, and might waste reviewers' time.
 In addition this workflow can also save contributors their _own_ valuable time, as a idea might be identified as unlikely to be accepted before the contributor spends their time writing the code for it.
 
-Most code changes to bitcoin are proposed directly as pull requests -- there's no need to open an issue for every idea before implementing it, unless it will require significant changes.
+Most code changes to bitcoin are proposed directly as PRs -- there's no need to open an issue for every idea before implementing it, unless it will require significant changes.
 Additionally, other contributors (and would-be reviewers) will often agree with the approach of a change, but want to "see the implementation" before they can really pass judgement on it.
 
 Reviews help to store and track reviews to PRs in a public way.
@@ -126,7 +123,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 * What stops a hacker hijacking the Bitcoin Core website and hosting malicious binaries?
 ** How about malicious binaries hosted by linux package managers?
 * Where can you go for help if Bitcoin Core doesn't build on your machine?
-* Before you create a pull request to the main bitcoin core repo, what checks should you do locally?
+* Before you create a PR to the main bitcoin core repo, what checks should you do locally?
 ** Are there any additional checks you can think of which are only run in the bitcoin core repo (and not your fork)?
 
 == Solo work
@@ -141,7 +138,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 * Fork the https://github.com/bitcoin/bitcoin[bitcoin core repository]
 ** GitHub provides a guide on how to https://guides.github.com/activities/forking/[fork a project]
 * Download a clone of your fork of the bitcoin project to your local machine
-* Checkout a tag, branch or pull request
+* Checkout a tag, branch or PR
 
 === Building bitcoin from source
 
@@ -182,20 +179,19 @@ TIP: starting with `ping` and `pong` messages might be easiest
 * Review a different team member's PR
 * Submit your review of the PR as a GitHub comment on the PR
 
-== Removed text
-
-=== Goals
-
-* Learn how the Bitcoin Core project uses GitHub
-* Learn how to compile the code from source
-* Learn how to run the test suite
-* Learn about other developers journeys into bitcoin dev
-* PR review process
-
-=== Concepts
-
-* GitHub usage
-* Git usage
-* Building bitcoin from source code
-* Running the test suite
-
+// == Removed text
+// 
+// === Goals
+// 
+// * Learn how the Bitcoin Core project uses GitHub
+// * Learn how to compile the code from source
+// * Learn how to run the test suite
+// * Learn about other developers journeys into bitcoin dev
+// * PR review process
+// 
+// === Concepts
+// 
+// * GitHub usage
+// * Git usage
+// * Building bitcoin from source code
+// * Running the test suite
