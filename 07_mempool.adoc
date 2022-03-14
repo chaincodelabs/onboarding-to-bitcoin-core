@@ -504,19 +504,29 @@ More information on this function can be found in <<AcceptSingleTransaction>>.
 
 === Package relay
 
-Since the commit this documentation is based on, the concept of "package relay" has been introduced to Bitcoin Core.
-glozow describes the rationale behind the package relay proposal in her gist https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[Package mempool accept].
+https://bitcoinops.org/en/topics/package-relay/[Package Relay] is a long-discussed concept and, at
+the time of writing, is a work in progress in Bitcoin Core.  A significant portion of the project
+involves changes to mempool validation, which glozow describes in her gist
+https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[Package mempool accept].
 
-This began with a refactoring which saw the following lines into the `MempoolAccept::AcceptSingleTransaction()` function we looked at above:
+https://github.com/bitcoin/bitcoin/pull/20833[PR#20833] added the ability for mempool validation to
+assess a set of dependent transactions and enabled the `testmempoolaccept` RPC to support multiple
+transactions.
 
-.valiation.cpp#MempoolAccept::AcceptSingleTransaction()
-[source,cpp]
-----
-    if (m_rbf && !ReplacementChecks(ws)) return MempoolAcceptResult::Failure(ws.m_state);
-----
+https://github.com/bitcoin/bitcoin/pull/21800[PR#21800] added the ability to analyze and limit the
+ancestor and descendant sets of packages in relation to the mempool.
 
-The refactoring was done in commit https://github.com/bitcoin/bitcoin/commit/c9b1439ca9ab691f4672d2cbf33d9381f2985466[c9b1439] as part of https://github.com/bitcoin/bitcoin/pull/23381[PR#23381].
-Following this https://github.com/bitcoin/bitcoin/pull/22674[PR#22674] introduced single child packages into the mempool acceptance flow.
+https://github.com/bitcoin/bitcoin/pull/22674[PR#22674] defined child-with-unconfirmed-parents
+packages and enabled submission of such packages to the mempool.
 
-The document https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md] contains current information on the stated package acceptance rules.
+These PRs were also preceded by several refactoring efforts:
+https://github.com/bitcoin/bitcoin/pull/21062[PR#21062],
+https://github.com/bitcoin/bitcoin/pull/22796[PR#22796],
+https://github.com/bitcoin/bitcoin/pull/22675[PR#22675],
+https://github.com/bitcoin/bitcoin/pull/22855[PR#22855],
+https://github.com/bitcoin/bitcoin/pull/23381[PR#23381].
+
+The document
+https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md]
+contains current information on the stated package acceptance rules.
 
