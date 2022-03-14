@@ -451,9 +451,7 @@ For a transaction received over the P2P protocol, the call to ATMP is found in _
 
 ----
 
-...whereas for locally-generated transactions the call to ATMP comes from
-`node/transaction.cpp::BroadcastTransaction()`, which is called from the `sendrawtransaction` RPC
-and from various wallet functions.
+...whereas for locally-generated transactions the call to ATMP comes from `node/transaction.cpp::BroadcastTransaction()`, which is called from the `sendrawtransaction` RPC and from various wallet functions.
 We can see this in the call-graph for `AcceptToMemoryPool`:
 
 image::validation_8h_af6c5c758554417ece7c885200c9a6d03_icgraph.svg[]
@@ -464,158 +462,90 @@ NOTE: `while` in the diagram stems from the `ThreadMessageHandler()` loop.
 
 The `MemPoolAccept` class handles mempool validation for new transactions.
 
-Selecting the best transactions for the resource-constrained mempool involves a tradeoff between
-optimistically validating candidates to identify the highest feerate ones and protecting the node
-from DoS attacks. As such, we apply a set of validation rules known as mempool _policy_ in addition
-to consensus.
+Selecting the best transactions for the resource-constrained mempool involves a trade-off between optimistically validating candidates to identify the highest feerate ones and protecting the node from DoS attacks.
+As such, we apply a set of validation rules known as mempool _policy_ in addition to consensus.
 
 We might categorize transaction validation checks in a few different ways:
 
-- Consensus vs Policy: These can also be thought of as mandatory vs non-mandatory checks. These two
-  are not mutually exclusive, but we make efforts to compartamentalize consensus rules.
+* Consensus vs Policy: These can also be thought of as mandatory vs non-mandatory checks.
+These two are not mutually exclusive, but we make efforts to compartmentalize consensus rules.
+* Script vs Non-script: Script refers to the instructions and data used to specify and satisfy spending conditions.
+We make this distinction because script checking (specifically, signature verification) is the most computationally intensive part of transaction validation.
+* Contextual vs Context-Free: The context refers to our knowledge of the current state, represented as https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.h#L566[ChainState].
+Contextual checks might require the current block height or knowledge of the current UTXO set, while context-free checks only need the transaction itself.
+We also need to look into our mempool to validate a transaction that spends unconfirmed parents or conflicts with another transaction already in our mempool.
 
-- Script vs Non-script: Script refers to the instructions and
-  data used to specify and satisfy spending conditions. We make this distinction because script
-checking (specifically, signature verification) is the most computationally intensive part of
-transaction validation.
+=== Context-free non-script checks
 
-- Contextual vs Context-Free: The context refers to our knowledge of the current state, represented
-  as https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.h#L566[ChainState].
-Contextual checks might require the current block height or knowledge of the current UTXO set,
-while context-free checks only need the transaction itself. We also need to look into our mempool to
-validate a transaction that spends unconfirmed parents or conflicts with another transaction already
-in our mempool.
+Mempool validation in Bitcoin Core starts off with non-script checks (sometimes called https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L541["PreChecks"], the name of the function in which these checks run).
 
-#### Context-Free Non-Script Checks
-
-Mempool validation in Bitcoin Core starts off with non-script checks (sometimes called
- https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L541["PreChecks"],
-the name of the function in which these checks run).
-
-As a defensive strategy, the node starts with context-free and/or easily computed checks.
+As a defensive strategy the node starts with context-free and/or easily computed checks.
 Here are some examples:
 
-- None of the outputs are trying to send a value https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/consensus/tx_check.cpp#L25-L27[less than 0 or greater than 21 million
+* None of the outputs are trying to send a value https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/consensus/tx_check.cpp#L25-L27[less than 0 or greater than 21 million
   BTC].
+* The transaction https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L568[isn't a coinbase], as there can't be any coinbase transactions outside of blocks.
+* The transaction isn't https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/policy/policy.cpp#L88[more than 400,000 weight units].
++
+It's possible for a larger transaction to be consensus-valid, but it would occupy too much space in the mempool.
+If we allowed these transactions an attacker could try to dominate our mempool with very large transactions that are never mined.
 
-- The transaction https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L568[isn't a
-  coinbase],
-as there can't be any coinbase transactions outside of blocks.
+=== Contextual non-script checks
 
-- The transaction isn't https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/policy/policy.cpp#L88[more than 400,000 weight
-  units].
-It's possible for a larger transation to be consensus-valid, but it would occupy too much space in
-the mempool. If we allowed these transactions, an attacker could try to dominate our mempool with
-very large transactions that are never mined.
+Perhaps the most obvious non-script contextual check here is to https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L641-L662[make sure the inputs are available], either in the current chainstate or an unspent output of an in-mempool transaction.
+Instead of looking through the entire blockchain (hundreds of gigabytes stored on disk), Bitcoin Core nodes keep a https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.h#L517-L541[layered cache] of the available https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/coins.h#L30[coins] (a few gigabytes, much of which can be kept in memory).
+To make this process more efficient, coins fetched from disk during mempool validation are https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1116-L1124[kept in memory] if the transaction is accepted to the mempool.
 
-#### Contextual Non-Script Checks
+Timelocks are also checked here - the node grabs the BIP113 Median Time Past and/or block height at the current chainstate to check transaction `nLockTime` and input `nSequence`
 
-Perhaps the most obvious non-script contextual check here is to
-https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L641-L662[make
-sure the inputs are available],
-either in the current chainstate or an unspent output of an in-mempool transaction. Instead of
-looking through the entire blockchain (hundreds of gigabytes stored on disk), Bitcoin Core nodes
-keep a https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.h#L517-L541[layered cache]
-of the available https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/coins.h#L30[coins]
-(a few gigabytes, much of which can be kept in memory). To make this process more efficient, coins
-fetched from disk during mempool validation are https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1116-L1124[kept in memory]
-if the transaction is accepted to the mempool.
+=== "Contextual" Script Checks
 
-Timelocks are also checked here - the node grabs the BIP113 Median Time Past and/or block height at
-the current chainstate to check transaction `nLockTime` and input `nSequence`
+Transaction https://doxygen.bitcoincore.org/validation_8cpp.html#a6a96a3e1e6818904fdd5f51553b7ea60[script checks] are actually context-free in isolation; the https://doxygen.bitcoincore.org/class_c_tx_in.html#aba540fd902366210a6ad6cd9a18fe763[`scriptSig`] and https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#specification[`witness`] for each input, paired with the https://doxygen.bitcoincore.org/class_c_tx_out.html#a25bf3f2f4befb22a6a0be45784fe57e2[`scriptPubKey`] in the https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1469[corresponding UTXO] can be passed into the script interpreter and validated without state.
+The https://doxygen.bitcoincore.org/interpreter_8h.html[script interpreter] simply evaluates the series of opcodes and data based on the arguments passed to it.
 
-#### "Contextual" Script Checks
+The "context" passed to the script interpreter is a set of https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/script/interpreter.h#L42-L143[script verification flags] indicating which rules to apply during script verification.
+For example, the `OP_CHECKSEQUENCEVERIFY` opcode repurposed `OP_NOP3`.
+The script verification flag `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY` instructs the script interpreter https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/script/interpreter.cpp#L587[to interpret] the opcode `0xb2` as the instruction to check that the input's `nSequence` is greater than the stack value or as a no-op. Starting at the BIP112 activation height, https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1695-L1697[nodes pass] `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY=1` into the script interpreter during consensus script checks.
 
-Transaction https://doxygen.bitcoincore.org/validation_8cpp.html#a6a96a3e1e6818904fdd5f51553b7ea60[script
-checks] are actually context-free in isolation; the https://doxygen.bitcoincore.org/class_c_tx_in.html#aba540fd902366210a6ad6cd9a18fe763[`scriptSig`]
-and https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#specification[`witness`] for
-each input, paired with the https://doxygen.bitcoincore.org/class_c_tx_out.html#a25bf3f2f4befb22a6a0be45784fe57e2[`scriptPubKey`]
-in the https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1469[corresponding UTXO]
-can be passed into the script interpreter and validated without state. The https://doxygen.bitcoincore.org/interpreter_8h.html[script interpreter]
-simply evaluates the series of
-opcodes and data based on the arguments passed to it.
+=== Context-free Signature and Script Checks
 
-The "context" passed to the script interpreter is a set of https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/script/interpreter.h#L42-L143[script verification flags]
-indicating which rules to apply during script verification. For example, the
-`OP_CHECKSEQUENCEVERIFY` opcode repurposed `OP_NOP3`. The script
-verification flag `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY` instructs the script interpreter https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/script/interpreter.cpp#L587[to
-interpret]
-the opcode `0xb2` as the instruction to check
-that the input's `nSequence` is greater than the stack value or as a no-op. Starting at the BIP112
-activation height, https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1695-L1697[nodes
-pass] `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY=1` into the script interpreter during consensus script checks.
+Mempool validation performs two sets of script checks: https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L917[`PolicyScriptChecks`] and https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L943[`ConsensusScriptChecks`].
+The former runs the script interpreter using consensus and policy flags and caches the signature result (if successful) in the https://github.com/bitcoin/bitcoin/blob/d67330d11245b11fbdd5e2dd5343ee451186931e/src/script/sigcache.cpp#L21-L26[signature cache].
+The latter runs the script interpreter using https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L965[consensus flags only] and caches the full validation result in the script execution cache, identified by the wtxid and script verification flags.
+If a new consensus rule is activated between now and the block in which this transaction is included, the cached result is no longer valid, but this is easily detected based on the script verification flags.
 
-#### Context-free Signature and Script Checks
+For example, before taproot rules are enforced in consensus, they are in policy (`SCRIPT_VERIFY_TAPROOT` included in policy but not consensus script verification flags); nodes won't relay and accept taproot-invalid version 1 transactions into their mempools, even though they aren't breaking any consensus rules yet.
+All script checks will be cached without `SCRIPT_VERIFY_TAPROOT`.
+After taproot activation, if a previously-validated transaction is seen, the cache entry's script verification flags won't match current consensus flags, so the node will re-run script checks for that transaction.
 
-Mempool validation performs two sets of script checks:
-https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L917[`PolicyScriptChecks`]
-and
-https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L943[`ConsensusScriptChecks`].
-The former runs the script interpreter using consensus and policy flags and caches
-the signature result (if successful) in the https://github.com/bitcoin/bitcoin/blob/d67330d11245b11fbdd5e2dd5343ee451186931e/src/script/sigcache.cpp#L21-L26[signature cache].
-The latter runs the script interpreter using https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L965[consensus flags
-only]
-and caches the full validation result in the script execution cache,
-identified by the wtxid and script verification flags. If a new consensus rule
-is activated between now and the block in which this transaction is included, the cached result is
-no longer valid, but this is easily detected based on the script verification flags.
+The most computationally-intensive part of script validation is signature verification (indicated in a script by opcodes such as `OP_CHECKSIG`), which doesn't change based on context.
+To save the node from repetitive work, at the very start of script checks, parts of the transaction are https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/script/interpreter.cpp#L1423[serialized, hashed, and stored] in a `PrecomputedTransactionData` struct for use in signature verification.
+This is especially handy in transactions that have multiple inputs and/or signatures.
+Additionally, the cached result from `PolicyScriptChecks` can be used immediately in `ConsensusScriptChecks`; we almost never need to verify the same signature more than once!
 
-For example, before taproot rules are enforced in consensus, they are in policy
-(`SCRIPT_VERIFY_TAPROOT` included in policy but not consensus script verification flags); nodes
-won't relay and accept taproot-invalid version 1 transactions into their mempools, even though they
-aren't breaking any consensus rules yet. All script checks will be cached without
-`SCRIPT_VERIFY_TAPROOT`. After taproot activation, if a previously-validated transaction is seen,
-the cache entry's script verification flags won't match current consensus flags, so the node will
-re-run script checks for that transaction.
+== Submission to Mempool
 
-The most computationally-intensive part of script validation is signature verification (indicated in
-a script by opcodes such as `OP_CHECKSIG`), which doesn't change based on context. To save the node
-from repetitive work, at the very start of script checks, parts of the transaction are
-https://github.com/bitcoin/bitcoin/blob/1a369f006fd0bec373b95001ed84b480e852f191/src/script/interpreter.cpp#L1423[serialized, hashed, and stored]
-in a
-`PrecomputedTransactionData`
-struct for use in signature verification. This is especially handy in transactions that have
-multiple inputs and/or signatures. Additionally, the cached result from `PolicyScriptChecks` can be
-used immediately in `ConsensusScriptChecks`; we almost never need to verify the same signature more
-than once!
+Every entry in the mempool contains a transaction, and various metadata such as the time it was received, its fees (for faster lookup), the height and/or time needed to satisfy its timelocks, and pointers to any parents and children in the mempool.
 
-### Submission to Mempool
+Much of the mempool is devoted to keeping track of a transaction's in-mempool ancestors (parents, parents of parents, etc.) and descendants (children, children of children, etc.) and their aggregated fees.
+A transaction is only valid if its ancestors exist: a transaction can't be mined unless its parents are mined, and its parents can't be mined unless their parents are mined, and so on.
+Conversely, if a transaction is evicted from the mempool, its descendants must be too.
 
-Every entry in the mempool contains a transaction, and various metadata such as the time it was
-received, its fees (for faster lookup), the height and/or time needed to satisfy its timelocks, and
-pointers to any parents and children in the mempool.
+As such, a transaction's effective feerate is not just its base feerate divided by weight, but that of itself and all of its ancestors.
+This information is also taken into account when the mempool fills up and the node must choose which transactions to evict (also based on fees).
+Of course, all of this information can be calculated on the fly, but constructing a block is extremely time-sensitive, so the mempool opts to cache this information rather than spend more time calculating it.
+As one might imagine, the family DAGs can get quite hairy and a source of resource exhaustion, so one part of mempool policy is to limit individual transactions' connectivity.
 
-Much of the mempool is devoted to keeping track of a transaction's in-mempool ancestors (parents,
-parents of parents, etc.) and descendants (children, children of children, etc.) and their
-aggregated fees. A transaction is only valid if its ancestors exist: a transaction can't be mined
-unless its parents are mined, and its parents can't be mined unless their parents are mined, and so
-on. Conversely, if a transaction is evicted from the mempool, its descendants must be too.
+== Package relay
 
-As such, a transaction's effective feerate is not just its base feerate divided by weight, but that
-of itself and all of its ancestors. This information is also taken into account when the mempool
-fills up and the node must choose which transactions to evict (also based on fees). Of course, all
-of this information can be calculated on the fly, but constructing a block is extremely
-time-sensitive, so the mempool opts to cache this information rather than spend more time
-calculating it. As one might imagine, the family DAGs can get quite hairy and a source of resource
-exhaustion, so one part of mempool policy is to limit individual transactions' connectivity.
+https://bitcoinops.org/en/topics/package-relay/[Package Relay] is a long-discussed concept and, at the time of writing, is a work in progress in Bitcoin Core.
+A significant portion of the project involves changes to mempool validation, which glozow describes in her gist https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[Package mempool accept].
 
+https://github.com/bitcoin/bitcoin/pull/20833[PR#20833] added the ability for mempool validation to assess a set of dependent transactions and enabled the `testmempoolaccept` RPC to support multiple transactions.
 
-=== Package relay
+https://github.com/bitcoin/bitcoin/pull/21800[PR#21800] added the ability to analyse and limit the ancestor and descendant sets of packages in relation to the mempool.
 
-https://bitcoinops.org/en/topics/package-relay/[Package Relay] is a long-discussed concept and, at
-the time of writing, is a work in progress in Bitcoin Core.  A significant portion of the project
-involves changes to mempool validation, which glozow describes in her gist
-https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[Package mempool accept].
-
-https://github.com/bitcoin/bitcoin/pull/20833[PR#20833] added the ability for mempool validation to
-assess a set of dependent transactions and enabled the `testmempoolaccept` RPC to support multiple
-transactions.
-
-https://github.com/bitcoin/bitcoin/pull/21800[PR#21800] added the ability to analyze and limit the
-ancestor and descendant sets of packages in relation to the mempool.
-
-https://github.com/bitcoin/bitcoin/pull/22674[PR#22674] defined child-with-unconfirmed-parents
-packages and enabled submission of such packages to the mempool.
+https://github.com/bitcoin/bitcoin/pull/22674[PR#22674] defined child-with-unconfirmed-parents packages and enabled submission of such packages to the mempool.
 
 These PRs were also preceded by several refactoring efforts:
 https://github.com/bitcoin/bitcoin/pull/21062[PR#21062],
@@ -624,7 +554,5 @@ https://github.com/bitcoin/bitcoin/pull/22675[PR#22675],
 https://github.com/bitcoin/bitcoin/pull/22855[PR#22855],
 https://github.com/bitcoin/bitcoin/pull/23381[PR#23381].
 
-The document
-https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md]
-contains current information on the stated package acceptance rules.
+The document https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md] contains current information on the stated package acceptance rules.
 
