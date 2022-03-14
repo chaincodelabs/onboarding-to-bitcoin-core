@@ -448,7 +448,7 @@ For a transaction received over the P2P protocol, the call to ATMP is found in _
 ...whereas for locally-generated transactions the call to ATMP comes from `node/transaction.cpp::BroadcastTransaction()`, which is called from the `sendrawtransaction` RPC and from various wallet functions.
 We can see this in the call-graph for `AcceptToMemoryPool`:
 
-image::atmp_call_graph.svg[]
+image::validation_8h_af6c5c758554417ece7c885200c9a6d03_icgraph.svg[]
 
 NOTE: `while` in the diagram stems from the `ThreadMessageHandler()` loop.
 
