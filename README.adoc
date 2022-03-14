@@ -1,3 +1,4 @@
 = Onboarding to Bitcoin Core
 
 A hosted version of the documentation is currently hosted at https://obc.256k1.dev[obc.256k1.dev]
+This location may be subject to change in the future.

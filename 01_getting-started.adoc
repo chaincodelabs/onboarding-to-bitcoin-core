@@ -2,6 +2,10 @@
 
 This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6]
 
+WARNING: Whilst this disclaimer is present this documentation is considered a work in progress and may be subject to minor or major changes at any time without notice.
+
+WARNING: This documentation can temporarily be found hosted at https://obc.256k1.dev[], however the hosted location is likely to change in the near future.
+
 == Building Bitcoin Core from source
 
 When building Bitcoin Core from source, there are some platform-dependant instructions to follow.
