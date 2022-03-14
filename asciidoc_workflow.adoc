@@ -5,7 +5,7 @@ The https://asciidoctor.org/[asciidoc] format has been used for this documentati
 To use asciidoc format, ensure that the `asciidoctor` tool is installed (and on your system $PATH).
 Also, it can be useful to ensure your editor understands the filetype, e.g. for Vim you can install https://github.com/habamax/vim-asciidoctor[vim-asciidoctor].
 
-== Generating index.html for static hosting
+== Generating _index.html_ for static hosting
 
 You can generate an _index.html_ file for static web hosting by installing `asciidoctor` and then running:
 
@@ -14,9 +14,11 @@ You can generate an _index.html_ file for static web hosting by installing `asci
 asciidoctor index.adoc
 ----
 
-=== Reduce as a pre-commit hook
+Simply host _index.html_ along with the _images/_ dir at the root of your web server to serve the documentation.
 
-If you prefer you can write a simple pre-commit hook to generate an updated _index.adoc_ file at each commit.
+=== Update _index.html_ as a pre-commit hook
+
+If you prefer you can write a simple pre-commit hook to update _index.html_ file at each commit.
 An example of this might be:
 
 .$PROJECT_ROOT/.git/hooks/pre-commit
