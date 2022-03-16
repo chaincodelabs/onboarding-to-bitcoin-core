@@ -171,7 +171,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 
 === Create a test using test framework
 
-* You can refer to the }https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
+* You can refer to the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
 * Try and write a new functional test which can send p2p messages between nodes
 +
 TIP: starting with `ping` and `pong` messages might be easiest
@@ -184,17 +184,17 @@ TIP: starting with `ping` and `pong` messages might be easiest
 * Submit your review of the PR as a GitHub comment on the PR
 
 // == Removed text
-// 
+//
 // === Goals
-// 
+//
 // * Learn how the Bitcoin Core project uses GitHub
 // * Learn how to compile the code from source
 // * Learn how to run the test suite
 // * Learn about other developers journeys into bitcoin dev
 // * PR review process
-// 
+//
 // === Concepts
-// 
+//
 // * GitHub usage
 // * Git usage
 // * Building bitcoin from source code
