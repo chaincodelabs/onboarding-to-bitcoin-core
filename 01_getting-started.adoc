@@ -171,7 +171,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 
 === Create a test using test framework
 
-* You can refer to the }https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
+* You can refer to the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
 * Try and write a new functional test which can send p2p messages between nodes
 +
 TIP: starting with `ping` and `pong` messages might be easiest
