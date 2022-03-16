@@ -122,7 +122,9 @@ Reviews help to store and track reviews to PRs in a public way.
 Comments (inside issues, PRs, discussions etc.) are where users can discuss relevant aspects of the item and have history of those discussions preserved for future reference.
 Often contributors having "informal" discussions about changes on e.g. IRC will be advised that they should echo the gist of their conversation as a comment so that the rationale behind changes can be determined in the future.
 
-== Research topics/questions
+== Practice
+
+=== Research topics/questions
 
 * What stops a hacker hijacking the Bitcoin Core website and hosting malicious binaries?
 ** How about malicious binaries hosted by linux package managers?
@@ -130,21 +132,21 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 * Before you create a PR to the main bitcoin core repo, what checks should you do locally?
 ** Are there any additional checks you can think of which are only run in the bitcoin core repo (and not your fork)?
 
-== Solo work
+=== Solo work
 
-=== Git exercises
+==== Git exercises
 
 * Understand lsilva01's https://github.com/lsilva01/operating-bitcoin-core-v1/blob/main/git-tutorial.md[git tutorial for Bitcoin Core]
 * https://chris.beams.io/posts/git-commit/[Write good commit messages]
 
-=== GitHub workflow basics
+==== GitHub workflow basics
 
 * Fork the https://github.com/bitcoin/bitcoin[bitcoin core repository]
 ** GitHub provides a guide on how to https://guides.github.com/activities/forking/[fork a project]
 * Download a clone of your fork of the bitcoin project to your local machine
 * Checkout a tag, branch or PR
 
-=== Building bitcoin from source
+==== Building bitcoin from source
 
 * Compile the source code you cloned
 * Run the tests
@@ -153,7 +155,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 . Also see https://github.com/bitcoin/bitcoin/tree/master/test#running-the-tests[Bitcoin Core, running the tests]
 . https://github.com/bitcoin/bitcoin/tree/master/src/test/README.md[Bitcoin Core, unit tests]
 
-=== Review a PR
+==== Review a PR
 
 * Find a PR (which can be open or closed) on GitHub which looks interesting and/or accessible
 * Checkout the PR locally
@@ -169,7 +171,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 ** Your system specifications if relevant
 ** Suggesting nits
 
-=== Create a test using test framework
+==== Create a test using test framework
 
 * You can refer to the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
 * Try and write a new functional test which can send p2p messages between nodes
@@ -177,7 +179,7 @@ Often contributors having "informal" discussions about changes on e.g. IRC will 
 TIP: starting with `ping` and `pong` messages might be easiest
 * Try writing a more advanced test
 
-== Group work
+=== Group work
 
 * Each submit a PR on a team member's fork of Bitcoin Core (not the main repo)
 * Review a different team member's PR
