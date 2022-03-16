@@ -23,7 +23,6 @@ NOTE: Jon's estimates of  "5-15 PR reviews|issues solved" per PR submitted is no
 // Archived @ https://archive.is/MyohE
 Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/master/review-checklist.md[review checklist] details what a 'good' review might look like along with some examples what she considers good reviews.
 In addition to this, it details how potential reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review themselves.
-
 Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and needed documentation.
 
 === Commit messages
@@ -74,7 +73,7 @@ The https://en.bitcoin.it/wiki/Signet[Bitcoin wiki Signet page] provides additio
 
 == BIPs
 
-Bitcoin uses Bitcoin Improvement Proposals (BIPs) as a design document for introducing new features or behaviour into bitcoin. 
+Bitcoin uses Bitcoin Improvement Proposals (BIPs) as a design document for introducing new features or behaviour into bitcoin.
 Bitcoin magazine describes what a BIP is in their article https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
 
 The BIPs are currently hosted on https://github.com/bitcoin/bips[GitHub].
@@ -130,7 +129,7 @@ The git `blame` command will show you when and by who a particular line of code 
 
 For example, if we checkout Bitcoin Core at https://github.com/bitcoin/bitcoin/tree/v22.0[v22.0] and we are planning to make a change related to the `m_addr_send_times_mutex` found in _src/net_processing.cpp_, we might want to find out more about its history before touching it.
 
-With `git `blame` we can find out the last person who touched this code: 
+With `git `blame` we can find out the last person who touched this code:
 
 [source,bash,options="nowrap"]
 ----
@@ -213,7 +212,7 @@ We learn now that John also originally added this to _net.{cpp|h}_, before later
 === PR discussion
 
 To get even more context we can take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
-To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top, e.g.: 
+To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top, e.g.:
 
 [source,bash]
 ----
@@ -262,20 +261,20 @@ THEN:
 * Send coins around the group
 
 // == Removed Text
-// 
+//
 // === Goals
-// 
+//
 // * How are changes made to Bitcoin Core?
 // * Development environment optimisations
 // * How is Bitcoin Core source code organised
 // * What's the BIP process?
 // ** What type of changes require a BIP?
 // * Learn how to test changes on a live distributed test network
-// 
+//
 // === Concepts
-// 
+//
 // * Decentralised Development
 // * BIPs
 // * Bitcoin Core development
-// * Bitcoin Core architecture 
+// * Bitcoin Core architecture
 // * Signet
