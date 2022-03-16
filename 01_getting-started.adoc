@@ -73,7 +73,7 @@ Having multiple maintainers, members, contributors and reviewers gives this obje
 It is possible for a "rogue" PR to be submitted by a contributor, however we rely on the thorough peer review process to catch these.
 There has recently been discussion on the mailing list about https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019490.html[purposefully testing malicious PRs] to test this property of the review process even further.
 
-In the event that a maintainer goes rogue and starts merging controversial code, or conversely _not_ merging changes which are desired by the community at large, then there are two possible avenues of recourse for users:
+In the event that a maintainer goes rogue and starts merging controversial code, or conversely _not_ merging changes which are desired by the community at large, then there are two possible avenues of recourse:
 
 . Have the "lead maintainer" remove the malicious maintainer
 . In the case that the lead maintainer themselves is considered to be the "rogue" agent: fork the project to a new location and continue development there.
@@ -184,17 +184,17 @@ TIP: starting with `ping` and `pong` messages might be easiest
 * Submit your review of the PR as a GitHub comment on the PR
 
 // == Removed text
-// 
+//
 // === Goals
-// 
+//
 // * Learn how the Bitcoin Core project uses GitHub
 // * Learn how to compile the code from source
 // * Learn how to run the test suite
 // * Learn about other developers journeys into bitcoin dev
 // * PR review process
-// 
+//
 // === Concepts
-// 
+//
 // * GitHub usage
 // * Git usage
 // * Building bitcoin from source code
