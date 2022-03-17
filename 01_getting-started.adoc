@@ -78,7 +78,8 @@ In the event that a maintainer goes rogue and starts merging controversial code,
 . Have the "lead maintainer" remove the malicious maintainer
 . In the case that the lead maintainer themselves is considered to be the "rogue" agent: fork the project to a new location and continue development there.
 
-In the case that GitHub itself becomes the rogue entity, there have been numerous https://github.com/bitcoin/bitcoin/issues/20227[discussions about how to move away from GitHub], should the need ever arise.
+In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub which have been summarised on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
+This summary came in part from discussions on https://github.com/bitcoin/bitcoin/issues/20227[this] GitHub issue.
 
 === Github workflow
 
