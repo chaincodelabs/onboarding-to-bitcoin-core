@@ -15,6 +15,11 @@ For windows this is "build-windows.md", for macOS this is "build-osx.md" and for
 
 There is also a guide by Jon Atack about how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core].
 
+=== Doxygen documentation
+
+Bitcoin Core uses https://www.doxygen.nl/index.html[Doxygen] to generate developer documentation automatically from its annotated C++ codebase.
+Developers can access documentation of the current release of Bitcoin Core online at https://doxygen.bitcoincore.org/[doxygen.bitcoincore.org], or alternatively can generate documentation for their current head using `make docs` (see https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md#generating-documentation[Generating Documentation] for more info).
+
 == Bitcoin contributor journeys
 
 Some contributors have documented their journeys into the space which let's us learn about approaches they found useful, but also any pitfalls and things they found difficult along the way.
@@ -22,11 +27,6 @@ Some contributors have documented their journeys into the space which let's us l
 * https://github.com/amitiuttarwar[Amiti Uttarwar] - https://medium.com/@amitiu/onboarding-to-bitcoin-core-7c1a83b20365[Onboarding to Bitcoin Core]
 * https://github.com/jonatack[Jon Atack] - https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it[On Reviewing, and Helping Those Who Do It]
 * https://github.com/jimmysong[Jimmy Song] - https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[A Gentle Introduction to Bitcoin Core Development]
-
-== Doxygen documentation
-
-Bitcoin Core uses https://www.doxygen.nl/index.html[Doxygen] to generate developer documentation automatically from its annotated C++ codebase.
-Developers can access documentation of the current release of Bitcoin Core online at https://doxygen.bitcoincore.org/[doxygen.bitcoincore.org], or alternatively can generate documentation for their current head using `make docs` (see https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md#generating-documentation[Generating Documentation] for more info).
 
 == Bitcoin Core and GitHub
 
