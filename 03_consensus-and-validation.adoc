@@ -1,11 +1,8 @@
 = Consensus & validation
 
 One of the most fundamental concepts behind bitcoin is that nodes are able to maintain decentralised consensus on the ordering of transactions in the system.
-The primary mechanism behind this relies on all nodes validating two things against their own copy of the (consensus) rules:
 
-. Every transaction
-. Every block
-
+The primary mechanism behind this relies on all nodes validating every transaction and every block against their own copy of the (consensus) rules.
 The secondary mechanism is that in the event of a discrepancy, all nodes should follow the chain with the most cumulative proof-of-work.
 
 The product of following these two mechanisms is that all nodes in the network will _eventually_ converge onto a single canonical, valid chain.
@@ -177,7 +174,7 @@ Its interface is defined in the C header [bitcoinconsensus.h](https://github.com
 
 In its initial version the API includes two functions:
 
-- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction 
+- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction
 correctly spends the passed scriptPubKey under additional constraints indicated by flags
 - `bitcoinconsensus_version` returns the API version, currently at an experimental `0`
 
@@ -707,10 +704,9 @@ Practical question on Merkle root calculation::
 TODO, add exercise
 
 // == Removed text
-// 
+//
 // The outline of the mechanism at work is that a node relaying a transaction can slightly modify the signature in a way which is still acceptable to the underlying OpenSSL module.
 // Once the signature has been changed, the transaction ID (hash) will also change.
 // If the modified transaction is then included in a block, before the original, the effect is that the sender will still see the outgoing transaction as "unconfirmed" in their wallet.
 // The sender wallet should however also see the accepted (modified) outgoing transaction, so their balance will be calculated correctly, only a "stuck doublespend" will pollute their wallet.
 // The receiver will not perceive anything unordinary, unless they were tracking the incoming payment using the txid as given to them by the sender.
-
