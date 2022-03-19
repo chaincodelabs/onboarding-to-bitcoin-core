@@ -105,8 +105,11 @@ bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, co
 ----
 ====
 
+[TIP]
+====
 Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
 In what circumstances might it not make sense?
+====
 Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
 
 == Database consensus
@@ -177,7 +180,7 @@ Its interface is defined in the C header [bitcoinconsensus.h](https://github.com
 
 In its initial version the API includes two functions:
 
-- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction 
+- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction
 correctly spends the passed scriptPubKey under additional constraints indicated by flags
 - `bitcoinconsensus_version` returns the API version, currently at an experimental `0`
 
@@ -193,7 +196,10 @@ _consensus/consensus.h_ contains a number of `static const` values relating to c
 These are globally shared between files such as _validation.cpp_, _rpc_mining.cpp_ and _rpc/mining.cpp_.
 These consensus-critical values are marked as `const` so that there is no possibility that they can be changed at any point during program execution.
 
+[TIP]
+====
 There are other values in the codebase (not contained within this file) that are consensus-critical -- can you find any?
+====
 
 == Transaction validation
 
@@ -707,10 +713,9 @@ Practical question on Merkle root calculation::
 TODO, add exercise
 
 // == Removed text
-// 
+//
 // The outline of the mechanism at work is that a node relaying a transaction can slightly modify the signature in a way which is still acceptable to the underlying OpenSSL module.
 // Once the signature has been changed, the transaction ID (hash) will also change.
 // If the modified transaction is then included in a block, before the original, the effect is that the sender will still see the outgoing transaction as "unconfirmed" in their wallet.
 // The sender wallet should however also see the accepted (modified) outgoing transaction, so their balance will be calculated correctly, only a "stuck doublespend" will pollute their wallet.
 // The receiver will not perceive anything unordinary, unless they were tracking the incoming payment using the txid as given to them by the sender.
-
