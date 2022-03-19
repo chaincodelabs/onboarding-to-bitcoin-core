@@ -179,7 +179,14 @@ This process of codebase "archaeology" will prove invaluable in the future when 
 ==  Codebase archaeology
 
 When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally, if possible.
-One of the best ways to do this is by using a combination of git tools -- `git blame`, `git log -S`, and less commonly `git log -G` -- and the discussions on GitHub.
+One of the best ways to do this is by using a combination of git tools:
+
+- `git blame`
+- `git log -S`
+- `git log -G`
+- `git log -p`
+
+and the discussions on GitHub.
 
 === git blame
 
@@ -266,6 +273,20 @@ Date:   Mon Mar 29 11:36:19 2021 +0100
 ----
 
 We learn now that John also originally added this to _net.{cpp|h}_, before later moving it into _net_processing.{cpp|h}_ as part of a push to separate out `addr` relay data and logic from _net.cpp_.
+
+=== git log -p
+
+`git log -p` (usually also given with a file name argument) follows each commit message with a _patch_ (diff)
+of the changes made by that commit to that file (or files).
+This is similar to `git blame` except that `git blame` shows the source of only lines _currently_ in the file.
+
+=== git log --follow _file..._
+
+One of the most famous https://github.com/bitcoin/bitcoin/pull/9260[file renames] was _src/main.{h,cpp}_ to _src/validation.{h,cpp}_ in 2016.
+If you simply run `git log src/validation.h`, the oldest displayed commit is one that did the rename.
+`git log --follow src/validation.h` will show the same recent commits followed by the older _src/main.h_ commits.
+
+To see the history of a file that's been removed, specify ` -- ` before the file name, such as `git log -- some_removed_file.cpp`.
 
 === PR discussion
 
