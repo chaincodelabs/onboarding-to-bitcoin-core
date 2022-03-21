@@ -102,8 +102,11 @@ bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, co
 ----
 ====
 
+[TIP]
+====
 Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
 In what circumstances might it not make sense?
+====
 Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
 
 == Database consensus
@@ -190,7 +193,10 @@ _consensus/consensus.h_ contains a number of `static const` values relating to c
 These are globally shared between files such as _validation.cpp_, _rpc_mining.cpp_ and _rpc/mining.cpp_.
 These consensus-critical values are marked as `const` so that there is no possibility that they can be changed at any point during program execution.
 
+[TIP]
+====
 There are other values in the codebase (not contained within this file) that are consensus-critical -- can you find any?
+====
 
 == Transaction validation
 
