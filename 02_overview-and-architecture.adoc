@@ -71,6 +71,64 @@ Don't forget to also pass the signet option to `bitcoin-cli` if using it to cont
 Instructions on how to setup your own Signet network can be found in the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/master/contrib/signet/README.md[Signet README.md].
 The https://en.bitcoin.it/wiki/Signet[Bitcoin wiki Signet page] provides additional background on Signet.
 
+== Regtest testing network
+
+Another test network is _regtest_, which stands for _regression test_.
+This mode is enabled by starting bitcoind with the `-regtest` option.
+This is an entirely self-contained mode, giving you complete control of the state of the blockchain.
+Blocks can be mined instantly, and only explicitly.
+
+The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests] use this mode, but you can run it manually.
+It provides a good means to learn and experiment.
+It's often run with a single node but may be run with multiple co-located (local) nodes (most of the functional tests do this).
+The blockchain initially contains only the genesis block.
+Here's an example session (after you've built `bitcoind` and `bitcoin-cli`):
+
+[source,bash,options="nowrap"]
+----
+$ mkdir /tmp/regtest-datadir
+$ src/bitcoind -regtest -daemon -datadir=/tmp/regtest-datadir
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
+{
+  "chain": "regtest",
+  "blocks": 0,
+  "headers": 0,
+  "bestblockhash": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206",
+  _(...)_
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir createwallet testwallet
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir generate 3
+{
+  "address": "bcrt1qpw3pjhtf9myl0qk9cxt54qt8qxu2mj955c7esx",
+  "blocks": [
+    "6b121b0c094b5e107509632e8acade3f6c8c2f837dc13c72153e7fa555a29984",
+    "5da0c549c3fddf2959d38da20789f31fa7642c3959a559086436031ee7d7ba54",
+    "3210f3a12c25ea3d8ab38c0c4c4e0d5664308b62af1a771dfe591324452c7aa9"
+  ]
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
+{
+  "chain": "regtest",
+  "blocks": 3,
+  "headers": 3,
+  "bestblockhash": "3210f3a12c25ea3d8ab38c0c4c4e0d5664308b62af1a771dfe591324452c7aa9",
+  _(...)_
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getbalances
+{
+  "mine": {
+    "trusted": 0.00000000,
+    "untrusted_pending": 0.00000000,
+    "immature": 150.00000000
+  }
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir stop
+----
+
+Monitor `/tmp/regtest-datadir/regtest/debug.log` to see what `bitcoind` is doing.
+You may stop and restart the node and it will use the existing state.
+(Simply remove the data directory to start again from scratch.)
+
 == BIPs
 
 Bitcoin uses Bitcoin Improvement Proposals (BIPs) as a design document for introducing new features or behaviour into bitcoin.
