@@ -78,13 +78,14 @@ This mode is enabled by starting bitcoind with the `-regtest` option.
 This is an entirely self-contained mode, giving you complete control of the state of the blockchain.
 Blocks can be mined instantly, and only explicitly.
 
-The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests]
-use this mode, but you can run it manually. It provides a good means to learn and
-experiment. It's often run with a single node but may be run with multiple co-located (local)
-nodes (most of the functional tests do this). The blockchain initially contains only the genesis block.
+The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests] use this mode, but you can run it manually.
+It provides a good means to learn and experiment.
+It's often run with a single node but may be run with multiple co-located (local) nodes (most of the functional tests do this).
+The blockchain initially contains only the genesis block.
 Here's an example session (after you've built `bitcoind` and `bitcoin-cli`):
 
 [source,bash,options="nowrap"]
+----
 $ mkdir /tmp/regtest-datadir
 $ src/bitcoind -regtest -daemon -datadir=/tmp/regtest-datadir
 $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
@@ -122,6 +123,7 @@ $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getbalances
   }
 }
 $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir stop
+----
 
 Monitor `/tmp/regtest-datadir/regtest/debug.log` to see what `bitcoind` is doing.
 You may stop and restart the node and it will use the existing state.
