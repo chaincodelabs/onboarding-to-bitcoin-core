@@ -354,9 +354,9 @@ Once the wallet component is started and any wallets supplied via argument have 
 The wallet can be controlled using `bitcoin-cli` or `bitcoin-qt` GUI, and wallet files can be interacted with using the stand-alone `bitcoin-wallet` tool.
 
 Both `bitcoind` and `bitcoin-qt` run a (JSON) RPC server which is ready to service, amongst other things, commands to interact with wallets.
-The command line tool `bitcoin-cli` will allow interaction of any RPC server started by either `bitcoin` or `bitcoin-qt`.
+The command line tool `bitcoin-cli` will allow interaction of any RPC server started by either `bitcoind` or `bitcoin-qt`.
 
-TIP: If using `bitcoin-qt` there is also an RPC console built into the GUI.
+TIP: If using `bitcoin-qt` there is also an RPC console built into the GUI or you can run with `-server=1` to allow access via `bitcoin-cli`.
 
 If using the `bitcoin-qt` GUI itself then communication with the wallet is done directly via qt's https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/qt/walletmodel.h#L50-L242[`WalletModel` interface].
 
@@ -722,7 +722,7 @@ Below is a section of the `AvailableCoins()` function which illustrates availabl
 
 [NOTE]
 ====
-If a `SigningProvider` is found a second check is performed: to see if the coin is "spendable" by calling `IsSolvable()`.
+If a `SigningProvider` is found a second check is performed: to see if the coin is "solvable" by calling `IsSolvable()`.
 
 Whilst `getSolvingProvider()` might return a `SigningProvider` (read: SPKM), not all SPKMs will be able to provide *private* key data needed for signing transactions, e.g. in the case of a watch-only wallet.
 ====
