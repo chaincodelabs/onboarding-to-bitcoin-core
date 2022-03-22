@@ -75,7 +75,7 @@ It turns out that it's possible for a spy node to easily scrape the full content
 The spy just has to connect to a victim node multiple times and execute `GETADDR`.
 This scraped data can then be used to infer private information about the victim.
 
-For example, a spy can monitor the victim's `AddrMan` content in real time and figure out which peers a node is connected to. 
+For example, a spy can monitor the victim's `AddrMan` content in real time and figure out which peers a node is connected to.
 A spy can also compare the `AddrMan` content from two different connections (e.g. one identified by Tor address and one identified by IPv4) and figure out that it's actually the same physical node.
 
 https://github.com/bitcoin/bitcoin/pull/18991[PR#18991] is a first step towards fixing these privacy issues.
@@ -106,11 +106,11 @@ Many techniques exist to help users obfuscate their IP address when submitting t
 Beyond initial broadcast, _rebroadcast_ behaviour can also leak information.
 If a node rebroadcasts its own wallet transactions differently from transactions received from its peers, adversaries can use this information to infer transaction origins even if the initial broadcast revealed nothing.
 
-===== Rebroadcast project 
+===== Rebroadcast project
 
 The rebroadcast project's goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
 
-https://github.com/bitcoin/bitcoin/pull/21061[PR#21061] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast. 
+https://github.com/bitcoin/bitcoin/pull/21061[PR#21061] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
 After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
 
 Rebroadcasts happen once per new block.
@@ -158,14 +158,14 @@ That vector is updated and accessed by various nodes, including:
 Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1139[cs_vNodes].
 
 // For operations that are done on each connection in turn (e.g. reading from each socket in the socket handler thread, or passing messages to net_processing in the message handler thread), the common pattern is to:
-// 
+//
 // . lock `cs_vNodes`
 // . make a copy of the `vNodes` vector
 // . for each `CNode` object, increment an internal https://github.com/bitcoin/bitcoin/blob/92758699/src/net.h#L454[nRefCount] atomic counter.
 // . release `cs_vNodes`
 // . operate on each of the `CNode` objects in the `vNodes` copy in turn
 // . decrement the `nRefCount` counter for each `CNode`
-// 
+//
 // This PR proposes to extract that pattern into an https://en.cppreference.com/w/cpp/language/raii[RAII] object called `NodesSnapshot`.
 // It also changes the order of some logic in the socket handler thread.
 // The motivation is to reduce https://stackoverflow.com/questions/1970345/what-is-thread-contention[lock contentions].
@@ -319,7 +319,7 @@ unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
 
 TODO: describe connecting to hardcoded seeds after 6 minutes if still `addrman == 0`.
 
-== P2P message encryption 
+== P2P message encryption
 
 P2P messages are currently all unencrypted which can potentially open up vulnerabilities: https://gist.github.com/jonasschnelli/c530ea8421b8d0e80c51486325587c52
 
@@ -377,7 +377,7 @@ https://github.com/bitcoin/bitcoin/pull/18806[PR#18806] removed those `isFull` a
 == Blocksonly relay
 
 After a block is mined it is broadcast to the p2p network where it will eventually be relayed to all nodes on the network.
-There are two methods available for relaying blocks: 
+There are two methods available for relaying blocks:
 
 . *Legacy Relay*
 ** A node participating in legacy relaying will always send or request entire blocks.
@@ -431,7 +431,7 @@ Since https://github.com/bitcoin/bitcoin/pull/20079[PR#20079] we now treat hands
 
 == Testing P2P changes
 
-It can be very difficult to test P2P changes as tooling and functional tests for them lacking.
+It can be challenging to test P2P changes as tooling and functional tests are lacking.
 Often devs simply setup a new node with the patch and leave it for some time!?
 
 Is there fuzzing for P2P messages yet?
