@@ -276,8 +276,7 @@ We learn now that John also originally added this to _net.{cpp|h}_, before later
 
 === git log -p
 
-`git log -p` (usually also given with a file name argument) follows each commit message with a _patch_ (diff)
-of the changes made by that commit to that file (or files).
+`git log -p` (usually also given with a file name argument) follows each commit message with a _patch_ (diff) of the changes made by that commit to that file (or files).
 This is similar to `git blame` except that `git blame` shows the source of only lines _currently_ in the file.
 
 === git log --follow _file..._
