@@ -10,7 +10,7 @@ TIP: The version of BDB we used for the wallet is unmaintained, so all new walle
 
 == Wallet architecture
 
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets. 
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets.
 
 === Separation of wallet and node functionality
 
@@ -367,7 +367,7 @@ Commands which can be used to control the wallet via RPC are listed in https://g
 If we take a look at the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L2562-L2620[`loadwallet` RPC] we can see similarities to ``WalletClientImpl``'s `LoadWallets()` function.
 
 However this time the function will check the `WalletContext` to check that we have a wallet context (in this case a reference to a chain interface) loaded.
-Next it will call https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L237-L248[`wallet.cpp#LoadWallet`] which starts by grabbing `g_wallet_loading_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L207-L234[`LoadWalletInternal`] which adds the wallet to `vpwallets` and sets up various event notifications.
+Next it will call https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L237-L248[`wallet.cpp#LoadWallet`] which starts by grabbing `g_loading_wallet_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L207-L234[`LoadWalletInternal`] which adds the wallet to `vpwallets` and sets up various event notifications.
 
 .src/wallet/rpcwallet.cpp#loadwallet()
 [source, cpp]
@@ -874,4 +874,4 @@ Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not i
 ** Adaptor signatures
 * Multiwallet
 * Hardware wallet interface (HWI)
-* QT 
+* QT
