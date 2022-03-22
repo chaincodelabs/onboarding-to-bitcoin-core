@@ -431,7 +431,7 @@ Since https://github.com/bitcoin/bitcoin/pull/20079[PR#20079] we now treat hands
 
 == Testing P2P changes
 
-It can be very difficult to test P2P changes as tooling and functional tests for them lacking.
+It can be challenging to test P2P changes as tooling and functional tests are lacking.
 Often devs simply setup a new node with the patch and leave it for some time!?
 
 Is there fuzzing for P2P messages yet?
