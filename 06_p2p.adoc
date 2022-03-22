@@ -91,8 +91,11 @@ We don't want to reveal the exact contents of our mempool or the precise timing 
 https://github.com/bitcoin/bitcoin/pull/18861[PR#18861] improved transaction-origin privacy.
 The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
 The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
-While this helps in many cases, it is an imperfect heuristic.
-Why is this?
+
+[TIP]
+====
+While this helps in many cases, why is it still an imperfect heuristic?
+====
 
 https://github.com/bitcoin/bitcoin/pull/19109[PR#19109] further reduces the possible attack surface.
 It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
@@ -434,7 +437,10 @@ Since https://github.com/bitcoin/bitcoin/pull/20079[PR#20079] we now treat hands
 It can be challenging to test P2P changes as tooling and functional tests are lacking.
 Often devs simply setup a new node with the patch and leave it for some time!?
 
+[TIP]
+====
 Is there fuzzing for P2P messages yet?
+====
 
 === Testing transaction and block relay under SegWit
 
