@@ -24,7 +24,7 @@ The primary mempool object itself is initialised onto the node in _init.cpp_ as 
 The mempool constructor:
 
 .txmempool.h
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
 class CTxMemPool
 {
@@ -46,7 +46,7 @@ public:
 And the initialisation from _init.cpp_:
 
 .init.cpp#AppInitMain()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     assert(!node.mempool);
     int check_ratio = std::min<int>(std::max<int>(args.GetArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
@@ -65,7 +65,7 @@ Sanity checking here refers to checking the consistency of the entire mempool ev
 If a mempool from a previous program run exists (saved in `mempool.dat`), "Step 11" of `AppInitMain()` in _init.cpp_, "import blocks" calls the following to load the mempool from disk:
 
 .init.cpp#AppInitMain()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     chainman.m_load_block = std::thread(&TraceThread<std::function<void()>>, "loadblk", [=, &chainman, &args] {
         ThreadImport(chainman, vImportFiles, args);
@@ -82,7 +82,7 @@ First we read the version and count of serialised transactions to follow, then w
 A note that upon loading we test each transaction for expiry before loading to the in-memory mempool model:
 
 .validation.cpp#LoadMempool()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     if (nTime > nNow - nExpiryTimeout) {
         LOCK(cs_main);
@@ -128,7 +128,7 @@ See <<Transaction format in the mempool>> for more information on what data coun
 When the node is shut down its mempool is (by default) persisted to disk called from `init.cpp#Shutdown()`:
 
 .init.cpp#Shutdown()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     if (node.mempool && node.mempool->IsLoaded() && node.args->GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
         DumpMempool(*node.mempool);
@@ -141,7 +141,7 @@ A pointer to the mempool object is passed to `DumpMempool()`, which begins by lo
 Information on each transaction is stored in a vector of `CTxMempoolInfo` objects called `vinfo`.
 
 .validation.cpp#DumpMempool()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool skip_file_commit)
 {
@@ -170,7 +170,7 @@ Afterwards we loop through `vinfo` writing the transaction, the time it entered 
 Finally, any transactions remaining in `mapDeltas`, which is now effectively the set of unbroadcasted transactions, are appended to the file.
 
 .validation.cpp#DumpMempool()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     // ...
     try {
@@ -205,7 +205,7 @@ We are able to write (and later read) `mapDeltas` to the file only using the `<<
 This is due to the operator overload on the `CAutoFile` class found in _streams.h_:
 
 .streams.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 /**
  * map
@@ -246,7 +246,7 @@ Finally, if writing the elements to the temporary file was successful, we close 
 A lot of the mempool magic -- how fee-efficient block templates can be swiftly generated from chains of potentially-complex transactions -- comes down to ``CTxMempool``'s special `boost::multi_index` `maptx` which is able to natively store transactions in an index against multiple criteria, as described in the https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/index.html[documentation] and code comments:
 
 .txmempool.h#CTxMempool
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
 
 /*
@@ -311,7 +311,7 @@ This is because `ancestor_score`, or in other words the fee:weight ratio of a pa
 From the docs:
 
 .miner.cpp#BlockAssembler::addPackageTxs()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 // This transaction selection algorithm orders the mempool based
 // on feerate of a transaction including all unconfirmed ancestors.
@@ -321,7 +321,7 @@ From the docs:
 Finally the default, and untagged, sort field of the index, which is using the https://www.boost.org/doc/libs/1_62_0/libs/multi_index/doc/reference/hash_indices.html#unique_non_unique[hashed_unique] sort, hashing the transaction ID using Bitcoin Core's implementation of the SipHash hasher for TXIDs:
 
 .util/hasher.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 class SaltedTxidHasher
 {
@@ -347,7 +347,7 @@ This includes adding and removing transactions from the mempool, requesting and 
 They store not only transaction information, but also pre-computed information about ancestors.
 
 .txmempool.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 
 class CTxMemPoolEntry
@@ -412,7 +412,7 @@ In all cases, the transaction is submitted to the mempool through AcceptToMemory
 For a transaction received over the P2P protocol, the call to ATMP is found in _net_processing.cpp_:
 
 .net_processing.cpp
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
     // ...
 

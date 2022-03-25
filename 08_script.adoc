@@ -61,7 +61,7 @@ We begin by initialising a new `CMutableTransaction` which we will use to build 
 We use the mutable version of the transaction object as transaction assembly might require adding or removing inputs to satisfy fee constraints, as well as re-ordering of in- and outputs to throw off heuristics related to change addresses.
 
 .primitives/transaction.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 /** A mutable version of CTransaction. */
 struct CMutableTransaction
@@ -76,7 +76,7 @@ struct CMutableTransaction
 
 Next we create a vector of ``COutput``s (UTXOs) available for the wallet to select from as transaction inputs, followed by creating a vector of ``CRecipient``s to use as the transaction outputs, which notably includes the `scriptPubKey` for each recipient:
 
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 struct CRecipient
 {
@@ -95,7 +95,7 @@ For each recipient we then create a new `CTxOut` object with the `amount` and `s
 If coin selection is not being used (manual selection of input coins), we select coins to reach the required `amount` from our vector of ``COutput``s (UTXOs) and add them to a set of ``CInputCoin``s.
 
 .wallet/coinselection.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 class CInputCoin {
 public:
@@ -117,7 +117,7 @@ In order to have our `{Descriptor|Legacy}ScriptPubKeyMan` sign the transaction, 
 We generate this mapping inside `CWallet::SignTransaction()` which, when called with a `CMutableTransaction` as argument, begins by iterating the vector of ``vin``s in the transaction, using `mapWallet.find()` to locate the previous transaction and return it as a `CWalletTx`, which we use to initialise each `Coin`.
 
 .src/wallet/wallet.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool CWallet::SignTransaction(CMutableTransaction& tx) const
 {
@@ -143,7 +143,7 @@ This has the effect of trying to sign each coin with all available ScriptPubKeyM
 This is actioned by calling `CWallet::SignTransaction()` again, this time including the coin map and sighash type as arguments which calls a different function `SignTransaction()` specialization:
 
 .src/wallet/wallet.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const
 {
@@ -164,7 +164,7 @@ bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint,
 The ScriptPubKeyMan will first collect the relevant keys for each coin into a `FlatSigningProvider` and will call `script/sign.cpp#SignTransaction()` on the transaction, passing along the `FlatSigningProvider`.
 
 ./wallet/scriptpubkeyman.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool DescriptorScriptPubKeyMan::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const
 {
@@ -188,7 +188,7 @@ bool DescriptorScriptPubKeyMan::SignTransaction(CMutableTransaction& tx, const s
 The critical section of the `SignTransaction()` loop is shown below:
 
 .src/script/sign.cpp#SignTransaction()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     for (unsigned int i = 0; i < mtx.vin.size(); i++) {
         CTxIn& txin = mtx.vin[i];
@@ -213,7 +213,7 @@ The Pubkey and amount for each coin are retrieved, along with signature data for
 `DataFromTransaction()` returns all the information needed to produce a signature for that coin as a `SignatureData` struct:
 
 .src/script/sign.h#SignatureData
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 // This struct contains information from a transaction input and also contains signatures for that input.
 // The information contained here can be used to create a signature and is also filled by ProduceSignature
@@ -247,7 +247,7 @@ Inputs by default will signed with a sighash of `SIGHASH_ALL`, but this can be r
 Taking a look inside `ProduceSignature()` we can see how this works.
 
 .src/script/sign.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool ProduceSignature(const SigningProvider& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
 {
@@ -270,7 +270,7 @@ The function performs some initialisations before calling `script/sign.cpp#SignS
 If it is successful, `SignStep` continues by switching over the script type and, depending on the script type, calling the required signing operation and pushing the required elements onto the `sigdata` variable.
 
 .script/sign.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 static bool SignStep(const SigningProvider& provider, const BaseSignatureCreator& creator, const CScript& scriptPubKey,
                      std::vector<valtype>& ret, TxoutType& whichTypeRet, SigVersion sigversion, SignatureData& sigdata)
@@ -310,7 +310,7 @@ TIP: This recursion makes sense if you consider that, in order to sign for these
 We can see this switch in `ProduceSignature()`:
 
 .src/script/sign.cpp#ProduceSignature()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     if (solved && whichType == TxoutType::SCRIPTHASH)
     {
@@ -390,7 +390,7 @@ There are a number of other ways which scripts can fail TODO
 In order to sign for a script we are going to call `SignTransaction()` which has the following signature:
 
 .script/sign.cpp#SignTransaction()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool SignTransaction(CMutableTransaction& mtx, const SigningProvider* keystore, const std::map<COutPoint, Coin>& coins, int nHashType, std::map<int, std::string>& input_errors)
 ----
@@ -404,7 +404,7 @@ This is achieved internally by looping over each coin selected as input, setting
 The remainder of the loop then verifies the produced signature using the cached version of the `CTransaction`, `txConst` so as not to repeat potentially expensive signature calculations.
 
 .script/sign.cpp#SignTransaction()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
     // ...
 
@@ -468,7 +468,7 @@ Not every input will be signed for during this loop -- an obvious example would 
 Have a descriptor cache for descriptors in _src_script_descriptor.h_:
 
 .src/script/descriptor.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 
 /** \brief Interface for parsed descriptor objects.
@@ -500,7 +500,7 @@ _src/script/interpreter.h_
 `BaseSignatureChecker` class is used to check signatures and has functions for the various different signature types allowed:
 
 .src/script/interpreter.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 class BaseSignatureChecker
 {

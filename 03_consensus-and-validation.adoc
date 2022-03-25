@@ -19,7 +19,7 @@ This effectively meant that a transactions ID (txid) could be changed, because t
 ====
 
 .src/pubkey.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 /** This function is taken from the libsecp256k1 distribution and implements
  *  DER parsing for ECDSA signatures, while supporting an arbitrary subset of
@@ -58,7 +58,7 @@ This was carried out in https://github.com/bitcoin/bitcoin/pull/2520[PR#2520].
 We can see the resulting flag in the script verification enum:
 
 .src/script/interpreter.h
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 // Passing a non-strict-DER signature or one with undefined hashtype to a checksig operation causes script failure.
 // Evaluating a pubkey that is not (0x04 + 64 bytes) or (0x02 or 0x03 + 32 bytes) by checksig causes script failure.
@@ -70,7 +70,7 @@ SCRIPT_VERIFY_STRICTENC = (1U << 1),
 [%collapsible]
 ====
 
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror) {
     // Empty signature. Not strictly DER encoded, but allowed to provide a
@@ -246,7 +246,7 @@ First we run https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4ed
 Since https://github.com/bitcoin/bitcoin/pull/23381[PR#23381] checks on BIP125 Replace By Fee (RBF) replacement transactions have been moved out into their own check function, `ReplacementChecks()`, which is still called from within `AcceptSingleTransaction()`:
 
 .src/validation.cpp#MemPoolAccept::AcceptSingleTransaction()
-[source,cpp,highlight=10]
+[source,cpp,highlight=10,options=nowrap]
 ----
 MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
 {
@@ -283,7 +283,7 @@ This function is called when a new transaction is learned about before we add it
 This means that it gets called both from _src/net_processing.cpp_ when we hear about new transactions from the p2p network, and by _node/transaction.cpp_ when we are trying to send one of our own transactions.
 
 .src/validation.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
 {
@@ -334,7 +334,7 @@ Once `AcceptSingleTransaction` has acquired the `cs_main` and  `m_pool.cs` locks
 [%collapsible]
 ====
 .src/txmempool.h#CTxMemPool
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 /**
  * This mutex needs to be locked when accessing `mapTx` or other members
@@ -370,7 +370,7 @@ mutable RecursiveMutex cs;
 The `Workspace` struct is initialised with a pointer to the transactions' `CTransactionRef` and holds the following additional information:
 
 .src/validation.cpp#MemPoolAccept::Workspace
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 struct Workspace {
     explicit Workspace(const CTransactionRef& ptx) : m_ptx(ptx), m_hash(ptx->GetHash()) {}
@@ -395,7 +395,7 @@ struct Workspace {
 We can look at ATMPArgs to see what other information our mempool wants to know about in addition to transaction information.
 
 .src/validation.cpp#MemPoolAccept::ATMPArgs
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 struct ATMPArgs {
     const CChainParams& m_chainparams;
@@ -419,7 +419,7 @@ struct ATMPArgs {
 This gets used during the mempool transaction eviction selection process as part of `CTxMemPool::Expire()` (where it is referenced by the name `entry_time`):
 
 .src/txmempool.cpp#CTXMemPool::Expire()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 int CTxMemPool::Expire(std::chrono::seconds time)
 {
@@ -449,7 +449,7 @@ This happens when we want to broadcast one of our own transactions, done by call
 The code comments for `PreChecks` give a good indication of what the PreChecks are for:
 
 .src/validation.cpp#MemPoolAccept::PreChecks()
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 // Run the policy checks on a given transaction, excluding any script checks.
 // Looks up inputs, calculates feerate, considers replacement, evaluates
@@ -467,7 +467,7 @@ Following PreChecks we initialise a `PrecomputedTransactionData` struct which wi
 [%collapsible]
 ====
 .script/interpreter.cpp
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 struct PrecomputedTransactionData
 {
@@ -514,7 +514,7 @@ See the <<Transaction validation>> and <<Consensus in Bitcoin Core>> sections fo
 `PolicyScriptChecks()` starts with some initialisation of the transaction into a `CTransaction`, before beginning to check the input scripts against the script flags.
 
 .src/validation.cpp#PolicyScriptChecks
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws, PrecomputedTransactionData& txdata)
 {
@@ -559,7 +559,7 @@ If the coin is not already spent, we reference it from either the UTXO set or ou
 [%collapsible]
 ====
 .src/validation.cpp#CheckInputsFromMempoolAndCache
-[source,cpp]
+[source,cpp,options=nowrap]
 ----
 /**
 * Checks to avoid mempool polluting consensus critical paths since cached

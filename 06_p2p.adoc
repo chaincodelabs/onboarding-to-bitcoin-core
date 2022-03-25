@@ -178,7 +178,7 @@ Since the vector can be updated by multiple threads, it is guarded by a mutex ca
 `CConnman::Start()` will first attempt to bind to any specified bind (and whitebind) addresses (and onion services), along with optional i2p interface setup:
 
 .src/net.cpp#CConnman::Start
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
     if (fListen && !InitBinds(connOptions.vBinds, connOptions.vWhiteBinds, connOptions.onion_binds)) {
         if (clientInterface) {
@@ -200,7 +200,7 @@ Next we add any addresses supplied via the `-seednode` argument, and then load a
 `anchors.dat` will be empty on first run but if we are later happy with our connection to the bitcoin network (and have a clean shutdown) our two outbound block-relay-only peers will be saved in this file to aid in connectivity on subsequent program runs.
 
 .src/net.cpp#CConnman::Start
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
     for (const auto& strDest : connOptions.vSeedNodes) {
         AddAddrFetch(strDest);
@@ -234,7 +234,7 @@ Next we add any addresses supplied via the `-seednode` argument, and then load a
 Because the networking segment of the code is multi-threaded, two `CSemaphores` are setup next which control the number of connections being made by the node.
 
 .src/net.cpp#CConnman::Start
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
     if (semOutbound == nullptr) {
         // initialize semaphore
@@ -249,7 +249,7 @@ Because the networking segment of the code is multi-threaded, two `CSemaphores` 
 After this we get to the primary thread initialisation.
 
 .src/net.cpp#CConnman::Start
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
     //
     // Start threads
@@ -286,7 +286,7 @@ After this we get to the primary thread initialisation.
 It might appear that DNS seeds are being tried before both manual connections and any addresses found in `peers.dat`, however closer inspection of the 109L function `CConnmann::ThreadDNSAddressSeed` reveals that more than half of those lines are spent trying _not_ to query the DNS seeds, as the rationale in the code comments describes:
 
 .src/net.cpp#CConnman::ThreadDNSAddressSeed
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
 // goal: only query DNS seed if address need is acute
 // * If we have a reasonable number of peers in addrman, spend
@@ -305,7 +305,7 @@ It might appear that DNS seeds are being tried before both manual connections an
 We see in that function if we have > 1000 peers in our `addrman` (`DNSSEEDS_DELAY_PEER_THRESHOLD`) we will sleep for 5 minutes (`DNSSEEDS_DELAY_MANY_PEERS`) before querying the DNS seeds, but if we know about fewer than 1000 peers then we will only sleep for 11 seconds (`DNSSEEDS_DELAY_FEW_PEERS`):
 
 .src/net.cpp#CConnman::ThreadDNSAddressSeed
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
 const std::chrono::seconds seeds_wait_time = (addrman.size() >= DNSSEEDS_DELAY_PEER_THRESHOLD ? DNSSEEDS_DELAY_MANY_PEERS : DNSSEEDS_DELAY_FEW_PEERS);
 ----
@@ -315,7 +315,7 @@ We mitigate this risk by limiting the number of IP addresses addrman learns to 2
 Further down in `ThreadDNSAddressSeed()` we see such a magic number:
 
 .src/net.cpp#CConnman::ThreadDNSAddressSeed
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
 unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
 ----
@@ -331,7 +331,7 @@ P2P messages are currently all unencrypted which can potentially open up vulnera
 Entropy for the RNG is often harvested from network connections:
 
 .src/net.cpp
-[source, cpp]
+[source,cpp,options=nowrap]
 ----
 net.cpp
 488-

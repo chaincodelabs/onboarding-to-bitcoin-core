@@ -206,7 +206,7 @@ $ grep -n m_addr_send_times_mutex src/net_processing.cpp
 4304:    LOCK(peer.m_addr_send_times_mutex);
 ----
 
-[source,bash]
+[source,bash,options=nowrap]
 ----
 $ git blame -L233,233 src/net_processing.cpp
 
@@ -215,7 +215,7 @@ $ git blame -L233,233 src/net_processing.cpp
 
 With this information we can easily look up that commit to gain some additional context:
 
-[source,bash]
+[source,bash,options=nowrap]
 ----
 $ git show 76568a3351
 
@@ -242,7 +242,7 @@ A 'modification' (vs. a 'move') in git parlance implies that there are uneven in
 This implies that this term has either been added or removed in the commit.
 ====
 
-[source,bash]
+[source,bash,options=nowrap]
 ----
 $ git log -S m_addr_send_times_mutex
 ───────────────────────────────────────
@@ -292,7 +292,7 @@ To see the history of a file that's been removed, specify ` -- ` before the file
 To get even more context we can take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
 To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top, e.g.:
 
-[source,bash]
+[source,bash,options=nowrap]
 ----
 $ git log --merges --reverse --oneline --ancestry-path 4ad4abcf07efefafd439b28679dff8d6bbf62943..upstream | head -n 1
 
