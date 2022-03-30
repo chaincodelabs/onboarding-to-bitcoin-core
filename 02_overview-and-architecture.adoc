@@ -131,37 +131,29 @@ You may stop and restart the node and it will use the existing state.
 
 === Manual testing while running a function test
 
-Running regtest as described allows you to start from scratch
-with an empty chain, empty wallet, no existing state.
-A particularly effective alternate way to use regtest is to start a
-https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test],
-and cause it to pause during execution (after it's created various state),
-and then interact with the test using `bitcoin-cli` as described above.
-Add `import time; time.sleep(600)` somewhere in a functional test (Python script)
-to suspend the test at that point for 10 minutes. 
+Running regtest as described allows you to start from scratch with an empty chain, empty wallet, and no existing state.
+A particularly effective alternate way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test] and cause it to pause during execution (after it's created various state), and then interact with the test using `bitcoin-cli` as described above.
+Add `import time; time.sleep(600)` somewhere in a functional test (Python script) to suspend the test at that point for 10 minutes.
 
-When the test is paused (you may want to add a `print("paused")` statement
-just before the call to `sleep()` to know it's been reached), find the data
-directory for the nodes, for example:
-```
+When the test is paused (you may want to add a `print("paused")` statement just before the call to `sleep()` to know it's been reached), find the data directory for the nodes, for example:
+
+[source,bash,options=nowrap]
+----
 $ ps alx | grep bitcoind
 0  1000   57478   57476  20   0 1031376 58604 pipe_r SLl+ pts/10    0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 -logtimemicros -debug (...)
 0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
-```
-You can look at the `bitcoin.conf` files within the data directories to
-see what other config options are being specified (there's always `-regtest=1`),
-which is a good way to learn advanced uses of regtest.
+----
+
+You can look at the `bitcoin.conf` files within the data directories to see what other config options are being specified (there's always `-regtest=1`), which is a good way to learn advanced uses of regtest.
 Now you can submit RPC requests to a specific node, for example:
-```
+
+[source,bash,options=nowrap]
+----
 $ src/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchaininfo
-```
-Another way is to pause execution is to set a breakpoint, either by using a
-Python debugger, or by adding `import pdb; pdb.set_trace()` at the desired stopping
-point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt,
-at which you can type `help` and see and do all kinds of useful things.
-This has the further advantage (over calling `sleep()`) that you can single-step
-through the test while also manually interacting with the nodes,
-combining automated and manual testing.
+----
+
+Another way to pause execution is to set a breakpoint, either by using a Python debugger, or by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
+This has the further advantage (over calling `sleep()`) that you can single-step through the test while also manually interacting with the nodes, combining automated and manual testing.
 
 == BIPs
 
