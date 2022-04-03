@@ -82,47 +82,6 @@ https://github.com/bitcoin/bitcoin/pull/18991[PR#18991] was a first step towards
 By limiting (caching) the leaked portion of `AddrMan`, these inference activities became much harder.
 Caching in this context means that the `ADDR` response (which is only a small subset of a node's `AddrMan` content) remains the same for every `GETADDR` call during (roughly) a day.
 
-=== `Tx` privacy
-
-If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
-To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
-We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
-
-https://github.com/bitcoin/bitcoin/pull/18861[PR#18861] improved transaction-origin privacy.
-The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
-The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
-
-[TIP]
-====
-While this helps in many cases, why is it still an imperfect heuristic?
-====
-
-https://github.com/bitcoin/bitcoin/pull/19109[PR#19109] further reduces the possible attack surface.
-It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
-When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
-
-==== Rebroadcasting transactions
-
-Hiding links between wallet addresses and IP addresses is a key part of Bitcoin privacy.
-Many techniques exist to help users obfuscate their IP address when submitting their own transactions, and various P2P changes have been proposed with the goal of hiding transaction origins.
-
-Beyond initial broadcast, _rebroadcast_ behaviour can also leak information.
-If a node rebroadcasts its own wallet transactions differently from transactions received from its peers, adversaries can use this information to infer transaction origins even if the initial broadcast revealed nothing.
-
-===== Rebroadcast project
-
-The rebroadcast project's goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
-
-https://github.com/bitcoin/bitcoin/pull/21061[PR#21061] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
-After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
-
-Rebroadcasts happen once per new block.
-The set of transactions to be rebroadcast is calculated as follows:
-
-* The node regularly estimates the minimum feerate for transactions to be included in the next block, `m_cached_fee_rate`.
-* When a new block arrives, the transactions included in the block are removed from the mempool. The node then uses `BlockAssembler` to calculate which transactions (with a total weight up to 3/4 of the block maximum) from the mempool are more than 30 minutes old and have a minimum feerate of `m_cached_fee_rate`. This results in a set of transactions that our node would have included in the last block.
-* The rebroadcast attempt tracker, `m_attempt_tracker`, tracks how many times and how recently we've attempted to rebroadcast a transaction so that we don't spam the network with re-announcements.
-
 === Addr black holes
 
 We know that some nodes on the network do _not_ relay `addr` messages that they receive.
@@ -142,6 +101,48 @@ The node uses the presence of `m_addr_known` to decide whether the peer is a can
 https://github.com/bitcoin/bitcoin/pull/19031[PR#19031] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155] `addrv2` message, a new p2p message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
 
 The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses], the https://geti2p.net[Invisible Internet Project (I2P)], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
+
+== `Tx` privacy
+
+If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
+To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
+We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
+
+https://github.com/bitcoin/bitcoin/pull/18861[PR#18861] improved transaction-origin privacy.
+The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
+The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
+
+[TIP]
+====
+While this helps in many cases, why is it still an imperfect heuristic?
+====
+
+https://github.com/bitcoin/bitcoin/pull/19109[PR#19109] further reduces the possible attack surface.
+It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
+When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
+
+=== Rebroadcasting transactions
+
+Hiding links between wallet addresses and IP addresses is a key part of Bitcoin privacy.
+Many techniques exist to help users obfuscate their IP address when submitting their own transactions, and various P2P changes have been proposed with the goal of hiding transaction origins.
+
+Beyond initial broadcast, _rebroadcast_ behaviour can also leak information.
+If a node rebroadcasts its own wallet transactions differently from transactions received from its peers, adversaries can use this information to infer transaction origins even if the initial broadcast revealed nothing.
+
+==== Rebroadcast project
+
+The rebroadcast project's goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
+
+https://github.com/bitcoin/bitcoin/pull/21061[PR#21061] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
+After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
+
+Rebroadcasts happen once per new block.
+The set of transactions to be rebroadcast is calculated as follows:
+
+* The node regularly estimates the minimum feerate for transactions to be included in the next block, `m_cached_fee_rate`.
+* When a new block arrives, the transactions included in the block are removed from the mempool. The node then uses `BlockAssembler` to calculate which transactions (with a total weight up to 3/4 of the block maximum) from the mempool are more than 30 minutes old and have a minimum feerate of `m_cached_fee_rate`. This results in a set of transactions that our node would have included in the last block.
+* The rebroadcast attempt tracker, `m_attempt_tracker`, tracks how many times and how recently we've attempted to rebroadcast a transaction so that we don't spam the network with re-announcements.
+
 
 == Connections overview
 
