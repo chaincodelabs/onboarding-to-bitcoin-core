@@ -33,12 +33,19 @@ This fall back functionality is only run as a last resort if all DNS seeds are d
 
 === Addrman
 
+Every time a node hears about another node in the network, it adds/updates a record in its `AddrMan` (Address Manager).
+This is where all the data about nodes in the network is stored, and this is where a `GETADDR` receiver looks to construct an `ADDR` response to the requester.
+
+Addrman has several design goals: We want to have a diverse selection of addresses in order to find good peers to connect to, but also want to be resistant against DOS attacks and
+limit the influence of a single source (so that a single peer cannot monopolize our address database).
+It consists of two tables, the New tables (where new, unverified addresses are stored) and the Tried tables, where only addresses are stored to which the node has made a successful
+outgoing connection at some point in the past.
+
+=== Address relay
+
 The Bitcoin network uses `addr` messages to communicate (node) network addresses.
 See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation] for more details.
 Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
-
-Every time a node hears about another node in the network, it adds/updates a record in its `AddrMan` (Address Manager).
-This is where all the data about nodes in the network is stored, and this is where a `GETADDR` receiver looks to construct an `ADDR` response to the requester.
 
 Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
 When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards those addresses with a timestamp within 10 minutes of the current time to 1 or 2 peers, selected at random.
@@ -65,7 +72,7 @@ If this reveals new blocks, the eviction logic will rotate out an existing block
 If no new blocks are discovered, the connection is closed.
 It's important for this eviction logic to be carefully reviewed.
 
-=== Addrman and eclipse attacks design guide
+==== Addrman and eclipse attacks design guide
 
 The concepts involved in how address-based (eclipse) attacks work, how Bitcoin Core manages and tries connections to new (node) addresses, countermeasures deployed to try and prevent naive eclipse attacks, some partially-deployed countermeasures and currently-open research questions can be found in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks].
 
