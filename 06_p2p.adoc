@@ -51,6 +51,8 @@ Bitcoin Core nodes will periodically self-announce (also known as self-advertise
 When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards those addresses with a timestamp within 10 minutes of the current time to 1 or 2 peers, selected at random.
 If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network. The timestamp condition is there to ensure that the relay of a given address stops after some time.
 
+Since https://github.com/bitcoin/bitcoin/pull/22387[PR#22387], there is a rate limit for address relay, so that addresses from peers that send too many of them are ignored.
+
 === Eclipse attacks
 
 https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse attacks] occur when an adversary is able to isolate a victim's node from the rest of the network.
