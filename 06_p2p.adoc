@@ -334,7 +334,16 @@ TODO: describe connecting to hardcoded seeds after 6 minutes if still `addrman =
 
 == P2P message encryption
 
-P2P messages are currently all unencrypted which can potentially open up vulnerabilities: https://gist.github.com/jonasschnelli/c530ea8421b8d0e80c51486325587c52
+P2P messages are currently all unencrypted which can potentially open up vulnerabilities like:
+
+* Associated metadata in P2P messages may reveal private information.
+* Possibilities for attackers who control the routing infrastructure of the P2P network to censor P2P
+messages since P2P messages can be detected trivially - they always start with a fixed sequence of magic bytes.
+
+https://gist.github.com/dhruv/5b1275751bc98f3b64bcafce7876b489[BIP 324] proposes a new Bitcoin P2P protocol which features transport encryption and slightly lower bandwidth usage.
+
+https://bip324.com[bip324.com] contains a list of all the open PRs and great resources to understand the proposal.
+A visual explanation of how BIP 324 works can be found in this blog - https://github.com/stratospher/blogosphere/blob/main/bip324.md[How to encrypt the P2P protocol?]
 
 === Networking contribution to node RNG entropy
 
