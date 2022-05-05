@@ -2,11 +2,11 @@
 
 == Decentralised development
 
-Olivia Lovenmark and Amiti Uttarwar describe in their blog post https://blog.okcoin.com/2020/09/15/developing-bitcoin/[Developing Bitcoin] how changes to bitcoin follow the pathway from proposal to being merged into the software, and finally adopted by users.
+Olivia Lovenmark and Amiti Uttarwar describe in their https://blog.okcoin.com/2020/09/15/developing-bitcoin/[blog post] "Developing Bitcoin", how changes to bitcoin follow the pathway from proposal to being merged into the software, and finally into voluntary adoption by users choosing to use the software.
 
 == Bitcoin Core development process and documentation
 
-The Bitcoin Core project itself contains two documents of particular interest to contributors:
+The Bitcoin Core project itself contains two documents of particular interest to Contributors:
 
 . https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md[CONTRIBUTING.md] -- How to get started contributing to the project.
 . https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md[developer-notes.md] -- Development guidelines, coding style etc.
@@ -14,35 +14,34 @@ The Bitcoin Core project itself contains two documents of particular interest to
 === Reviews
 
 Jon Atack's article https://jonatack.github.io/articles/how-to-contribute-pull-requests-to-bitcoin-core[How To Contribute Pull Requests To Bitcoin Core] describes some less-obvious requirements that any PR you make might be subjected to during peer review, for example that it needs an accompanying test, or that an intermediate commit on the branch doesn't compile.
-It also describes the uncodified expectation that contributors should not only be writing code, but more importantly be reviewing others' PRs.
+It also describes the uncodified expectation that Contributors should not only be writing code, but perhaps more importantly be providing reviews on other Contributors' PRs.
 Most developers enjoy writing their own code more than reviewing code from others, but the decentralised review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
 
-NOTE: Jon's estimates of  "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon personally feels would be best for the project. Don't be put off submitting a potentially valuable PR just because "you haven't done enough reviews"!
+IMPORTANT: Jon's personal estimates of "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon himself feels would be best for the project. Don't be put off submitting a potentially valuable PR just because "you haven't done enough reviews"!
 
-// TODO: Update link when merged
 // Archived @ https://archive.is/MyohE
-Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/master/review-checklist.md[review checklist] details what a 'good' review might look like along with some examples what she considers good reviews.
-In addition to this, it details how potential reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review themselves.
-Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and needed documentation.
+Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/master/review-checklist.md[review checklist] details what a "good" review might look like, along with some examples of what she personally considers good reviews.
+In addition to this it details how potential Reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review.
+Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and documentation needed.
 
 === Commit messages
 
-When writing commit messages be sure to have read Chris Beams' https://chris.beams.io/posts/git-commit/[How to Write a Git Commit Message] blog post.
+When writing commit messages be sure to have read Chris Beams' "How to Write a Git Commit Message" https://chris.beams.io/posts/git-commit/[blog post].
 As described in CONTRIBUTING.md PRs should be prefixed with the component or area the PR affects.
-Common areas are listed in CONTRIBUTING.md https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request].
-In addition to this, individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.
+Common areas are listed in CONTRIBUTING.md section: https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request].
+Individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.
 
 === Build issues
 
 Some compile-time issues can be caused by an unclean build directory.
-The comments in https://github.com/bitcoin/bitcoin/issues/19330[issue 19330] provide some clarifications and tips on how other contributors clean their directories, as well as some ideas for shell aliases to boost productivity.
+The comments in https://github.com/bitcoin/bitcoin/issues/19330[issue 19330] provide some clarifications and tips on how other Contributors clean their directories, as well as some ideas for shell aliases to boost productivity.
 
 === Debugging Bitcoin Core
 
 // Archived @ https://archive.is/hRExH
-Fabian Jahr has created a guide, https://github.com/fjahr/debugging_bitcoin[Debugging Bitcoin Core], aimed at detailing the ways in which various Bitcoin Core components can be debugged, including the Bitcoin Core binary itself, unit tests, functional tests along with an introduction to core dumps and the Valgrind memory leak detection suite.
+Fabian Jahr has created a https://github.com/fjahr/debugging_bitcoin[guide] on "Debugging Bitcoin Core", aimed at detailing the ways in which various Bitcoin Core components can be debugged, including the Bitcoin Core binary itself, unit tests, functional tests along with an introduction to core dumps and the Valgrind memory leak detection suite.
 
-Of particular note to developers are the configure flags used to build Bitcoin Core without optimisations to permit more effective debugging of the Bitcoin Core binary.
+Of particular note to Developers are the configure flags used to build Bitcoin Core without optimisations to permit more effective debugging of the various resulting binary files.
 
 Fabian has also presented on this topic a number of times:
 
@@ -51,37 +50,61 @@ Fabian has also presented on this topic a number of times:
 
 == Bitcoin Core architecture
 
-lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the bitcoin core onboarding documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
+lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the Bitcoin Core Onboarding Documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
 
-Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality using the document https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions].
+Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality from the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions] document.
 
-James O'Beirne has recorded 3 videos which go into detail on how the codebase is laid out, how the build system works, what devtools there are, as well as what the primary function of many of the files are:
+James O'Beirne has recorded 3 videos which go into detail on how the codebase is laid out, how the build system works, what developer tools there are, as well as what the primary function of many of the files in the codebase are:
 
 . https://www.youtube.com/watch?v=J1Ru8V36z_Y[Architectural tour of Bitcoin Core (part 1 of 3)]
 . https://www.youtube.com/watch?v=RVWcUnpZX4E[Architectural tour of Bitcoin Core (part 2 of 3)]
 . https://www.youtube.com/watch?v=UiD5DZU9Zp4[Architectural tour of Bitcoin Core (part 3 of 3)]
 
+== Test networks
+
+Three types of test network are available:
+
+1. Testnet
+1. Regtest
+1. Signet
+
+These three networks all use coins of zero value, so can be used experimentally.
+
+They primary differences between the networks are as follows:
+
+|          Feature          |            Testnet             |            Regtest            |                Signet                 |
+|---------------------------|--------------------------------|-------------------------------|---------------------------------------|
+| Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorised signers     |
+| Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins) |
+| P2P port                  | 18333                          | 18443                         | 38333                                 |
+| RPC port                  | 18332                          | 18442                         | 38332                                 |
+| Peers                     | Public                         | None                          | Public                                |
+| Topology                  | Organic                        | Manual                        | Organic                               |
+| Chain birthday            | 2011-02-02                     | At time of use                | 2020-09-01                            |
+| Can initiate re-orgs      | If Miner                       | Yes                           | No                                    |
+| Primary use               | Networked testing              | Automated integration tests   | Networked testing                     |
+
 == Signet testing network
 
-Signet is both a tool that allows developers to create their own networks for testing interactions between different Bitcoin software and the name of the most popular of these public testing networks.
+Signet is both a tool that allows Developers to create their own networks for testing interactions between different Bitcoin software, and the name of the most popular of these public testing networks.
 Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP 325].
 
 To connect to the "main" Signet network, simply start bitcoind with the signet option, e.g. `bitcoind -signet`.
-Don't forget to also pass the signet option to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet`.
-Instructions on how to setup your own Signet network can be found in the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/master/contrib/signet/README.md[Signet README.md].
-The https://en.bitcoin.it/wiki/Signet[Bitcoin wiki Signet page] provides additional background on Signet.
+Don't forget to also pass the signet option to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet your_command_here`.
+Instructions on how to setup your own Signet network can be found in the Bitcoin Core Signet https://github.com/bitcoin/bitcoin/tree/master/contrib/signet/README.md[README.md].
+The Bitcoin wiki Signet https://en.bitcoin.it/wiki/Signet[page] provides additional background on Signet.
 
 == Regtest testing network
 
-Another test network is _regtest_, which stands for _regression test_.
-This mode is enabled by starting bitcoind with the `-regtest` option.
+Another test network named _regtest_, which stands for _regression test_, is also available.
+This network is enabled by starting bitcoind with the `-regtest` option.
 This is an entirely self-contained mode, giving you complete control of the state of the blockchain.
 Blocks can be mined instantly, and only explicitly.
 
 The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests] use this mode, but you can run it manually.
-It provides a good means to learn and experiment.
+It provides a good means to learn and experiment on your own terms.
 It's often run with a single node but may be run with multiple co-located (local) nodes (most of the functional tests do this).
-The blockchain initially contains only the genesis block.
+The blockchain initially contains only the genesis block, so you need to mine >100 blocks in order to have any spendable coins from a coinbase transaction.
 Here's an example session (after you've built `bitcoind` and `bitcoin-cli`):
 
 [source,bash,options="nowrap"]
@@ -129,7 +152,7 @@ Monitor `/tmp/regtest-datadir/regtest/debug.log` to see what `bitcoind` is doing
 You may stop and restart the node and it will use the existing state.
 (Simply remove the data directory to start again from scratch.)
 
-=== Manual testing while running a function test
+=== Manual testing while running a functional test
 
 Running regtest as described allows you to start from scratch with an empty chain, empty wallet, and no existing state.
 A particularly effective alternate way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test] and cause it to pause during execution (after it's created various state), and then interact with the test using `bitcoin-cli` as described above.
@@ -153,14 +176,14 @@ $ src/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchainin
 ----
 
 Another way to pause execution is to set a breakpoint, either by using a Python debugger, or by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
-This has the further advantage (over calling `sleep()`) that you can single-step through the test while also manually interacting with the nodes, combining automated and manual testing.
+This has the further advantage (over calling `time.sleep()`), in that you can single-step through the test while also manually interacting with the nodes, combining automated and manual testing.
 
 == BIPs
 
 Bitcoin uses Bitcoin Improvement Proposals (BIPs) as a design document for introducing new features or behaviour into bitcoin.
-Bitcoin magazine describes what a BIP is in their article https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
+Bitcoin Magazine describes what a BIP is in their article https://bitcoinmagazine.com/guides/what-is-a-bitcoin-improvement-proposal-bip[What Is A Bitcoin Improvement Proposal (BIP)], specifically highlighting how BIPs are not necessarily binding documents required to achieve consensus.
 
-The BIPs are currently hosted on https://github.com/bitcoin/bips[GitHub].
+The BIPs are currently hosted on GitHub in the bitcoin/bips https://github.com/bitcoin/bips[repo].
 
 [example]
 ====
@@ -168,23 +191,32 @@ The BIPs include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[
 Of particular interest might be the sections https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_types[BIP Types] and https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_workflow[BIP Workflow].
 ====
 
-=== The BIP process
+=== What does having a BIP mean
 
 Bitcoin Core https://github.com/bitcoin/bitcoin/pull/22665[issue #22665] described how BIP125 was not being strictly adhered to by Bitcoin Core.
-This raised discussion amongst developers about whether the code (implementation) or the BIP should act as the specification, with most developers expressing that they felt that the code was the spec and any BIP generated was merely a design document to aid with re-implementation by others.
+This raised discussion amongst developers about whether the code (a.k.a. the implementation) or the BIP itself should act as the specification, with most developers expressing that they felt that "the code was the spec" and any BIP generated was merely a design document to aid with re-implementation by others, and should be corrected if necessary.
 
 NOTE: This view was not completely unanimous in the community.
 
-For consensus-critical code most Bitcoin Core developers consider "the code is the spec" to be the ultimate source of truth.
+For consensus-critical code most Bitcoin Core Developers consider "the code is the spec" to be the ultimate source of truth, which is one of the reasons that recommending running other full node implementations can be so difficult.
 A knock-on effect of this was that there were calls for review on BIP2 itself, with newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posting his thoughts to the https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html[bitcoin-dev mailing list].
+
+In summary a BIP represents a design document which should assist others in implementing a specific feature in a compatible way.
+These features are optional to usage of Bitcoin, and therefore implementation of BIPs are not required to use Bitcoin, only to remain compatible.
+Being assigned a BIP does not mean that an idea is endorsed as being a "good" idea, only that it is fully well-specified in a way that others could use to re-implement.
+Many ideas are assigned a BIP and then never implemented or used on the wider network.
 
 == Getting started with development
 
 What are the best ways to get started with Bitcoin Core development?
-One of the roles most in-demand from the project is that of code review and in fact this is also one of the best ways of getting familiarised with the codebase too!
+
+One of the roles most in-demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarised with the codebase too!
 Reviewing a few PRs, and adding your review comments to the PR on GitHub can be really valuable for you, the PR author and the bitcoin community.
 This https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html[Google Code Health] blog post gives some good advice on how to go about code review and getting past "feeling that you're not as smart as the programmer who wrote the change".
 If you're going to ask some questions as part of review, try and keep questions https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html[respectful].
+
+There is also a Bitcoin Core PR https://bitcoincore.reviews/[Review Club] held weekly on IRC which provides an ideal entry point into the Bitcoin Core codebase.
+A PR is selected, questions on the PR are provided to be discussed on irc.libera.chat #bitcoin-core-pr-reviews IRC room and a host will lead discussion around the changes.
 
 Aside from review, there are 3 main avenues which might lead you to submitting your *own* PR to the repository:
 
@@ -193,18 +225,17 @@ Aside from review, there are 3 main avenues which might lead you to submitting y
 . Adding a new feature (that you want for yourself?)
 
 To choose from these three, choosing a good first issue from an area of the codebase that seems interesting to you is often a good approach.
-This is because these issues have been somewhat implicitly "concept ACKed" by other contributors as "something that is likely worth someone working on".
+This is because these issues have been somewhat implicitly "concept ACKed" by other Contributors as "something that is likely worth someone working on".
 
-Now you have an idea of roughly what your PR is going to _do_, well done -- often this is the hardest part to taking your first step.
-If you don't have a bugfix or new feature in mind and you're struggling to find a good first issue which looks suitable for you, don't panic.
-Instead keep reviewing other developers' PRs to continue improving your understanding of the process (and the codebase), while you watch the issue tracker for something which you like the look of.
+If you don't have a bug fix or new feature in mind and you're struggling to find a good first issue which looks suitable for you, don't panic.
+Instead keep reviewing other Contributors' PRs to continue improving your understanding of the process (and the codebase) while you watch the Issue tracker for something which you like the look of.
 
 When you've decided what to work on it's time to take a look at the current behaviour of that part of the code and perhaps more importantly, try to understand _why_ this was originally implemented in this way.
 This process of codebase "archaeology" will prove invaluable in the future when you are trying to learn about other parts of the codebase on your own.
 
 ==  Codebase archaeology
 
-When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally, if possible.
+When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally.
 One of the best ways to do this is by using a combination of git tools:
 
 - `git blame`
@@ -212,11 +243,11 @@ One of the best ways to do this is by using a combination of git tools:
 - `git log -G`
 - `git log -p`
 
-and the discussions on GitHub.
+... and the discussions in various places on the GitHub repo.
 
 === git blame
 
-The git `blame` command will show you when and by who a particular line of code was last changed by.
+The git `blame` command will show you when (and by who) a particular line of code was last _changed_.
 
 For example, if we checkout Bitcoin Core at https://github.com/bitcoin/bitcoin/tree/v22.0[v22.0] and we are planning to make a change related to the `m_addr_send_times_mutex` found in _src/net_processing.cpp_, we might want to find out more about its history before touching it.
 
@@ -259,7 +290,7 @@ Let's see what else we can find out about it.
 
 === git log -S
 
-`git log -S` allows us to search for commits where this line was modified (not where it was only moved, for that use `git log -G`).
+`git log -S` allows us to search for commits where this line was _modified_ (not where it was only moved, for that use `git log -G`).
 
 [TIP]
 ====
@@ -308,15 +339,15 @@ This is similar to `git blame` except that `git blame` shows the source of only 
 === git log --follow _file..._
 
 One of the most famous https://github.com/bitcoin/bitcoin/pull/9260[file renames] was _src/main.{h,cpp}_ to _src/validation.{h,cpp}_ in 2016.
-If you simply run `git log src/validation.h`, the oldest displayed commit is one that did the rename.
+If you simply run `git log src/validation.h`, the oldest displayed commit is one that implemented the rename.
 `git log --follow src/validation.h` will show the same recent commits followed by the older _src/main.h_ commits.
 
 To see the history of a file that's been removed, specify ` -- ` before the file name, such as `git log -- some_removed_file.cpp`.
 
 === PR discussion
 
-To get even more context we can take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
-To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top, e.g.:
+To get even more context on the change we can leverage GitHub and take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
+To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top to show the specific PR number e.g.:
 
 [source,bash,options=nowrap]
 ----
@@ -364,21 +395,3 @@ THEN:
 
 * Send coins around the group
 
-// == Removed Text
-//
-// === Goals
-//
-// * How are changes made to Bitcoin Core?
-// * Development environment optimisations
-// * How is Bitcoin Core source code organised
-// * What's the BIP process?
-// ** What type of changes require a BIP?
-// * Learn how to test changes on a live distributed test network
-//
-// === Concepts
-//
-// * Decentralised Development
-// * BIPs
-// * Bitcoin Core development
-// * Bitcoin Core architecture
-// * Signet
