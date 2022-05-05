@@ -65,24 +65,28 @@ James O'Beirne has recorded 3 videos which go into detail on how the codebase is
 Three types of test network are available:
 
 1. Testnet
-1. Regtest
-1. Signet
+2. Regtest
+3. Signet
 
 These three networks all use coins of zero value, so can be used experimentally.
 
 They primary differences between the networks are as follows:
 
-|          Feature          |            Testnet             |            Regtest            |                Signet                 |
-|---------------------------|--------------------------------|-------------------------------|---------------------------------------|
-| Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorised signers     |
-| Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins) |
-| P2P port                  | 18333                          | 18443                         | 38333                                 |
-| RPC port                  | 18332                          | 18442                         | 38332                                 |
-| Peers                     | Public                         | None                          | Public                                |
-| Topology                  | Organic                        | Manual                        | Organic                               |
-| Chain birthday            | 2011-02-02                     | At time of use                | 2020-09-01                            |
-| Can initiate re-orgs      | If Miner                       | Yes                           | No                                    |
-| Primary use               | Networked testing              | Automated integration tests   | Networked testing                     |
+.Comparison of different test networks
+[cols="1h,1,1,1"]
+|===
+| Feature | Testnet | Regtest | Signet
+
+| Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorised signers
+| Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins)
+| P2P port                  | 18333                          | 18443                         | 38333
+| RPC port                  | 18332                          | 18442                         | 38332
+| Peers                     | Public                         | None                          | Public
+| Topology                  | Organic                        | Manual                        | Organic
+| Chain birthday            | 2011-02-02                     | At time of use                | 2020-09-01
+| Can initiate re-orgs      | If Miner                       | Yes                           | No
+| Primary use               | Networked testing              | Automated integration tests   | Networked testing
+|===
 
 == Signet testing network
 
