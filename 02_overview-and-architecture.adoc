@@ -74,8 +74,8 @@ They primary differences between the networks are as follows:
 
 .Comparison of different test networks
 [cols="1h,1,1,1"]
-|===
-| Feature | Testnet | Regtest | Signet
+|===================================================================================================================================
+| Feature                   | Testnet                        | Regtest                       | Signet
 
 | Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorised signers
 | Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins)
@@ -86,7 +86,7 @@ They primary differences between the networks are as follows:
 | Chain birthday            | 2011-02-02                     | At time of use                | 2020-09-01
 | Can initiate re-orgs      | If Miner                       | Yes                           | No
 | Primary use               | Networked testing              | Automated integration tests   | Networked testing
-|===
+|===================================================================================================================================
 
 == Signet testing network
 
@@ -171,7 +171,8 @@ $ ps alx | grep bitcoind
 0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
 ----
 
-You can look at the `bitcoin.conf` files within the data directories to see what other config options are being specified (there's always `-regtest=1`), which is a good way to learn advanced uses of regtest.
+You can look at the `bitcoin.conf` files within the data directories to see what other config options are being specified for the test (there's always `regtest=1`), which is a good way to learn advanced uses of regtest.
+
 Now you can submit RPC requests to a specific node, for example:
 
 [source,bash,options=nowrap]
@@ -195,7 +196,7 @@ The BIPs include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[
 Of particular interest might be the sections https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_types[BIP Types] and https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_workflow[BIP Workflow].
 ====
 
-=== What does having a BIP mean
+=== What does having a BIP number assigned to an idea mean
 
 Bitcoin Core https://github.com/bitcoin/bitcoin/pull/22665[issue #22665] described how BIP125 was not being strictly adhered to by Bitcoin Core.
 This raised discussion amongst developers about whether the code (a.k.a. the implementation) or the BIP itself should act as the specification, with most developers expressing that they felt that "the code was the spec" and any BIP generated was merely a design document to aid with re-implementation by others, and should be corrected if necessary.
@@ -207,7 +208,7 @@ A knock-on effect of this was that there were calls for review on BIP2 itself, w
 
 In summary a BIP represents a design document which should assist others in implementing a specific feature in a compatible way.
 These features are optional to usage of Bitcoin, and therefore implementation of BIPs are not required to use Bitcoin, only to remain compatible.
-Being assigned a BIP does not mean that an idea is endorsed as being a "good" idea, only that it is fully well-specified in a way that others could use to re-implement.
+Simply being _assigned_ a BIP does *not* mean that an idea is endorsed as being a "good" idea, only that it is fully-specified in a way that others could use to re-implement.
 Many ideas are assigned a BIP and then never implemented or used on the wider network.
 
 == Getting started with development
@@ -228,7 +229,7 @@ Aside from review, there are 3 main avenues which might lead you to submitting y
 . Fixing a bug
 . Adding a new feature (that you want for yourself?)
 
-To choose from these three, choosing a good first issue from an area of the codebase that seems interesting to you is often a good approach.
+Choosing a "good first issue" from an area of the codebase that seems interesting to you is often a good approach.
 This is because these issues have been somewhat implicitly "concept ACKed" by other Contributors as "something that is likely worth someone working on".
 
 If you don't have a bug fix or new feature in mind and you're struggling to find a good first issue which looks suitable for you, don't panic.
