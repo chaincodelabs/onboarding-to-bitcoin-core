@@ -159,16 +159,6 @@ Often Contributors having "informal" discussions about changes on e.g. IRC will 
 . Also see https://github.com/bitcoin/bitcoin/tree/master/test#running-the-tests[Bitcoin Core, running the tests]
 . https://github.com/bitcoin/bitcoin/tree/master/src/test/README.md[Bitcoin Core, unit tests]
 
-==== Cross-Compile Bitcoin Core
-
-Bitcoin Core has a build system that allows for cross-compiling to various systems.
-More on this system can be found under the https://github.com/bitcoin/bitcoin/tree/master/depends[bitcoin/depends] sub-directory.
-
-* Starting from a Linux Host or Virtual Machine, take a look at the depends https://github.com/bitcoin/bitcoin/tree/master/depends#readme[README].
-* Install the necessary dependencies for cross-compilation to Windows
-* Follow the instructions and cross-compile for Windows
-* Run and test the cross-compiled binary on a Windows host or Virtual Machine
-
 ==== Review a PR
 
 * Find a PR (which can be open or closed) on GitHub which looks interesting and/or accessible
