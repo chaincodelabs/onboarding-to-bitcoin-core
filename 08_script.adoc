@@ -30,7 +30,7 @@ A full list of available (and disabled) OPCODES can be found in https://github.c
 
 We can generate new scripts ourself when creating a new address.
 We can also learn about scripts when we hear about a new transaction, either from the P2P network, or from a newly-connected block.
-Serialised transactions contain, amongst other fields:
+Serialized transactions contain, amongst other fields:
 
 * A vector of inputs (`CTxIn`)
 * A vector of outputs (`CTxOut`)

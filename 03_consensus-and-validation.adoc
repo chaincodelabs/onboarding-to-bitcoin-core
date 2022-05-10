@@ -1,18 +1,18 @@
 = Consensus & validation
 
-One of the most fundamental concepts behind bitcoin is that nodes are able to maintain decentralised consensus on the ordering of transactions in the system.
+One of the fundamental concepts underlying bitcoin is that nodes on the network are able to maintain decentralized consensus on the ordering of transactions in the system.
 
-The primary mechanism behind this relies on all nodes validating every transaction and every block against their own copy of the (consensus) rules.
-The secondary mechanism is that in the event of a discrepancy, all nodes should follow the chain with the most cumulative proof-of-work.
+The primary mechanism that enables this is that all nodes should validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
+The secondary mechanism is that in the event of a discrepancy between two competing chain tips, all nodes should follow the chain with the most cumulative proof-of-work.
 
-The product of following these two mechanisms is that all nodes in the network will _eventually_ converge onto a single canonical, valid chain.
-For more information on how the bitcoin networks' decentralised consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
+The product of following these two mechanisms is that all nodes in the network will eventually converge onto a single, canonical, valid chain.
+For more information on how the bitcoin networks' decentralized consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
 
 == Consensus bugs
 
-Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed the possibility of a consensus failure] related to signature verification when using OpenSSL.
+Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed] the possibility of a consensus failure via usage of OpenSSL.
 The issue was that the OpenSSL signature verification was accepting *multiple* signature serialization formats (for the same signature) as valid.
-This effectively meant that a transactions ID (txid) could be changed, because the signature contributes to the txid hash.
+This effectively meant that a transactions' ID (txid) could be changed, because the signature contributes to the txid hash.
 
 .Click to show the code comments related to pubkey signature parsing from _pubkey.cpp_
 [%collapsible]
@@ -37,16 +37,16 @@ int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1_ecdsa_
 ----
 ====
 
-There were a few main cases to consider:
+There were a few cases to consider:
 
 . first party malleation: signature length descriptor is extended to 5 bytes
-. third party malleation: signatures are "slightly" tweaked (or padded)
-. third party malleation: negating the `S` value of the ECDSA signature
+. third party malleation: signature may be slightly "tweaked" or padded
+. third party malleation: negating the `S` value of the signature
 
 In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
-The first party (the sender) can create a valid (normal length) signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
+The first party (the sender) can create a normal-length valid signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
 
-In the second case, of signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
+In the second case, signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
 However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning) in the event that they are relying on txids to track transactions.
 
 It is interesting to consider the order of the steps taken to fix this potential vulnerability:
@@ -367,7 +367,7 @@ mutable RecursiveMutex cs;
 ----
 ====
 
-The `Workspace` struct is initialised with a pointer to the transactions' `CTransactionRef` and holds the following additional information:
+The `Workspace` struct is initialized with a pointer to the transactions' `CTransactionRef` and holds the following additional information:
 
 .src/validation.cpp#MemPoolAccept::Workspace
 [source,cpp,options=nowrap]

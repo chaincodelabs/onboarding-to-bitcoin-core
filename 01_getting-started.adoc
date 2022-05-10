@@ -59,15 +59,16 @@ PRs can only be merged into the main project by Maintainers.
 Whilst this might give the illusion that Maintainers are in control of the project, the Maintainers' role dictates that they *should not* be unilaterally deciding what PRs are merged and which aren't.
 Instead they should be determining mergability of changes, based primarily on the reviews and discussions of other Contributors on the GitHub PR, or less commonly the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list.
 
-Working on that basis, the Maintainers' role becomes largely _janitorial_ in that they are simply executing the desires of the community review process; a community which is made up of a decentralised and diverse group of Contributors.
+Working on that basis, the Maintainers' role becomes largely _janitorial_ in that they are simply executing the desires of the community review process; a community which is made up of a decentralized and diverse group of Contributors.
+The role of maintainers was discussed and updated in https://github.com/bitcoin/bitcoin/pull/25078[PR#25078].
 
 A list of Maintainers and suggested Reviewers can be found in the https://github.com/bitcoin/bitcoin/tree/master/REVIEWERS[REVIEWERS] document.
 As the document states, these are *not* the only people who should be reviewing PRs.
 The project needs as many reviews on each PR as possible, ideally from a diverse range of Reviewers.
 
-The objective of the Bitcoin Core Organisation is therefore to represent an entity that is decentralised as much as practically possible, on a centralised platform.
+The objective of the Bitcoin Core Organisation is therefore to represent an entity that is decentralized as much as practically possible, on a centralized platform.
 One where no single Contributor, Member or Maintainer has unilateral control over what is/isn't merged into the project.
-Having multiple Maintainers, Members, Contributors and Reviewers gives this objective the best chance of being realised.
+Having multiple Maintainers, Members, Contributors and Reviewers gives this objective the best chance of being realized.
 
 ==== Organisation fail-safes
 
@@ -79,7 +80,7 @@ In the event that a Maintainer goes rogue and starts merging controversial code,
 . Have the Lead Maintainer remove the malicious Maintainer
 . In the case that the Lead Maintainer themselves is considered to be the rogue agent: fork the project to a new location and continue development there.
 
-In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub which have been summarised on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
+In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub which have been summarized on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
 This summary came in part from discussions on https://github.com/bitcoin/bitcoin/issues/20227[this] GitHub issue.
 
 === GitHub workflow
