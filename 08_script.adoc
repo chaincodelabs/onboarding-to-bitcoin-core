@@ -383,6 +383,56 @@ If any of the following are true, the script will evaluate to `false`:
 
 There are a number of other ways which scripts can fail TODO
 
+== Script inside of addresses
+
+Bitcoin addresses can be of a "script hash" type (P2SH, and now P2WSH).
+As the name implies a valid script is created before being hashed.
+This hash is then used to generate an address which coins can be sent to.
+Once coins have been received to this address a (redeem / witness) script which hashes to the same hash must be provided (`scriptPubKey`), along with a satisfactory `scriptSig` in order to authorize a new spend.
+
+The origins of this revolutionary (at the time) style of address are touched upon in this https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-May/020429.html[email] from ZmnSCPxj.
+The general context of the email is recursive covenants.
+A portion of the email is quoted below for convenience:
+
+[quote, ZmnSCPxj]
+____
+Covenants were first expressed as a possibility, I believe, during discussions around P2SH.
+Basically, at the time, the problem was this:
+
+* Some receivers wanted to use k-of-n multisignature for improved security.
+* The only way to implement this, pre-P2SH, was by putting in the `scriptPubKey` all the public keys.
+* The sender is the one paying for the size of the `scriptPubKey`.
+* It was considered unfair that the sender is paying for the security of the receiver.
+
+Thus, `OP_EVAL` and the P2SH concept was conceived.
+Instead of the `scriptPubKey` containing the k-of-n multisignature, you create a separate script containing the public keys, then hash it, and the `scriptPubKey` would contain the hash of the script.
+By symmetry with the P2PKH template:
+
+[source]
+----
+    OP_DUP OP_HASH160 <hash160(pubkey)> OP_EQUALVERIFY OP_CHECKSIG
+----
+
+The P2SH template would be:
+
+[source]
+----
+    OP_DUP OP_HASH160 <hash160(redeemScript)> OP_EQUALVERIFY OP_EVAL
+----
+
+`OP_EVAL` would take the stack top vector and treat it as a Bitcoin SCRIPT.
+
+It was then pointed out that `OP_EVAL` could be used to create recursive SCRIPTs by quining using `OP_CAT`.
+`OP_CAT` was already disabled by then, but people were talking about re-enabling it somehow by restricting the output size of `OP_CAT` to limit the O(2^N) behavior.
+
+Thus, since then, `OP_CAT` has been associated with ***recursive*** covenants (and people are now reluctant to re-enable it even with a limit on its output size, because recursive covenants).
+In particular, `OP_CAT` in combination with `OP_CHECKSIGFROMSTACK` and `OP_CHECKSIG`, you could get a deferred `OP_EVAL` and then use `OP_CAT` too to quine.
+
+Because of those concerns, the modern P2SH is now "just a template" with an implicit `OP_EVAL` of the `redeemScript`, but without any `OP_EVAL` being actually enabled.
+____
+
+For more details refer to https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki[BIP16] which introduced P2SH addresses.
+
 == Removed text
 
 === Signing scripts
