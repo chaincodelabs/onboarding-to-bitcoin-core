@@ -91,7 +91,7 @@ What follows can be outlined from the code comments:
 
 == GUI initialisation
 
-After configuration the GUI is initialised.
+After configuration the GUI is initialized.
 Here the `Node` object created earlier is passed to `app.SetNode()` before a window is created and the application executed.
 
 The bulk of the Qt GUI classes are defined in _src/qt/bitcoingui.{h|cpp}_.

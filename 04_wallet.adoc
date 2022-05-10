@@ -31,7 +31,7 @@ In order to facilitate code separation, distinct interfaces between the node and
 
 == Wallet component initialisation
 
-The wallet component is initialised via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/walletinitinterface.h#L11-L23[_src/walletinitinterface.h_].
+The wallet component is initialized via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/walletinitinterface.h#L11-L23[_src/walletinitinterface.h_].
 The member functions are marked as virtual in the `WalletInitInterface` definition, indicating that they are going to be overridden later by a derived class.
 
 .src/walletinitinterface.h
@@ -449,7 +449,7 @@ Following successful creation, various `bitcoind` program arguments are checked 
 These include options such as "-addresstype", "-changetype", "-mintxfee" and "-maxtxfee" amongst others.
 It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
 
-After the wallet is fully initialised and setup, its keypool will be topped up before the wallet is locked and registered with the <<Validation interface>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
+After the wallet is fully initialized and setup, its keypool will be topped up before the wallet is locked and registered with the <<Validation interface>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
 The rescan is smart in detecting the wallet "birthday" using metadata stored in the `ScriptPubKeyMan` and won't scan blocks produced before this date:
 
 .src/wallet/wallet.cpp#CWallet::Create()
@@ -827,7 +827,9 @@ The Branch and Bound algorithm is described in detail in Murch's Master Thesis: 
 
 ----
 
-You can read a little more about the differences between these two coin selection algorithms on this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer].
+You can read a little more about the differences between these two coin selection algorithms in this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer].
+
+You can read more about `waste` and the waste metric in this https://bitcoin.stackexchange.com/questions/113622/what-does-waste-metric-mean-in-the-context-of-coin-selection/113625#113625[StackExchange answer].
 
 Coin selection is performed as a loop, as it may take multiple iterations to select the optimal coins for a given transaction.
 

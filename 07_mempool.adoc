@@ -19,7 +19,7 @@ The documentation subfolder https://github.com/bitcoin/bitcoin/tree/master/doc/p
 
 === Initialisation
 
-The primary mempool object itself is initialised onto the node in _init.cpp_ as part of `AppInitMain()` which takes `NodeContext& node` as an argument.
+The primary mempool object itself is initialized onto the node in _init.cpp_ as part of `AppInitMain()` which takes `NodeContext& node` as an argument.
 
 The mempool constructor:
 
@@ -77,7 +77,7 @@ This is run in its own thread so that (potentially) slow disk I/O has a minimal 
 `ThreadImport` actually runs a few jobs sequentially, first it does a reindex (if necessary), followed by loading block files from disk, a check that we are still activated on the best chain according to the blocks we just loaded from disk, and then finally loading the mempool with `chainman.ActiveChainstate().LoadMempool(args);`.
 
 `validation.cpp#LoadMempool()` is pretty much a mirror of `DumpMempool()` described in more detail below in <<Shutdown>>:
-First we read the version and count of serialised transactions to follow, then we test each one for expiry before submitting it to <<MemPoolAccept>>, and finally read any remaining `mapDeltas` and `unbroadcast_txids` from the file.
+First we read the version and count of serialized transactions to follow, then we test each one for expiry before submitting it to <<MemPoolAccept>>, and finally read any remaining `mapDeltas` and `unbroadcast_txids` from the file.
 
 A note that upon loading we test each transaction for expiry before loading to the in-memory mempool model:
 
@@ -393,7 +393,7 @@ When we add a transaction to the mempool we must update the descendant data for 
 Conversely if we remove a transaction from the mempool, we must also remove all of its descendants.
 A particular area where speed can be critical is in block assembly.
 
-Some of this extra transaction metadata however *does* count towards the mempool's maximum size, therefore a default mempool of 300MB will contain less than 300MB of serialised transactions.
+Some of this extra transaction metadata however *does* count towards the mempool's maximum size, therefore a default mempool of 300MB will contain less than 300MB of serialized transactions.
 
 == Adding transactions to the mempool
 

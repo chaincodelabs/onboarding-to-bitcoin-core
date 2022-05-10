@@ -1,6 +1,6 @@
 = Overview & architecture of Bitcoin Core
 
-== Decentralised development
+== Decentralized development
 
 Olivia Lovenmark and Amiti Uttarwar describe in their https://blog.okcoin.com/2020/09/15/developing-bitcoin/[blog post] "Developing Bitcoin", how changes to bitcoin follow the pathway from proposal to being merged into the software, and finally into voluntary adoption by users choosing to use the software.
 
@@ -15,7 +15,7 @@ The Bitcoin Core project itself contains two documents of particular interest to
 
 Jon Atack's article https://jonatack.github.io/articles/how-to-contribute-pull-requests-to-bitcoin-core[How To Contribute Pull Requests To Bitcoin Core] describes some less-obvious requirements that any PR you make might be subjected to during peer review, for example that it needs an accompanying test, or that an intermediate commit on the branch doesn't compile.
 It also describes the uncodified expectation that Contributors should not only be writing code, but perhaps more importantly be providing reviews on other Contributors' PRs.
-Most developers enjoy writing their own code more than reviewing code from others, but the decentralised review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
+Most developers enjoy writing their own code more than reviewing code from others, but the decentralized review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
 
 IMPORTANT: Jon's personal estimates of "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon himself feels would be best for the project. Don't be put off submitting a potentially valuable PR just because "you haven't done enough reviews"!
 
@@ -77,7 +77,7 @@ They primary differences between the networks are as follows:
 |===================================================================================================================================
 | Feature                   | Testnet                        | Regtest                       | Signet
 
-| Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorised signers
+| Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorized signers
 | Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins)
 | P2P port                  | 18333                          | 18443                         | 38333
 | RPC port                  | 18332                          | 18442                         | 38332
@@ -215,7 +215,7 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
 
 What are the best ways to get started with Bitcoin Core development?
 
-One of the roles most in-demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarised with the codebase too!
+One of the roles most in-demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarized with the codebase too!
 Reviewing a few PRs, and adding your review comments to the PR on GitHub can be really valuable for you, the PR author and the bitcoin community.
 This https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html[Google Code Health] blog post gives some good advice on how to go about code review and getting past "feeling that you're not as smart as the programmer who wrote the change".
 If you're going to ask some questions as part of review, try and keep questions https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html[respectful].

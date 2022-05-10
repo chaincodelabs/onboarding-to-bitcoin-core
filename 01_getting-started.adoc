@@ -61,7 +61,7 @@ While this might give the illusion that Maintainers are in control of the projec
 Instead, they should be determining the mergability of changes based primarily on the reviews and discussions of other Contributors on the GitHub PR, or less commonly, the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list.
 
 Working on that basis, the Maintainers' role becomes largely _janitorial_.
-They are simply executing the desires of the community review process, a community which is made up of a decentralised and diverse group of Contributors.
+They are simply executing the desires of the community review process, a community which is made up of a decentralized and diverse group of Contributors.
 
 A list of Maintainers and suggested Reviewers can be found in the https://github.com/bitcoin/bitcoin/tree/master/REVIEWERS[REVIEWERS] document.
 As the document states, these are *not* the only people who should be reviewing PRs.
@@ -81,7 +81,7 @@ In the event that a Maintainer goes rogue and starts merging controversial code,
 . Have the Lead Maintainer remove the malicious Maintainer
 . In the case that the Lead Maintainer themselves is considered to be the rogue agent: fork the project to a new location and continue development there.
 
-In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub, which have been summarised on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
+In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub, which have been summarized on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
 This summary came in part from discussions on https://github.com/bitcoin/bitcoin/issues/20227[this] GitHub issue.
 
 === GitHub workflow
