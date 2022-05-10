@@ -33,54 +33,55 @@ Some Contributors have documented their journeys into the space which lets us le
 Bitcoin Core uses a GitHub-based workflow for development.
 The primary function of GitHub in the workflow is to discuss patches and connect them with review comments.
 
-Whilst some other prominent projects, e.g. the Linux kernel use email for soliciting feedback and review, Bitcoin Core has used GitHub for many years.
-Initially Satoshi distributed the code through private emails and hosting source archives at bitcoin.org, and later by hosting on SourceForge (which used SVN but did not at that time have a pull request system like GitHub).
+While some other prominent projects, e.g. the Linux kernel, use email to solicit feedback and review, Bitcoin Core has used GitHub for many years.
+Initially, Satoshi distributed the code through private emails and hosting source archives at bitcoin.org, and later by hosting on SourceForge (which used SVN but did not at that time have a pull request system like GitHub).
 The earliest reviewers submitted changes using patches either through email exchange with Satoshi, or by posting them on the bitcoin forum.
 
-In August 2009 the source code was moved to GitHub by Sirius and development has remained there, and used the GitHub workflows, ever since.
+In August 2009, the source code was moved to GitHub by Sirius, and development has remained there and used the GitHub workflows ever since.
 
 === Organisation & roles
 
-Anyone who contributes code to the codebase is labelled a Contributor by GitHub, and also by the community.
+Anyone who contributes code to the codebase is labelled a Contributor by GitHub and also by the community.
 As of Version 22.0 of Bitcoin Core, there are ~820 individual Contributors credited with changes.
 
 Some Contributors are also labelled as Members of the https://github.com/orgs/bitcoin/people[Bitcoin Core organisation].
 There are currently ~30 Members of the organisation.
-There are no defined criteria for becoming a Member of the organisation, persons are usually nominated for addition or removal by current Maintainer/Member/Admin on an ad-hoc basis.
-Members are usually frequent Contributors/Reviewers and have good technical knowledge of the codebase.
-Members also have some additional permissions over Contributors, such as adding/removing tags on issues and PRs, however being a Member **does not** permit you to merge PRs into the project.
-Members can also be assigned sections of the codebase which they might have specific expertise in, so they can be more easily requested for review as Suggested Reviewers by PR authors.
+There are no defined criteria for becoming a Member of the organisation; persons are usually nominated for addition or removal by current Maintainer/Member/Admin on an ad-hoc basis.
+Members are typically frequent Contributors/Reviewers and have good technical knowledge of the codebase.
+Members also have some additional permissions over Contributors, such as adding/removing tags on issues and PRs; however, being a Member **does not** permit you to merge PRs into the project.
+Members can also be assigned sections of the codebase in which they have specific expertise to be more easily requested for review as Suggested Reviewers by PR authors.
 
-NOTE: In a normal workflow it is neither necessary or desirable to "request reviews" from suggested reviewers, and in fact doing so without a good reason might be interpreted as being pushy, and having the opposite result than intended.
+NOTE: It is neither necessary nor desirable to "request reviews" from suggested reviewers in a normal workflow. Doing so without a good reason might be interpreted as being pushy and having the opposite result than intended.
 
 Some Members are also project Maintainers.
-There are currently 7 Maintainers on the Bitcoin Core project, but this number is arbitrary and is subject to change as people join and leave the project.
+There are currently 7 Maintainers on the Bitcoin Core project.
+This number is arbitrary and is subject to change as people join and leave the project.
 PRs can only be merged into the main project by Maintainers.
-Whilst this might give the illusion that Maintainers are in control of the project, the Maintainers' role dictates that they *should not* be unilaterally deciding what PRs are merged and which aren't.
-Instead they should be determining mergability of changes, based primarily on the reviews and discussions of other Contributors on the GitHub PR, or less commonly the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list.
+While this might give the illusion that Maintainers are in control of the project, the Maintainers' role dictates that they *should not* be unilaterally deciding which PRs get merged and which don't.
+Instead, they should be determining the mergability of changes based primarily on the reviews and discussions of other Contributors on the GitHub PR, or less commonly, the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list.
 
-Working on that basis, the Maintainers' role becomes largely _janitorial_ in that they are simply executing the desires of the community review process; a community which is made up of a decentralized and diverse group of Contributors.
-The role of maintainers was discussed and updated in https://github.com/bitcoin/bitcoin/pull/25078[PR#25078].
+Working on that basis, the Maintainers' role becomes largely _janitorial_.
+They are simply executing the desires of the community review process, a community which is made up of a decentralized and diverse group of Contributors.
 
 A list of Maintainers and suggested Reviewers can be found in the https://github.com/bitcoin/bitcoin/tree/master/REVIEWERS[REVIEWERS] document.
 As the document states, these are *not* the only people who should be reviewing PRs.
 The project needs as many reviews on each PR as possible, ideally from a diverse range of Reviewers.
 
-The objective of the Bitcoin Core Organisation is therefore to represent an entity that is decentralized as much as practically possible, on a centralized platform.
-One where no single Contributor, Member or Maintainer has unilateral control over what is/isn't merged into the project.
-Having multiple Maintainers, Members, Contributors and Reviewers gives this objective the best chance of being realized.
+The objective of the Bitcoin Core Organisation is to represent an entity that is decentralized as much as practically possible on a centralised platform
+One where no single Contributor, Member, or Maintainer has unilateral control over what is/isn't merged into the project.
+Having multiple Maintainers, Members, Contributors, and Reviewers gives this objective the best chance of being realised.
 
 ==== Organisation fail-safes
 
-It is possible for a "rogue PR" to be submitted by a Contributor, however we rely on systematic and thorough peer review to catch these.
+It is possible for a "rogue PR" to be submitted by a Contributor; however, we rely on systematic and thorough peer review to catch these.
 There has recently been https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019490.html[discussion] on the mailing list about purposefully submitting malicious PRs to test the robustness of this review process.
 
-In the event that a Maintainer goes rogue and starts merging controversial code, or conversely _not_ merging changes which are desired by the community at large, then there are two possible avenues of recourse:
+In the event that a Maintainer goes rogue and starts merging controversial code, or conversely, _not_ merging changes that are desired by the community at large, then there are two possible avenues of recourse:
 
 . Have the Lead Maintainer remove the malicious Maintainer
 . In the case that the Lead Maintainer themselves is considered to be the rogue agent: fork the project to a new location and continue development there.
 
-In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub which have been summarized on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
+In the case that GitHub itself becomes the rogue entity, there have been numerous discussions about how to move away from GitHub, which have been summarized on the devwiki https://github.com/bitcoin-core/bitcoin-devwiki/wiki/GitHub-alternatives-for-Bitcoin-Core[here].
 This summary came in part from discussions on https://github.com/bitcoin/bitcoin/issues/20227[this] GitHub issue.
 
 === GitHub workflow
@@ -94,12 +95,12 @@ The GitHub side of the Bitcoin Core workflow for Contributors consists primarily
 
 Generally, issues are used for two purposes:
 
-. Posting known issues with software, e.g. bug reports, crash logs
+. Posting known issues with the software, e.g., bug reports, crash logs
 . Soliciting feedback on potential changes without providing associated code, as would be required in a PR.
 
 GitHub provides their own https://guides.github.com/features/issues/[guide] on mastering Issues which is worth reading to understand the feature-set available when working with an issue.
 
-PRs are where Contributors can submit their code against the main codebase and solicit feedback on: the concept, the approach taken for the implementation, and the actual implementation itself.
+PRs are where Contributors can submit their code against the main codebase and solicit feedback on the concept, the approach taken for the implementation, and the actual implementation itself.
 
 PRs and Issues are often linked to/from one another:
 
@@ -108,16 +109,16 @@ PRs and Issues are often linked to/from one another:
 One common workflow is when an Issue is opened to report a bug.
 After replicating the issue, a Contributor creates a patch and then opens a PR with their proposed changes.
 
-In this case the Contributor should, in addition to comments about the patch, reference that the patch fixes the issue.
+In this case, the Contributor should, in addition to comments about the patch, reference that the patch fixes the issue.
 For a patch which fixes issue 22889 this would be done by writing "fixes #22889" in the PR description or in a commit message.
-In this case the syntax "fixes #issue-number" is caught by GitHub's https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue[pull request linker] which handles the cross-link automatically.
+In this case, the syntax "fixes #issue-number" is caught by GitHub's https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue[pull request linker], which handles the cross-link automatically.
 ====
 
-Another use of Issues is for soliciting feedback on ideas which might require _significant_ changes.
-This helps free the project from having too many PRs open which aren't ready for review, and might waste reviewers' time.
-In addition this workflow can also save Contributors their _own_ valuable time, as a idea might be identified as unlikely to be accepted _before_ the contributor spends their time writing the code for it.
+Another use-case of Issues is soliciting feedback on ideas that might require _significant_ changes.
+This helps free the project from having too many PRs open which aren't ready for review and might waste reviewers' time.
+In addition, this workflow can also save Contributors their _own_ valuable time, as an idea might be identified as unlikely to be accepted _before_ the contributor spends their time writing the code for it.
 
-Most code changes to bitcoin are proposed directly as PRs -- there's no need to open an Issue for every idea before implementing it, unless it may require significant changes.
+Most code changes to bitcoin are proposed directly as PRs -- there's no need to open an Issue for every idea before implementing it unless it may require significant changes.
 Additionally, other Contributors (and would-be Reviewers) will often agree with the approach of a change, but want to "see the implementation" before they can really pass judgement on it.
 
 GitHub is therefore used to help store and track reviews to PRs in a public way.
