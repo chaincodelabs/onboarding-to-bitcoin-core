@@ -58,7 +58,7 @@ There are currently 7 Maintainers on the Bitcoin Core project.
 This number is arbitrary and is subject to change as people join and leave the project.
 PRs can only be merged into the main project by Maintainers.
 While this might give the illusion that Maintainers are in control of the project, the Maintainers' role dictates that they *should not* be unilaterally deciding which PRs get merged and which don't.
-Instead, they should be determining the mergability of changes based primarily on the reviews and discussions of other Contributors on the GitHub PR, or less commonly, the https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-core-dev[#bitcoin-core-dev] mailing list.
+Instead, they should be determining the mergability of changes based primarily on the reviews and discussions of other Contributors on the GitHub PR.
 
 Working on that basis, the Maintainers' role becomes largely _janitorial_.
 They are simply executing the desires of the community review process, a community which is made up of a decentralized and diverse group of Contributors.
