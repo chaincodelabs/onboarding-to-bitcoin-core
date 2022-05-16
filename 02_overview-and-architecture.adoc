@@ -24,6 +24,33 @@ Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/master/review-checkli
 In addition to this it details how potential Reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review.
 Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and documentation needed.
 
+=== Continuous integration
+
+When PRs are submitted against the primary Bitcoin Core repo a series of CI https://github.com/bitcoin/bitcoin/tree/v23.0/ci[tests] will automatically be run.
+These include a series of linters and formatters such as `clang-format`, `flake8` and `shellcheck`.
+It's possible (and advised) to run these checks locally against any changes you make before you push them.
+You can run a decent sub-set of the checks by running:
+
+[source,bash]
+----
+./test/lint/lint-circular-dependencies.py
+./test/lint/lint-python.py
+./test/lint/lint-whitespace.py
+----
+
+Or you can install all requirements and run all checks with:
+
+[source,bash]
+----
+./test/lint/lint-all.py
+----
+
+NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python.
+
+Linting your changes helps avoid the avoidable scenario of pushing some changes as a PR which are then quickly marked as failing CI.
+
+TIP: If you do fail a lint or any other CI check, force-pushing the fix to your branch will cancel currently-running the currently-running CI checks and replace them.
+
 === Commit messages
 
 When writing commit messages be sure to have read Chris Beams' "How to Write a Git Commit Message" https://chris.beams.io/posts/git-commit/[blog post].
