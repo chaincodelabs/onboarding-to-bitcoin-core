@@ -1,0 +1,35 @@
+= Use of the asciidoc format
+
+The https://asciidoctor.org/[asciidoc] format has been used for this documentation.
+
+To use asciidoc format, ensure that the `asciidoctor` tool is installed (and on your system $PATH).
+Also, it can be useful to ensure your editor understands the filetype, e.g. for Vim you can install https://github.com/habamax/vim-asciidoctor[vim-asciidoctor].
+
+A quick reference for asciidoc formatting can be found https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[here].
+
+This documentation follows the asciidoc recommended practice of https://asciidoctor.org/docs/asciidoc-recommended-practices/#one-sentence-per-line[One Sentence Per Line]. 
+If you choose to contribute (thank you!) please try and continue this practice to make future editing more straightforward.
+
+== Generating _index.html_ for static web hosting
+
+You can generate an _index.html_ file for static web hosting by installing the <<asciidoctor>> tool and then running:
+
+[source,bash]
+----
+asciidoctor index.adoc
+----
+
+Simply host _index.html_ along with the _images/_ directory and its contents at the root of your web server to serve the documentation.
+
+=== Update _index.html_ automatically as a pre-commit hook
+
+If you prefer you can write a simple pre-commit hook to update _index.html_ file automatically at each commit.
+An example of this might be:
+
+._$PROJECT_ROOT/.git/hooks/pre-commit_
+[source,bash]
+----
+#!/usr/bin/bash
+
+asciidoctor index.adoc
+----

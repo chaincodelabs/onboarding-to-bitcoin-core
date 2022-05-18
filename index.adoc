@@ -1,0 +1,21 @@
+= Onboarding to Bitcoin Core
+include::settings.adoc[]
+:leveloffset: +1
+
+include::01_getting-started.adoc[]
+
+include::02_overview-and-architecture.adoc[]
+
+include::03_consensus-and-validation.adoc[]
+
+include::04_wallet.adoc[]
+
+include::05_gui.adoc[]
+
+include::06_p2p.adoc[]
+
+include::07_mempool.adoc[]
+
+include::08_script.adoc[]
+
+:leveloffset: -1
