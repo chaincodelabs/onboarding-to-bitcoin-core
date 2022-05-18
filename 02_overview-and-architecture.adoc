@@ -274,12 +274,12 @@ This process of codebase "archaeology" will prove invaluable in the future when 
 When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally.
 One of the best ways to do this is by using a combination of git tools:
 
-- `git blame`
-- `git log -S`
-- `git log -G`
-- `git log -p`
+* `git blame`
+* `git log -S`
+* `git log -G`
+* `git log -p`
 
-... and the discussions in various places on the GitHub repo.
+As well as the discussions in various places on the GitHub repo.
 
 === git blame
 
@@ -321,7 +321,7 @@ Date:   Fri Jul 10 16:29:57 2020 +0100
 
 ----
 
-So we've learned now that this mutex was moved here by John from net.{cpp|h} in it's most recent touch.
+So we've learned now that this mutex was moved here by John from _net.{cpp|h}_ in it's most recent touch.
 Let's see what else we can find out about it.
 
 === git log -S
@@ -330,7 +330,7 @@ Let's see what else we can find out about it.
 
 [TIP]
 ====
-A 'modification' (vs. a 'move') in git parlance implies that there are uneven instances of the search term in the commit diffs' add/remove sections.
+A 'modification' (vs. a 'move') in git parlance is the result of uneven instances of the search term in the commit diffs' add/remove sections.
 
 This implies that this term has either been added or removed in the commit.
 ====
@@ -378,7 +378,11 @@ One of the most famous https://github.com/bitcoin/bitcoin/pull/9260[file renames
 If you simply run `git log src/validation.h`, the oldest displayed commit is one that implemented the rename.
 `git log --follow src/validation.h` will show the same recent commits followed by the older _src/main.h_ commits.
 
-To see the history of a file that's been removed, specify ` -- ` before the file name, such as `git log -- some_removed_file.cpp`.
+To see the history of a file that's been removed, specify " -- " before the file name, such as:
+[source,bash]
+----
+git log -- some_removed_file.cpp
+----
 
 === PR discussion
 
