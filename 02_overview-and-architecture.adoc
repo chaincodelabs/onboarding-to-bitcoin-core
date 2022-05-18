@@ -1,5 +1,9 @@
 = Overview & architecture of Bitcoin Core
 
+This chapter is devoted to giving an overview of the Architecture of Bitcoin Core.
+Whilst the other topics below all add some context to the architecture, the bulk of the reading can be found in the <<Bitcoin Core architecture>> section, by following the links to lsilva01's guide.
+
+
 == Decentralized development
 
 Olivia Lovenmark and Amiti Uttarwar describe in their https://blog.okcoin.com/2020/09/15/developing-bitcoin/[blog post] "Developing Bitcoin", how changes to bitcoin follow the pathway from proposal to being merged into the software, and finally into voluntary adoption by users choosing to use the software.
@@ -48,7 +52,7 @@ Or you can install all requirements and run all checks with:
 NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python.
 
 Linting your changes helps avoid the avoidable scenario of pushing some changes as a PR which are then quickly marked as failing CI.
-
+
 TIP: If you do fail a lint or any other CI check, force-pushing the fix to your branch will cancel currently-running the currently-running CI checks and replace them.
 
 === Commit messages
@@ -70,10 +74,8 @@ Fabian Jahr has created a https://github.com/fjahr/debugging_bitcoin[guide] on "
 
 Of particular note to Developers are the configure flags used to build Bitcoin Core without optimisations to permit more effective debugging of the various resulting binary files.
 
-Fabian has also presented on this topic a number of times:
-
-. On his https://www.youtube.com/watch?v=6aPSCDAiqVI[ChainCode labs' residency].
-. At https://www.youtube.com/watch?v=gr75ubfNQ20[Scaling Bitcoin 2019].
+Fabian has also presented on this topic a number of times.
+A https://btctranscripts.com/scalingbitcoin/tel-aviv-2019/edgedevplusplus/debugging-bitcoin/[transcript] of his edgedevplusplus talk is available.
 
 == Bitcoin Core architecture
 
@@ -130,17 +132,17 @@ The Bitcoin wiki Signet https://en.bitcoin.it/wiki/Signet[page] provides additio
 Another test network named _regtest_, which stands for _regression test_, is also available.
 This network is enabled by starting bitcoind with the `-regtest` option.
 This is an entirely self-contained mode, giving you complete control of the state of the blockchain.
-Blocks can be mined instantly, and only explicitly.
+Blocks can simply be mined on command by the network operator.
 
-The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests] use this mode, but you can run it manually.
+The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests] use this mode, but you can also run it manually.
 It provides a good means to learn and experiment on your own terms.
 It's often run with a single node but may be run with multiple co-located (local) nodes (most of the functional tests do this).
-The blockchain initially contains only the genesis block, so you need to mine >100 blocks in order to have any spendable coins from a coinbase transaction.
+The blockchain initially contains only the genesis block, so you need to mine >100 blocks in order to have any spendable coins from a mature coinbase.
 Here's an example session (after you've built `bitcoind` and `bitcoin-cli`):
 
 [source,bash,options="nowrap"]
 ----
-$ mkdir /tmp/regtest-datadir
+$ mkdir -p /tmp/regtest-datadir
 $ src/bitcoind -regtest -daemon -datadir=/tmp/regtest-datadir
 $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
 {
@@ -186,8 +188,8 @@ You may stop and restart the node and it will use the existing state.
 === Manual testing while running a functional test
 
 Running regtest as described allows you to start from scratch with an empty chain, empty wallet, and no existing state.
-A particularly effective alternate way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test] and cause it to pause during execution (after it's created various state), and then interact with the test using `bitcoin-cli` as described above.
-Add `import time; time.sleep(600)` somewhere in a functional test (Python script) to suspend the test at that point for 10 minutes.
+A particularly effective alternate way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test] and cause it to pause during execution (after it's created some state), and then interact with the test using `bitcoin-cli` as described above.
+Add `import time; time.sleep(600)` somewhere into a functional test (which is just a Python script) to suspend the test at that point for 10 minutes.
 
 When the test is paused (you may want to add a `print("paused")` statement just before the call to `sleep()` to know it's been reached), find the data directory for the nodes, for example:
 
@@ -198,16 +200,16 @@ $ ps alx | grep bitcoind
 0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
 ----
 
-You can look at the `bitcoin.conf` files within the data directories to see what other config options are being specified for the test (there's always `regtest=1`), which is a good way to learn advanced uses of regtest.
+You can look at the `bitcoin.conf` files within the data directories to see what config options are being specified for the test (there's always `regtest=1`) in addition to the runtime options, which is a good way to learn about some advanced uses of regtest.
 
-Now you can submit RPC requests to a specific node, for example:
+While the (python) test is paused you can still submit RPC requests to a specific node, for example:
 
 [source,bash,options=nowrap]
 ----
 $ src/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchaininfo
 ----
 
-Another way to pause execution is to set a breakpoint, either by using a Python debugger, or by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
+Another way to pause test execution is to set a breakpoint, either by using a Python debugger, or by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
 This has the further advantage (over calling `time.sleep()`), in that you can single-step through the test while also manually interacting with the nodes, combining automated and manual testing.
 
 == BIPs
@@ -226,12 +228,13 @@ Of particular interest might be the sections https://github.com/bitcoin/bips/tre
 === What does having a BIP number assigned to an idea mean
 
 Bitcoin Core https://github.com/bitcoin/bitcoin/pull/22665[issue #22665] described how BIP125 was not being strictly adhered to by Bitcoin Core.
-This raised discussion amongst developers about whether the code (a.k.a. the implementation) or the BIP itself should act as the specification, with most developers expressing that they felt that "the code was the spec" and any BIP generated was merely a design document to aid with re-implementation by others, and should be corrected if necessary.
+This raised discussion amongst developers about whether the code (i.e. "the implementation") or the BIP itself should act as the specification, with most developers expressing that they felt that "the code was the spec" and any BIP generated was merely a design document to aid with re-implementation by others, and should be corrected if necessary.
 
 NOTE: This view was not completely unanimous in the community.
 
 For consensus-critical code most Bitcoin Core Developers consider "the code is the spec" to be the ultimate source of truth, which is one of the reasons that recommending running other full node implementations can be so difficult.
-A knock-on effect of this was that there were calls for review on BIP2 itself, with newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posting his thoughts to the https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html[bitcoin-dev mailing list].
+A knock-on effect of this was that there were calls for review on BIP2 itself, with respect to how BIPs should be updated/amended.
+Newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posted his thoughts on this to the https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html[bitcoin-dev mailing list].
 
 In summary a BIP represents a design document which should assist others in implementing a specific feature in a compatible way.
 These features are optional to usage of Bitcoin, and therefore implementation of BIPs are not required to use Bitcoin, only to remain compatible.
@@ -243,12 +246,12 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
 What are the best ways to get started with Bitcoin Core development?
 
 One of the roles most in-demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarized with the codebase too!
-Reviewing a few PRs, and adding your review comments to the PR on GitHub can be really valuable for you, the PR author and the bitcoin community.
+Reviewing a few PRs and adding your review comments to the PR on GitHub can be really valuable for you, the PR author and the bitcoin community.
 This https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html[Google Code Health] blog post gives some good advice on how to go about code review and getting past "feeling that you're not as smart as the programmer who wrote the change".
 If you're going to ask some questions as part of review, try and keep questions https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html[respectful].
 
 There is also a Bitcoin Core PR https://bitcoincore.reviews/[Review Club] held weekly on IRC which provides an ideal entry point into the Bitcoin Core codebase.
-A PR is selected, questions on the PR are provided to be discussed on irc.libera.chat #bitcoin-core-pr-reviews IRC room and a host will lead discussion around the changes.
+A PR is selected, questions on the PR are provided beforehand to be discussed on irc.libera.chat #bitcoin-core-pr-reviews IRC room and a host will lead discussion around the changes.
 
 Aside from review, there are 3 main avenues which might lead you to submitting your *own* PR to the repository:
 
@@ -258,6 +261,7 @@ Aside from review, there are 3 main avenues which might lead you to submitting y
 
 Choosing a "good first issue" from an area of the codebase that seems interesting to you is often a good approach.
 This is because these issues have been somewhat implicitly "concept ACKed" by other Contributors as "something that is likely worth someone working on".
+Don't confuse this for meaning that if you work on it that it is certain to be merged though.
 
 If you don't have a bug fix or new feature in mind and you're struggling to find a good first issue which looks suitable for you, don't panic.
 Instead keep reviewing other Contributors' PRs to continue improving your understanding of the process (and the codebase) while you watch the Issue tracker for something which you like the look of.
@@ -416,6 +420,7 @@ Either:
 * Distribute the `signetchallenge` value
 * One or all group members can act as Signet miners
 * Have all group members connect in to the custom signet
+* Some notes on this https://hackmd.io/KLaH9u6iTBuNokLhgJ0lnA[here].
 
 OR:
 

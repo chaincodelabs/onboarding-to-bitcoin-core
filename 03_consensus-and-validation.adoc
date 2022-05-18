@@ -3,9 +3,9 @@
 One of the fundamental concepts underlying bitcoin is that nodes on the network are able to maintain decentralized consensus on the ordering of transactions in the system.
 
 The primary mechanism that enables this is that all nodes should validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
-The secondary mechanism is that in the event of a discrepancy between two competing chain tips, all nodes should follow the chain with the most cumulative proof-of-work.
+The secondary mechanism is that in the event of a discrepancy between two competing chain tips, nodes should follow the chain with the most cumulative proof-of-work.
 
-The product of following these two mechanisms is that all nodes in the network will eventually converge onto a single, canonical, valid chain.
+The product of following these two mechanisms is that all honest nodes in the network will eventually converge onto a single, canonical, valid chain.
 For more information on how the bitcoin networks' decentralized consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
 
 == Consensus bugs
@@ -105,8 +105,9 @@ bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, co
 [TIP]
 ====
 Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
-In what circumstances might it not make sense?
+Are there circumstances where it might not make sense?
 ====
+
 Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
 
 == Database consensus
@@ -115,9 +116,9 @@ Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indic
 In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.
 What developers at the time could not foresee was that nodes that were still using BDB for these indices, all pre 0.8 nodes, were silently consensus-bound by a relatively obscure BDB-specific database lock counter.
 
-BDB required a configuration setting for the total number of locks available to your database.
-Bitcoin Core was also interpreting failure to grab the required number of locks as the block being invalid -- a consensus failure.
-This combination caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus split.
+BDB required a configuration setting for the total number of locks available to the database.
+Bitcoin Core was interpreting a failure to grab the required number of locks equivalent to block validation failing.
+This caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus-level chain split.
 https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50] provides further explanation on this incident.
 
 WARNING: Although database code is not in close proximity to the `/src/consensus` region of the codebase it was still able to induce a consensus bug.
@@ -280,7 +281,7 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
 ====
 
 This function is called when a new transaction is learned about before we add it to our mempool.
-This means that it gets called both from _src/net_processing.cpp_ when we hear about new transactions from the p2p network, and by _node/transaction.cpp_ when we are trying to send one of our own transactions.
+This means that it gets called both from _src/net_processing.cpp_ when we hear about new transactions from the P2P network, and by _node/transaction.cpp_ when we are trying to send one of our own transactions.
 
 .src/validation.cpp
 [source,cpp,options=nowrap]
@@ -317,7 +318,7 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
 }
 ----
 
-If the various checks pass, and this was not a test submission, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, trimming the mempool size and updating and affected RBF transactions as required.
+If the various checks pass, and this was not a test submission, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, trimming the mempool size and updating any affected RBF transactions as required.
 
 [TIP]
 ====
@@ -330,7 +331,7 @@ This means that we can hopefully "fail early" (and cheaply) on invalid transacti
 
 Once `AcceptSingleTransaction` has acquired the `cs_main` and  `m_pool.cs` locks, it calls `MemPoolAccept::PreChecks()` passing in a `Workspace` (`ws`), which is essentially a storage area for (validation status) state which can be shared by the different validation checks, along with a struct of `ATMPArgs`.
 
-.Click to the code comments on why we hold two locks before performing consensus checks on transactions
+.Click to see the code comments on why we hold _two_ locks before performing consensus checks on transactions
 [%collapsible]
 ====
 .src/txmempool.h#CTxMemPool
@@ -440,7 +441,7 @@ int CTxMemPool::Expire(std::chrono::seconds time)
 ----
 
 `m_bypass_limits` is used to determine whether we should enforce mempool fee limits for this transaction.
-If we are mining blocks, we may want to ensure our own transaction would pass mempool checks even if we don't attach a fee.
+If we are mining blocks we may want to ensure our own transaction would pass mempool checks, even if we don't attach a fee to it.
 
 `m_test_accept` is used if we just want to run mempool checks but not actually add the transaction into the mempool yet.
 This happens when we want to broadcast one of our own transactions, done by calling `BroadcastTransaction` from `node/transaction.cpp#BroadcastTransaction()`.
@@ -511,7 +512,7 @@ Note that local node policies are not necessarily consensus-binding, but are des
 See the <<Transaction validation>> and <<Consensus in Bitcoin Core>> sections for more information on the differences between policy and consensus.
 ====
 
-`PolicyScriptChecks()` starts with some initialisation of the transaction into a `CTransaction`, before beginning to check the input scripts against the script flags.
+`PolicyScriptChecks()` starts with initialisation of the transaction into a `CTransaction`, before beginning to check the input scripts against the script flags.
 
 .src/validation.cpp#PolicyScriptChecks
 [source,cpp,options=nowrap]
@@ -609,7 +610,7 @@ static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationS
 === Finalize
 
 Provided that consensus script checks pass and this was not a test ATMP call, we will call `Finalize()` on the transaction.
-This will remove any conflicting (lower fee) transactions from the mempool before adding this one, before trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
+This will remove any conflicting (lower fee) transactions from the mempool before adding this one, finishing by trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
 In the event that *this* transaction got trimmed, we ensure that we return a `TxValidationResult::TX_MEMPOOL_POLICY, "mempool full"` result.
 
 == AcceptMultipleTransactions
