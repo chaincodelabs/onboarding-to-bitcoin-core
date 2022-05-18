@@ -1,0 +1,719 @@
+= Consensus & validation
+
+One of the fundamental concepts underlying bitcoin is that nodes on the network are able to maintain decentralized consensus on the ordering of transactions in the system.
+
+The primary mechanism that enables this is that all nodes should validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
+The secondary mechanism is that in the event of a discrepancy between two competing chain tips, nodes should follow the chain with the most cumulative proof-of-work.
+
+The product of following these two mechanisms is that all honest nodes in the network will eventually converge onto a single, canonical, valid chain.
+For more information on how the bitcoin networks' decentralized consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
+
+== Consensus bugs
+
+Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed] the possibility of a consensus failure via usage of OpenSSL.
+The issue was that the OpenSSL signature verification was accepting *multiple* signature serialization formats (for the same signature) as valid.
+This effectively meant that a transactions' ID (txid) could be changed, because the signature contributes to the txid hash.
+
+.Click to show the code comments related to pubkey signature parsing from _pubkey.cpp_
+[%collapsible]
+====
+
+.src/pubkey.cpp
+[source,cpp,options=nowrap]
+----
+/** This function is taken from the libsecp256k1 distribution and implements
+ *  DER parsing for ECDSA signatures, while supporting an arbitrary subset of
+ *  format violations.
+ *
+ *  Supported violations include negative integers, excessive padding, garbage
+ *  at the end, and overly long length descriptors. This is safe to use in
+ *  Bitcoin because since the activation of BIP66, signatures are verified to be
+ *  strict DER before being passed to this module, and we know it supports all
+ *  violations present in the blockchain before that point.
+ */
+int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1_ecdsa_signature* sig, const unsigned char *input, size_t inputlen) {
+    // ...
+}
+----
+====
+
+There were a few cases to consider:
+
+. first party malleation: signature length descriptor is extended to 5 bytes
+. third party malleation: signature may be slightly "tweaked" or padded
+. third party malleation: negating the `S` value of the signature
+
+In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
+The first party (the sender) can create a normal-length valid signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
+
+In the second case, signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
+However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning) in the event that they are relying on txids to track transactions.
+
+It is interesting to consider the order of the steps taken to fix this potential vulnerability:
+
+. First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings. +
+This was carried out in https://github.com/bitcoin/bitcoin/pull/2520[PR#2520].
+. Following the policy change, the strict encoding rules were later enforced by consensus in https://github.com/bitcoin/bitcoin/pull/5713[PR#5713].
+
+We can see the resulting flag in the script verification enum:
+
+.src/script/interpreter.h
+[source,cpp,options=nowrap]
+----
+// Passing a non-strict-DER signature or one with undefined hashtype to a checksig operation causes script failure.
+// Evaluating a pubkey that is not (0x04 + 64 bytes) or (0x02 or 0x03 + 32 bytes) by checksig causes script failure.
+// (not used or intended as a consensus rule).
+SCRIPT_VERIFY_STRICTENC = (1U << 1),
+----
+
+.Expand to see where this flag is checked in _src/script/interpreter.cpp_
+[%collapsible]
+====
+
+[source,cpp,options=nowrap]
+----
+bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror) {
+    // Empty signature. Not strictly DER encoded, but allowed to provide a
+    // compact way to provide an invalid signature for use with CHECK(MULTI)SIG
+    if (vchSig.size() == 0) {
+        return true;
+    }
+    if ((flags & (SCRIPT_VERIFY_DERSIG | SCRIPT_VERIFY_LOW_S | SCRIPT_VERIFY_STRICTENC)) != 0 && !IsValidSignatureEncoding(vchSig)) {
+        return set_error(serror, SCRIPT_ERR_SIG_DER);
+    } else if ((flags & SCRIPT_VERIFY_LOW_S) != 0 && !IsLowDERSignature(vchSig, serror)) {
+        // serror is set
+        return false;
+    } else if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsDefinedHashtypeSignature(vchSig)) {
+        return set_error(serror, SCRIPT_ERR_SIG_HASHTYPE);
+    }
+    return true;
+}
+
+bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, const SigVersion &sigversion, ScriptError* serror) {
+    if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsCompressedOrUncompressedPubKey(vchPubKey)) {
+        return set_error(serror, SCRIPT_ERR_PUBKEYTYPE);
+    }
+    // Only compressed keys are accepted in segwit
+    if ((flags & SCRIPT_VERIFY_WITNESS_PUBKEYTYPE) != 0 && sigversion == SigVersion::WITNESS_V0 && !IsCompressedPubKey(vchPubKey)) {
+        return set_error(serror, SCRIPT_ERR_WITNESS_PUBKEYTYPE);
+    }
+    return true;
+}
+----
+====
+
+[TIP]
+====
+Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
+Are there circumstances where it might not make sense?
+====
+
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
+
+== Database consensus
+
+Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indices.
+In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.
+What developers at the time could not foresee was that nodes that were still using BDB for these indices, all pre 0.8 nodes, were silently consensus-bound by a relatively obscure BDB-specific database lock counter.
+
+BDB required a configuration setting for the total number of locks available to the database.
+Bitcoin Core was interpreting a failure to grab the required number of locks equivalent to block validation failing.
+This caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus-level chain split.
+https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50] provides further explanation on this incident.
+
+WARNING: Although database code is not in close proximity to the `/src/consensus` region of the codebase it was still able to induce a consensus bug.
+
+== Consensus in Bitcoin Core
+
+Review of the design of Bitcoin Core from <<Overview & architecture of Bitcoin Core>>  will naturally lead to a region of the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
+However this is not entirely the case...
+
+The primary components of consensus-related code can be found across the Bitcoin Core codebase in a number of files, including notably:
+
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#validationhcpp[validation.{h|cpp}]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#policy_region[policy/]
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
+
+[listing]
+----
+📂 bitcoin
+  📂 src
+    📂 consensus
+    📂 script
+      📄interpreter.cpp
+    📂 policy
+    📄 validation.h
+    📄 validation.cpp
+----
+
+Why is such a critical function split up between many files, and how do they all interact?
+Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
+
+The answer teaches us that policy checks are a superset of validation checks --  that is to say that a transaction that passes policy checks has implicitly passed consensus checks too.
+Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
+Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
+
+== libbitcoinkernel
+
+The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project seeks to modularise Bitcoin Cores' consensus engine.
+
+=== libbitcoinconsensus
+
+libbitcoinkernel is distinct from the libbitcoinconsensus library which is described in the 0.10.0 release notes:
+
+[quote]
+____
+Consensus library
+
+Starting from 0.10.0, the Bitcoin Core distribution includes a consensus library.
+
+The purpose of this library is to make the verification functionality that is
+critical to Bitcoin's consensus available to other applications, e.g. to language
+bindings such as [python-bitcoinlib](https://pypi.python.org/pypi/python-bitcoinlib) or
+alternative node implementations.
+
+This library is called `libbitcoinconsensus.so` (or, `.dll` for Windows).
+Its interface is defined in the C header [bitcoinconsensus.h](https://github.com/bitcoin/bitcoin/blob/0.10/src/script/bitcoinconsensus.h).
+
+In its initial version the API includes two functions:
+
+- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction
+correctly spends the passed scriptPubKey under additional constraints indicated by flags
+- `bitcoinconsensus_version` returns the API version, currently at an experimental `0`
+
+The functionality is planned to be extended to e.g. UTXO management in upcoming releases, but the interface
+for existing methods should remain stable.
+____
+
+Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
+
+== Hardcoded consensus values
+
+_consensus/consensus.h_ contains a number of `static const` values relating to consensus rules.
+These are globally shared between files such as _validation.cpp_, _rpc_mining.cpp_ and _rpc/mining.cpp_.
+These consensus-critical values are marked as `const` so that there is no possibility that they can be changed at any point during program execution.
+
+[TIP]
+====
+There are other values in the codebase (not contained within this file) that are consensus-critical -- can you find any?
+====
+
+== Transaction validation
+
+We can follow most of the journey of a transaction through Bitcoin Core by following glozow's excellent notes on transaction https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[Validation and Submission to the Mempool].
+glozow details the different types of checks that are run on a new transaction before it's accepted into the nodes' local mempool: consensus vs policy, script vs non-script, contextual vs context-free.
+
+glozow continues with sections on P2P transaction relay, orphans and mining, but https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[Block Validation] is highly consensus-related, describing the consensus checks performed on newly-learned blocks, specifically:
+
+[quote,glozow]
+____
+Since v0.8, Bitcoin Core nodes have used a https://github.com/bitcoin/bitcoin/pull/1677[UTXO set] rather than blockchain lookups to represent state and validate transactions.
+To fully validate new blocks nodes only need to consult their UTXO set and knowledge of the current consensus rules.
+Since consensus rules depend on block height and time (both of which can *decrease* during a reorg), they are recalculated for each block prior to validation.
+
+Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935[total sigop cost], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866[duplicate transactions], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179[timestamps], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255[witness commitments] https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946[input scripts]) for each block.
+
+Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887[work queue] delegated to a set of threads while the main validation thread is working on other things.
+While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
+
+If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just https://github.com/bitcoin/bitcoin/tree/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430[uses the script cache]!
+____
+
+The section on https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification] also highlights how the script interpreter is called from at least 3 distinct sites within the codebase:
+
+[quote]
+____
+* when the node https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001[receives a new transaction].
+
+* when the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29[node wants to broadcast a new transaction].
+
+* when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block]
+____
+
+Having considered both transactions that have entered into the mempool, and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
+
+Calls to transaction and block validation code come largely from _validation.cpp_.
+
+== AcceptSingleTransaction
+
+`MemPoolAccept::AcceptSingleTransaction()` is where the policy and validation checks on local transactions, and individual transactions we learn about from the P2P network occur before they enter the mempool.
+
+First we run https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L524-L528[PreChecks], followed by https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L530-L532[PolicyScriptChecks] and finally https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L534-L538[ConsensusScriptChecks].
+
+.Click to see additional information on replacement transaction checks
+[%collapsible]
+====
+Since https://github.com/bitcoin/bitcoin/pull/23381[PR#23381] checks on BIP125 Replace By Fee (RBF) replacement transactions have been moved out into their own check function, `ReplacementChecks()`, which is still called from within `AcceptSingleTransaction()`:
+
+.src/validation.cpp#MemPoolAccept::AcceptSingleTransaction()
+[source,cpp,highlight=10,options=nowrap]
+----
+MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
+{
+    AssertLockHeld(cs_main);
+    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
+
+    Workspace ws(ptx);
+
+    if (!PreChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    if (m_rbf && !ReplacementChecks(ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    // Perform the inexpensive checks first and avoid hashing and signature verification unless
+    // those checks pass, to mitigate CPU exhaustion denial-of-service attacks.
+    if (!PolicyScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    if (!ConsensusScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    // Tx was accepted, but not added
+    if (args.m_test_accept) {
+        return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
+    }
+
+    if (!Finalize(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
+
+    return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
+}
+----
+====
+
+This function is called when a new transaction is learned about before we add it to our mempool.
+This means that it gets called both from _src/net_processing.cpp_ when we hear about new transactions from the P2P network, and by _node/transaction.cpp_ when we are trying to send one of our own transactions.
+
+.src/validation.cpp
+[source,cpp,options=nowrap]
+----
+MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
+{
+    AssertLockHeld(cs_main);
+    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
+
+    Workspace ws(ptx);
+
+    if (!PreChecks(args, ws)) return MempoolAcceptResult(ws.m_state);
+
+    // Only compute the precomputed transaction data if we need to verify
+    // scripts (ie, other policy checks pass). We perform the inexpensive
+    // checks first and avoid hashing and signature verification unless those
+    // checks pass, to mitigate CPU exhaustion denial-of-service attacks.
+    PrecomputedTransactionData txdata;
+
+    if (!PolicyScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
+
+    if (!ConsensusScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
+
+    // Tx was accepted, but not added
+    if (args.m_test_accept) {
+        return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
+    }
+
+    if (!Finalize(args, ws)) return MempoolAcceptResult(ws.m_state);
+
+    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
+
+    return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
+}
+----
+
+If the various checks pass, and this was not a test submission, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, trimming the mempool size and updating any affected RBF transactions as required.
+
+[TIP]
+====
+As the comments on those functions allude to, we purposefully run the checks in that order so that the least computationally-expensive checks are fun first.
+
+This means that we can hopefully "fail early" (and cheaply) on invalid transactions.
+====
+
+=== PreChecks
+
+Once `AcceptSingleTransaction` has acquired the `cs_main` and  `m_pool.cs` locks, it calls `MemPoolAccept::PreChecks()` passing in a `Workspace` (`ws`), which is essentially a storage area for (validation status) state which can be shared by the different validation checks, along with a struct of `ATMPArgs`.
+
+.Click to see the code comments on why we hold _two_ locks before performing consensus checks on transactions
+[%collapsible]
+====
+.src/txmempool.h#CTxMemPool
+[source,cpp,options=nowrap]
+----
+/**
+ * This mutex needs to be locked when accessing `mapTx` or other members
+ * that are guarded by it.
+ *
+ * @par Consistency guarantees
+ *
+ * By design, it is guaranteed that:
+ *
+ * 1. Locking both `cs_main` and `mempool.cs` will give a view of mempool
+ *    that is consistent with current chain tip (`::ChainActive()` and
+ *    `CoinsTip()`) and is fully populated. Fully populated means that if the
+ *    current active chain is missing transactions that were present in a
+ *    previously active chain, all the missing transactions will have been
+ *    re-added to the mempool and should be present if they meet size and
+ *    consistency constraints.
+ *
+ * 2. Locking `mempool.cs` without `cs_main` will give a view of a mempool
+ *    consistent with some chain that was active since `cs_main` was last
+ *    locked, and that is fully populated as described above. It is ok for
+ *    code that only needs to query or remove transactions from the mempool
+ *    to lock just `mempool.cs` without `cs_main`.
+ *
+ * To provide these guarantees, it is necessary to lock both `cs_main` and
+ * `mempool.cs` whenever adding transactions to the mempool and whenever
+ * changing the chain tip. It's necessary to keep both mutexes locked until
+ * the mempool is consistent with the new chain tip and fully populated.
+ */
+mutable RecursiveMutex cs;
+----
+====
+
+The `Workspace` struct is initialized with a pointer to the transactions' `CTransactionRef` and holds the following additional information:
+
+.src/validation.cpp#MemPoolAccept::Workspace
+[source,cpp,options=nowrap]
+----
+struct Workspace {
+    explicit Workspace(const CTransactionRef& ptx) : m_ptx(ptx), m_hash(ptx->GetHash()) {}
+    std::set<uint256> m_conflicts;
+    CTxMemPool::setEntries m_all_conflicting;
+    CTxMemPool::setEntries m_ancestors;
+    std::unique_ptr<CTxMemPoolEntry> m_entry;
+    std::list<CTransactionRef> m_replaced_transactions;
+
+    bool m_replacement_transaction;
+    CAmount m_base_fees;
+    CAmount m_modified_fees;
+    CAmount m_conflicting_fees;
+    size_t m_conflicting_size;
+
+    const CTransactionRef& m_ptx;
+    const uint256& m_hash;
+    TxValidationState m_state;
+};
+----
+
+We can look at ATMPArgs to see what other information our mempool wants to know about in addition to transaction information.
+
+.src/validation.cpp#MemPoolAccept::ATMPArgs
+[source,cpp,options=nowrap]
+----
+struct ATMPArgs {
+    const CChainParams& m_chainparams;
+    const int64_t m_accept_time;
+    const bool m_bypass_limits;
+    /*
+     * Return any outpoints which were not previously present in the coins
+     * cache, but were added as a result of validating the tx for mempool
+     * acceptance. This allows the caller to optionally remove the cache
+     * additions if the associated transaction ends up being rejected by
+     * the mempool.
+     */
+    std::vector<COutPoint>& m_coins_to_uncache;
+    const bool m_test_accept;
+};
+----
+
+[sidebar]
+****
+`m_accept_time` is the local time when the transaction entered the mempool.
+This gets used during the mempool transaction eviction selection process as part of `CTxMemPool::Expire()` (where it is referenced by the name `entry_time`):
+
+.src/txmempool.cpp#CTXMemPool::Expire()
+[source,cpp,options=nowrap]
+----
+int CTxMemPool::Expire(std::chrono::seconds time)
+{
+    AssertLockHeld(cs);
+    indexed_transaction_set::index<entry_time>::type::iterator it = mapTx.get<entry_time>().begin();
+    setEntries toremove;
+    while (it != mapTx.get<entry_time>().end() && it->GetTime() < time) {
+        toremove.insert(mapTx.project<0>(it));
+        it++;
+    }
+    setEntries stage;
+    for (txiter removeit : toremove) {
+        CalculateDescendants(removeit, stage);
+    }
+    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY);
+    return stage.size();
+}
+----
+
+`m_bypass_limits` is used to determine whether we should enforce mempool fee limits for this transaction.
+If we are mining blocks we may want to ensure our own transaction would pass mempool checks, even if we don't attach a fee to it.
+
+`m_test_accept` is used if we just want to run mempool checks but not actually add the transaction into the mempool yet.
+This happens when we want to broadcast one of our own transactions, done by calling `BroadcastTransaction` from `node/transaction.cpp#BroadcastTransaction()`.
+****
+
+The code comments for `PreChecks` give a good indication of what the PreChecks are for:
+
+.src/validation.cpp#MemPoolAccept::PreChecks()
+[source,cpp,options=nowrap]
+----
+// Run the policy checks on a given transaction, excluding any script checks.
+// Looks up inputs, calculates feerate, considers replacement, evaluates
+// package limits, etc. As this function can be invoked for "free" by a peer,
+// only tests that are fast should be done here (to avoid CPU DoS).
+----
+
+The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L576-L949[`PreChecks` function] is very long but is worth examining to see exactly what checks are undertaken at this stage.
+
+=== PolicyScriptChecks
+
+Following PreChecks we initialise a `PrecomputedTransactionData` struct which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
+
+.Click to show the `PrecomputedTransactionData` struct
+[%collapsible]
+====
+.script/interpreter.cpp
+[source,cpp,options=nowrap]
+----
+struct PrecomputedTransactionData
+{
+    // BIP341 precomputed data.
+    // These are single-SHA256, see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#cite_note-15.
+    uint256 m_prevouts_single_hash;
+    uint256 m_sequences_single_hash;
+    uint256 m_outputs_single_hash;
+    uint256 m_spent_amounts_single_hash;
+    uint256 m_spent_scripts_single_hash;
+    //! Whether the 5 fields above are initialized.
+    bool m_bip341_taproot_ready = false;
+
+    // BIP143 precomputed data (double-SHA256).
+    uint256 hashPrevouts, hashSequence, hashOutputs;
+    //! Whether the 3 fields above are initialized.
+    bool m_bip143_segwit_ready = false;
+
+    std::vector<CTxOut> m_spent_outputs;
+    //! Whether m_spent_outputs is initialized.
+    bool m_spent_outputs_ready = false;
+
+    PrecomputedTransactionData() = default;
+
+    template <class T>
+    void Init(const T& tx, std::vector<CTxOut>&& spent_outputs);
+
+    template <class T>
+    explicit PrecomputedTransactionData(const T& tx);
+};
+----
+====
+
+Next we call `PolicyScriptChecks()` passing in the same `ATMPArgs` and `Workspace` that we used with PreChecks.
+This is going to check the transaction against our node policies.
+
+[TIP]
+====
+Note that local node policies are not necessarily consensus-binding, but are designed to help prevent resource exhaustion (e.g. DoS) on our node.
+
+See the <<Transaction validation>> and <<Consensus in Bitcoin Core>> sections for more information on the differences between policy and consensus.
+====
+
+`PolicyScriptChecks()` starts with initialisation of the transaction into a `CTransaction`, before beginning to check the input scripts against the script flags.
+
+.src/validation.cpp#PolicyScriptChecks
+[source,cpp,options=nowrap]
+----
+bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws, PrecomputedTransactionData& txdata)
+{
+    const CTransaction& tx = *ws.m_ptx;
+    TxValidationState& state = ws.m_state;
+
+    constexpr unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+
+    // Check input scripts and signatures.
+    // This is done last to help prevent CPU exhaustion denial-of-service attacks.
+    if (!CheckInputScripts(tx, state, m_view, scriptVerifyFlags, true, false, txdata)) {
+        // SCRIPT_VERIFY_CLEANSTACK requires SCRIPT_VERIFY_WITNESS, so we
+        // need to turn both off, and compare against just turning off CLEANSTACK
+        // to see if the failure is specifically due to witness validation.
+        TxValidationState state_dummy; // Want reported failures to be from first CheckInputScripts
+        if (!tx.HasWitness() && CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~(SCRIPT_VERIFY_WITNESS | SCRIPT_VERIFY_CLEANSTACK), true, false, txdata) &&
+                !CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~SCRIPT_VERIFY_CLEANSTACK, true, false, txdata)) {
+            // Only the witness is missing, so the transaction itself may be fine.
+            state.Invalid(TxValidationResult::TX_WITNESS_STRIPPED,
+                    state.GetRejectReason(), state.GetDebugMessage());
+        }
+        return false; // state filled in by CheckInputScripts
+    }
+
+    return true;
+}
+----
+
+Calling `CheckInputScripts()` involves ECDSA signature verification and is therefore computationally expensive.
+// TODO: Why?
+If the script type is SegWit an additional round of checking is performed, this time including the `CLEANSTACK` rule.
+The call(s) flag `cacheSigStore` as `true`, and `cacheFullScriptStore` as `false`, which means that matched signatures will be persisted in the cache, but matched full scripts will be removed.
+
+=== ConsensusScriptChecks
+
+If the PolicyScriptChecks return `true` we will move on to consensus script checks, again passing in the same `ATMPArgs`, `Workspace` and now `PrecomputedTransactionData` that we used previously with `PolicyScriptChecks`.
+
+The main check in here is `CheckInputsFromMempoolAndCache()` which is going to compare all the transaction inputs to our mempool, checking that they have not already been marked as spent.
+If the coin is not already spent, we reference it from either the UTXO set or our mempool, and finally submit it through `CheckInputScripts()` once more, this time caching both the signatures and the full scripts.
+
+.Click to show `CheckInputsFromMempoolAndCache()`
+[%collapsible]
+====
+.src/validation.cpp#CheckInputsFromMempoolAndCache
+[source,cpp,options=nowrap]
+----
+/**
+* Checks to avoid mempool polluting consensus critical paths since cached
+* signature and script validity results will be reused if we validate this
+* transaction again during block validation.
+* */
+static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationState& state,
+                const CCoinsViewCache& view, const CTxMemPool& pool,
+                unsigned int flags, PrecomputedTransactionData& txdata, CCoinsViewCache& coins_tip)
+                EXCLUSIVE_LOCKS_REQUIRED(cs_main, pool.cs)
+{
+    AssertLockHeld(cs_main);
+    AssertLockHeld(pool.cs);
+
+    assert(!tx.IsCoinBase());
+    for (const CTxIn& txin : tx.vin) {
+        const Coin& coin = view.AccessCoin(txin.prevout);
+
+        // This coin was checked in PreChecks and MemPoolAccept
+        // has been holding cs_main since then.
+        Assume(!coin.IsSpent());
+        if (coin.IsSpent()) return false;
+
+        // If the Coin is available, there are 2 possibilities:
+        // it is available in our current ChainstateActive UTXO set,
+        // or it's a UTXO provided by a transaction in our mempool.
+        // Ensure the scriptPubKeys in Coins from CoinsView are correct.
+        const CTransactionRef& txFrom = pool.get(txin.prevout.hash);
+        if (txFrom) {
+            assert(txFrom->GetHash() == txin.prevout.hash);
+            assert(txFrom->vout.size() > txin.prevout.n);
+            assert(txFrom->vout[txin.prevout.n] == coin.out);
+        } else {
+            assert(std::addressof(::ChainstateActive().CoinsTip()) == std::addressof(coins_tip));
+            const Coin& coinFromUTXOSet = coins_tip.AccessCoin(txin.prevout);
+            assert(!coinFromUTXOSet.IsSpent());
+            assert(coinFromUTXOSet.out == coin.out);
+        }
+    }
+
+    // Call CheckInputScripts() to cache signature and script validity against current tip consensus rules.
+    return CheckInputScripts(tx, state, view, flags, /* cacheSigStore = */ true, /* cacheFullSciptStore = */ true, txdata);
+}
+----
+====
+
+=== Finalize
+
+Provided that consensus script checks pass and this was not a test ATMP call, we will call `Finalize()` on the transaction.
+This will remove any conflicting (lower fee) transactions from the mempool before adding this one, finishing by trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
+In the event that *this* transaction got trimmed, we ensure that we return a `TxValidationResult::TX_MEMPOOL_POLICY, "mempool full"` result.
+
+== AcceptMultipleTransactions
+
+TODO: Can mention `PackageMempoolChecks()`?
+
+== Multiple chains
+
+TODO: Reorgs, undo data, `DisconnectBlock`
+
+Bitcoin nodes should ultimately converge in consensus on the most-work chain.
+Being able to track and monitor multiple chain (tips) concurrently is a key requirement for this to take place.
+There are a number of different states which the client must be able to handle:
+
+. A single, most-work chain being followed
+. Stale blocks learned about but not used
+. Full reorganisation from one chain tip to another
+
+`BlockManager` is tasked with maintaining a tree of all blocks learned about, along with their total work so that the most-work chain can be quickly determined.
+
+`CChainState` is responsible for updating our local view of the best tip, including reading and writing blocks to disk, and updating the UTXO set.
+A single `BlockManager` is shared between all instances of `CChainState`.
+
+`ChainstateManager` is tasked with managing multiple ``CChainState``s.
+Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the https://bitcoinops.org/en/topics/assumeutxo/[assumeUTXO] project.
+
+When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.
+
+== Exercises
+
+[qanda]
+What is the difference between contextual and context-free validation checks?::
+Contextual checks require some knowledge of the current "state", e.g. ChainState, chain tip or UTXO set.
++
+Context-free checks only require the information required in the transaction itself.
++
+See {glozow-tx-mempool-validation}[glozow-tx-mempool-validation] for more info.
+
+What are some examples of each?::
+context-free:
++
+. `tx.isCoinbase()`
+. https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/consensus/tx_check.cpp#L25-L28[0 &#8804; tx_value &#8804; MAX_MONEY]
+. https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/policy/policy.cpp#L88[tx not overweight]
+
++
+contextual: https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L671-L692[check inputs are available]
+
+In which function(s) do UTXO-related validity checks happen?::
+`ConnectBlock()`
+
+What type of validation checks are `CheckBlockHeader()` and `CheckBlock()` performing?::
+context-free
+
+Which class is in charge of managing the current blockchain?::
+`ChainstateManager()`
+
+Which class is in charge of managing the UTXO set?::
+`CCoinsViews()`
+
+Which functions are called when a longer chain is found that we need to re-org onto?::
+TODO
+
+Are there any areas of the codebase where the same consensus or validation checks are performed twice?::
+Again see https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[glozows notes] for examples
+
+Why does `CheckInputsFromMempoolAndCache` exist?::
+To prevent us from re-checking the scripts of transactions already in our mempool during consensus validation on learning about a new block
+
+Which function(s) are in charge of validating the merkle root of a block?::
+`BlockMerkleRoot()` and `BlockWitnessMerkleRoot()` construct a vector of merkle leaves, which is then passed to `ComputeMerkleRoot()` for calculation.
+// TODO: Calculate the merkle root of a sample block
+
+Can you find any evidence (e.g. PRs) which have been made in an effort to modularize consensus code?::
+A few examples: https://github.com/bitcoin/bitcoin/pull/10279[PR#10279], https://github.com/bitcoin/bitcoin/pull/20158[PR#20158]
+
+What is the function of `BlockManager()`?::
+It manages the current most-work chaintip and pruning of unneeded blocks (`\*.blk`) and associated undo (`*.rev`) files
+
+What stops a malicious node from sending multiple invalid headers to try and use up a nodes' disk space? (hint: these might be stored in `BlockManager.m_failed_blocks`)::
+Even invalid headers would need a valid proof of work which would be too costly to construct for a spammer
+
+Which functions are responsible for writing consensus-valid blocks to disk?::
+TODO: answer
+
+Are there any other components to Bitcoin Core which, similarly to the block storage database, are not themselves performing validation but can still be consensus-critical?::
+Not sure myself, sounds like an interesting question though!
+
+In which module (and class) is signature verification handled?::
+`src/script/interpreter.cpp#BaseSignatureChecker`
+
+Which function is used to calculate the Merkle root of a block, and from where is it called?::
+`src/consensus/merkle.cpp#ComputeMerkleRoot` is used to compute the merkle root.
++
+It is called from `src/chainparams.cpp#CreateGenesisBlock`, `src/miner.cpp#IncrementExtraNonce` & `src/miner.cpp#RegenerateCommitments` and from `src/validation.cpp#CheckBlock` to validate incoming blocks.
+
+Practical question on Merkle root calculation::
+TODO, add exercise
+
+// == Removed text
+//
+// The outline of the mechanism at work is that a node relaying a transaction can slightly modify the signature in a way which is still acceptable to the underlying OpenSSL module.
+// Once the signature has been changed, the transaction ID (hash) will also change.
+// If the modified transaction is then included in a block, before the original, the effect is that the sender will still see the outgoing transaction as "unconfirmed" in their wallet.
+// The sender wallet should however also see the accepted (modified) outgoing transaction, so their balance will be calculated correctly, only a "stuck doublespend" will pollute their wallet.
+// The receiver will not perceive anything unordinary, unless they were tracking the incoming payment using the txid as given to them by the sender.
