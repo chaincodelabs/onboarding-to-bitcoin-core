@@ -125,7 +125,7 @@ WARNING: Although database code is not in close proximity to the `/src/consensus
 
 == Consensus in Bitcoin Core
 
-Review of the design of Bitcoin Core from <<Overview & architecture of Bitcoin Core>>  will naturally lead to a region of the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
+Review of the design of Bitcoin Core from <<Architecture>>  will naturally lead to a region of the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
 However this is not entirely the case...
 
 The primary components of consensus-related code can be found across the Bitcoin Core codebase in a number of files, including notably:
@@ -156,7 +156,9 @@ Many of the policy checks contained in `policy` are called from inside `validati
 
 == libbitcoinkernel
 
-The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project seeks to modularise Bitcoin Cores' consensus engine.
+The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project seeks to modularise Bitcoin Cores' consensus engine and make it easier for developers to reason about when they are modifying code which could be consensus-critical.
+
+Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
 
 === libbitcoinconsensus
 
@@ -185,8 +187,6 @@ correctly spends the passed scriptPubKey under additional constraints indicated 
 The functionality is planned to be extended to e.g. UTXO management in upcoming releases, but the interface
 for existing methods should remain stable.
 ____
-
-Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
 
 == Hardcoded consensus values
 

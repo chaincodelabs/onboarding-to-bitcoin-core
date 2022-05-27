@@ -1,0 +1,22 @@
+= Architecture
+
+lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the Bitcoin Core Onboarding Documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
+
+Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality from the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions] document.
+
+James O'Beirne has recorded 3 videos which go into detail on how the codebase is laid out, how the build system works, what developer tools there are, as well as what the primary function of many of the files in the codebase are:
+
+. https://www.youtube.com/watch?v=J1Ru8V36z_Y[Architectural tour of Bitcoin Core (part 1 of 3)]
+. https://www.youtube.com/watch?v=RVWcUnpZX4E[Architectural tour of Bitcoin Core (part 2 of 3)]
+. https://www.youtube.com/watch?v=UiD5DZU9Zp4[Architectural tour of Bitcoin Core (part 3 of 3)]
+
+ryanofsky has written a handy https://github.com/ryanofsky/bitcoin/blob/pr/libs/doc/design/libraries.md[guide] covering the different libraries contained within Bitcoin Core, along with some of their conventions and a dependency graph for them.
+Generally speaking, the desire is for the Bitcoin Core project to become more modular and less monolithic over time.
+
+== Threads
+
+TODO: Table of threads and what they do
+
+== Directory structure
+
+TODO: A description of the directory structure
