@@ -421,8 +421,8 @@ They primary differences between the networks are as follows:
 
 | Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorized signers
 | Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins)
-| P2P port                  | 18333                          | 18443                         | 38333
-| RPC port                  | 18332                          | 18442                         | 38332
+| P2P port                  | 18333                          | 18444                         | 38333
+| RPC port                  | 18332                          | 18443                         | 38332
 | Peers                     | Public                         | None                          | Public
 | Topology                  | Organic                        | Manual                        | Organic
 | Chain birthday            | 2011-02-02                     | At time of use                | 2020-09-01
