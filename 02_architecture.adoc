@@ -1,5 +1,91 @@
 = Architecture
 
+== Overview of major bitcoind components
+
+The following diagram gives a brief overview of how some of the major components in bitcoind are related.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+[mermaid, target=bitcoind-overview, format=svg]
+....
+flowchart LR
+    bitcoind
+    RPCServer -.-> bitcoind
+    RESTServer -.-> bitcoind
+    Node -----> bitcoind
+    AddrMan --> Node
+    CConMan --> Node
+    Interfaces::Chain --> Node
+    ChainstateManager --> Node
+    FeeEstimator --> Node
+    NetGroupManager --> Node
+    CTxMempool --> Node
+    PeerManager --> Node
+    Wallet -.-> bitcoind
+    ScriptPubKeyman --> Wallet
+    WalletDatabase --> Wallet
+    sqlite -.-> WalletDatabase
+    BDB -.-> WalletDatabase
+    Logger --> bitcoind
+    ZMQ -.-> bitcoind
+    BlockManager --> ChainstateManager
+    LevelDB --> BlockManager
+....
+
+== Overview of bitcoin-cli operation
+
+The following diagram gives a brief overview of how bitcoin-cli operates.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+[mermaid, target=bitcoin-cli-overview, format=svg]
+....
+flowchart LR
+    BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GenerateToAddressHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> DefaultRequestHandler --> ConnectAndCallRPC
+    ConnectAndCallRPC <---> bitcoin-cli
+    ArgsManager --> bitcoin-cli
+....
+
+== Overview of tests in Bitcoin Core
+
+The following diagram gives a brief overview of how the tests are structured in Bitcoin Core.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+NOTE: The `fuzz_targets` themselves are located in the `test` folder, however the fuzz tests are run via the `test_runner` in src/test so we point fuzz to there.
+
+NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate] repo altogether, as they are quite large (~3.5GB repo size and ~13.4GB on clone).
+
+[mermaid, target=bitcoin-core-tests, format=svg]
+....
+flowchart LR
+    TR1[test_runner]
+    functional ---> test
+    lint ---> test
+    util ---> test
+    test_framework --> functional
+    TR1 --> functional
+
+    TR2["test_runner (fuzz)"]
+    fuzz_targets --> fuzz
+    fuzz ---> src/tests
+    libFuzzer --> fuzz
+    TR2 --> fuzz
+    qa-assets --> fuzz
+    unit ---> src/tests
+    Boost --> unit
+    test_bitcoin --> unit
+
+    classDef types fill:green,color:white,stroke:green;
+    class functional,lint,util,fuzz,unit types
+....
+
+== Deep technical dive (WIP)
+
 lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the Bitcoin Core Onboarding Documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
 
 Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality from the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions] document.
