@@ -21,6 +21,19 @@ asciidoctor index.adoc
 
 Simply host _index.html_ along with the _images/_ directory and its contents at the root of your web server to serve the documentation.
 
+=== Regenerate mermaid diagrams
+
+In order to regenerate the mermaid diagrams, you will need https://github.com/mermaid-js/mermaid-cli[mermaid-cli] and https://docs.asciidoctor.org/diagram-extension/latest/[asciidoctor-diagram] installed.
+
+With both of the above programs on your PATH, you can then run command:
+
+[source,shell]
+----
+asciidoctor -r asciidoctor-diagram index.adoc
+----
+
+To generate index.html, along with required images in the `/images` sub-directory.
+
 === Update _index.html_ automatically as a pre-commit hook
 
 If you prefer you can write a simple pre-commit hook to update _index.html_ file automatically at each commit.
