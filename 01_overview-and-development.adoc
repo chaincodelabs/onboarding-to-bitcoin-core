@@ -570,6 +570,17 @@ There are plenty of other channels on IRC where those topics can be discussed.
 There are also regular meetings held on #bitcoin-core-dev which are free and open for anyone to attend.
 Details and timings of the various meetings are found https://bitcoincore.org/en/meetings/[here].
 
+=== Choosing a discussion forum
+
+In reality there are no hard rules on choosing a discussion forum, but in practice there are some common conventions which are generally followed.
+
+* If you want to discuss the codebase of the Bitcoin Core implementation, then discussion on either the GitHub repo or IRC channel is usually most-appropriate.
+* If you want to discuss changes to the core bitcoin protocol, then discussion on the mailing list is usually warranted to solicit feedback from (all) bitcoin developers, including the many of them that do not work on Bitcoin Core directly.
+** If mailing list discussions seem to indicate interest for a proposal, then creation of a BIP usually follows.
+
+If discussing something Bitcoin Core-related, there can also be a question of whether it's best to open an Issue, to first discuss the problem and brainstorm possible solution approaches, or whether you should implement the changes as you see best first, open a PR, and then discuss changes in the PR.
+Again, there are no hard rules here, but general advice would be that for potentially-controversial subjects, it might be worth opening an Issue first, before (potentially) wasting time implementing a PR fix which is unlikely to be accepted.
+
 === Backports
 
 Bitcoin Core often backports fixes for bugs and soft fork activations into previous software releases.
