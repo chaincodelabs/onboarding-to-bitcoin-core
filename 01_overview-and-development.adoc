@@ -586,6 +586,42 @@ That being said, often during back-and-forth communication you might want to nud
 There are again no hard rules here, but it's often good practice to give somebody on the order of a few days to a week to respond.
 Remember that people have personal lives and often jobs outside of Bitcoin development.
 
+==== ACK / NACK
+
+If you are communicating on an Issue or PR, you might be met with "ACK"s and "NACK"s (or even "approach (N)ACK" or similar).
+ACK, or "acknowledge" generally means that the commenter approves with what is being discussed previously.
+NACK means they tend to not approve.
+
+What should you do if your PR is met with NACKs or a mixture of ACKs and NACKs?
+Again there are no hard rules but generally you should try to consider all feedback as constructive criticism.
+This can feel hard when veteran contributors appear to drop by and with a single "NACK" shoot down your idea, but in reality it presents a good moment to pause and reflect on _why_ someone is not agreeing with the path forward you have presented.
+
+Although there are again no hard "rules" or "measurement" systems regarding (N)ACKs, maintainers -- who's job it is to measure whether a change has consensus before merging -- will often use their discretion to attribute more weight behind the (N)ACKs of contributors that they feel have a good understanding of the codebase in this area.
+
+This make sense for many reasons, but lets imagine the extreme scenario where members of a Reddit/Twitter thread (or other group) all "https://www.dictionary.com/e/slang/brigading/[brigade]" a certain pull request on GitHub, filling it with tens or even hundreds of NACKs...
+In this scenario it makes sense for a maintainer to somewhat reduce the weighting of these NACKs vs the (N)ACKs of regular contributors:
+
+We are not sure which members of this brigade:
+
+* Know how to code and with what competency
+* Are familiar with the Bitcoin Core codebase
+* Understand the impact and repercussions of the change
+
+Whereas we can be more sure that regular contributors **and** those respondents who are providing additional rationale in addition to their (N)ACK, have some understanding of this nature.
+Therefore it make sense that we should weight regular contributors' responses, and those with additional compelling rationale, more heavily than GitHub accounts created yesterday which reply with a single word (N)ACK.
+
+From this extreme example we can then use a sliding scale to the other extreme where, if a proven expert in this area is providing a lone (N)ACK to a change, that we should perhaps step back and consider this more carefully.
+
+Does this mean that your views as a new contributor are likely to be ignored?
+**No**!!
+However it might mean that you might like to include rationale in any ACK/NACK comments you leave on PRs, to give more credence to your views.
+
+When others are (N)ACK-ing your work, you should not feel discouraged because they have been around longer than you.
+If they have not left rationale for the comment, then you should ask them for it.
+If they have left rationale but you disagree, then you can politely state your reasons for disagreement.
+
+In terms of choosing a tone, the best thing to do it to participate in PR review for a while and observe the tone used in public when discussing changes.
+
 === Backports
 
 Bitcoin Core often backports fixes for bugs and soft fork activations into previous software releases.
