@@ -244,7 +244,7 @@ The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project se
 
 Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
 
-=== libbitcoinconsensus
+== libbitcoinconsensus
 
 libbitcoinkernel is distinct from the libbitcoinconsensus library which is described in the 0.10.0 release notes:
 
