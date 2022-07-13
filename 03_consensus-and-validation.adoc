@@ -125,14 +125,13 @@ WARNING: Although database code is not in close proximity to the `/src/consensus
 
 == Consensus in Bitcoin Core
 
-Review of the design of Bitcoin Core from <<Architecture>>  will naturally lead to a region of the project titled https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["consensus/"] which one might conclude contains *all* the logic for maintaining consensus.
+Review of the design of Bitcoin Core from <<Architecture>>  will naturally lead to examining the https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["src/consensus"] directory which one might conclude contains *all* the logic for maintaining consensus.
 However this is not entirely the case...
 
 The primary components of consensus-related code can be found across the Bitcoin Core codebase in a number of files, including notably:
 
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#validationhcpp[validation.{h|cpp}]
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#policy_region[policy/]
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
 
 [#consensus-components,listing]
@@ -142,17 +141,18 @@ The primary components of consensus-related code can be found across the Bitcoin
     📂 consensus
     📂 script
       📄interpreter.cpp
-    📂 policy
     📄 validation.h
     📄 validation.cpp
 ----
 
-Why is such a critical function split up between many files, and how do they all interact?
+Why is such a critical process split up between many files, and how do they all interact?
+////
 Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
 
 The answer teaches us that policy checks are a superset of validation checks --  that is to say that a transaction that passes policy checks has implicitly passed consensus checks too.
 Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
 Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
+////
 
 == Hard & Soft Forks
 
