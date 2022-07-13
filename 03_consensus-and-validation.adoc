@@ -196,6 +196,24 @@ Bitcoin Core components which alter consensus behaviour, and should therefore be
 Changes which modify the **consensus rules** can be thought of as distinct from changes to areas of consensus code.
 Changes are made to consensus code files, for example refactoring, which are determined _not_ to modify the **consensus rules**, and therefore do not introduce forking behaviour.
 
+== Fork wishlists
+
+There are a number of items that developers have had on their wishlists to tidy up in future fork events.
+These have been collated into two lists:
+
+. <<The Great Consensus Cleanup>> (soft forking changes)
+. <<The Hard Fork Wishlist>> (hard forking changes)
+
+
+=== The Great Consensus Cleanup
+
+An https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-March/016714.html[email] from Matt Corallo with the subject "The Great Consensus Cleanup" described a "wishlist" of items developers were keen to tidy up in a future soft fork.
+
+=== The Hard Fork Wishlist
+
+The Hard Fork Wishlist is described on this en.bitcoin.it/wiki https://en.bitcoin.it/wiki/Hardfork_Wishlist[page].
+The rationale for collecting these changes together, is that if backwards-incompatible (hard forking) changes are being made, then we "might as well" try and get a few in at once, as these events are so rare.
+
 == Bitcoin core consensus specification
 
 A common question is where the bitcoin protocol is documented, i.e. in a specification.
