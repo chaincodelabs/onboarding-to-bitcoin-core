@@ -376,6 +376,27 @@ flowchart TB
 
 It follows that API changes to the libraries which are internally-facing can be done slightly easier than for libraries with externally-facing APIs, for which more care for compatibility must be taken.
 
+=== Library source code organization
+
+Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732] describes how the Bitcoin Core project is striving to organize library files, copied below for convenience:
+
+> Here is how I am thinking about the organization:
+> 
+>     * `libbitcoin_server.a`, `libbitcoin_wallet.a`, and `libbitcoinqt.a` should all be terminal dependencies. They should be able to depend on other symbols in other libraries, but no other libraries should depend on symbols in them (and they shouldn't depend on each other).
+> 
+>     * `libbitcoin_consensus.a` should be a standalone library that doesn't depend on symbols in other libraries mentioned here
+> 
+>     * `libbitcoin_common.a` and `libbitcoin_util.a` seem very interchangeable right now and mutually depend on each other. I think we should either merge them into one library, or create a new top-level `src/common/` directory complementing `src/util/`, and start to distinguish general purpose utility code (like argument parsing) from bitcoin-specific utility code (like formatting bip32 paths and using ChainParams). Both these libraries can be depended on by `libbitcoin_server.a`, `libbitcoin_wallet.a`, and `libbitcoinqt.a`, and they can depend on `libbitcoin_consensus.a`. If we want to split util and common up, as opposed to merging them together, then util shouldn't depend on libconsensus, but common should.
+> 
+> 
+> Over time, I think it'd be nice if source code organization reflected library organization . I think it'd be nice if all `libbitcoin_util` source files lived in `src/util`, all `libbitcoin_consensus.a` source files lived in `src/consensus`, and all `libbitcoin_server.a` code lived in `src/node` (and maybe the library was called `libbitcoin_node.a`).
+
+You can track the progress of these changes by following links from the issue to associated PRs.
+
+The `libbitcoin-kernel` https://github.com/bitcoin/bitcoin/issues/24303[project] will provide further clean-ups and improvements in this area.
+
+If you want to explore for yourself which sources certain libraries require on the current codebase, you can open the file `src/Makefile.am` and search for `_SOURCES`.
+
 == Deep technical dive (WIP)
 
 lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the Bitcoin Core Onboarding Documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
