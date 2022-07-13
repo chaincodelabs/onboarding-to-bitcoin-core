@@ -570,9 +570,9 @@ There are plenty of other channels on IRC where those topics can be discussed.
 There are also regular meetings held on #bitcoin-core-dev which are free and open for anyone to attend.
 Details and timings of the various meetings are found https://bitcoincore.org/en/meetings/[here].
 
-=== Choosing a discussion forum
+=== Communication
 
-In reality there are no hard rules on choosing a discussion forum, but in practice there are some common conventions which are generally followed.
+In reality there are no hard rules on choosing a discussion forum, but in practice there are some common conventions which are generally followed:
 
 * If you want to discuss the codebase of the Bitcoin Core implementation, then discussion on either the GitHub repo or IRC channel is usually most-appropriate.
 * If you want to discuss changes to the core bitcoin protocol, then discussion on the mailing list is usually warranted to solicit feedback from (all) bitcoin developers, including the many of them that do not work on Bitcoin Core directly.
@@ -580,6 +580,11 @@ In reality there are no hard rules on choosing a discussion forum, but in practi
 
 If discussing something Bitcoin Core-related, there can also be a question of whether it's best to open an Issue, to first discuss the problem and brainstorm possible solution approaches, or whether you should implement the changes as you see best first, open a PR, and then discuss changes in the PR.
 Again, there are no hard rules here, but general advice would be that for potentially-controversial subjects, it might be worth opening an Issue first, before (potentially) wasting time implementing a PR fix which is unlikely to be accepted.
+
+Regarding communication timelines it is important to remember that many contributors are unpaid volunteers, and even if they are sponsored or paid directly, nobody owes you their time.
+That being said, often during back-and-forth communication you might want to nudge somebody for a response and it's important that you do this in a courteous way.
+There are again no hard rules here, but it's often good practice to give somebody on the order of a few days to a week to respond.
+Remember that people have personal lives and often jobs outside of Bitcoin development.
 
 === Backports
 
