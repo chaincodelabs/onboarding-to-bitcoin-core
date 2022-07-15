@@ -2,13 +2,91 @@
 
 One of the fundamental concepts underlying bitcoin is that nodes on the network are able to maintain decentralized consensus on the ordering of transactions in the system.
 
-The primary mechanism that enables this is that all nodes should validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
-The secondary mechanism is that in the event of a discrepancy between two competing chain tips, nodes should follow the chain with the most cumulative proof-of-work.
+The primary mechanism at work is that all nodes validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
+The secondary mechanism is that in the event of a discrepancy between two competing chain tips nodes should follow the chain with the most cumulative proof-of-work.
+The result is that all honest nodes in the network will eventually converge onto a single, canonical, valid chain.
 
-The product of following these two mechanisms is that all honest nodes in the network will eventually converge onto a single, canonical, valid chain.
+WARNING: If all nodes do not compute consensus values identically (including edge cases) a chainsplit will result.
+
 For more information on how the bitcoin networks' decentralized consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus].
 
-== Consensus bugs
+TIP: In Bitcoin Core there are an extra level of validation checks applied to incoming transactions in addition to consensus checks called "policy" which have a slightly different purpose, see <<Consensus vs Policy>> for more information on the differences between the two.
+
+Consensus::
+A collection of functions and variables which **must** be computed identically to all https://bitnodes.io/nodes/[other] nodes on the network in order to remain in consensus and therefore on the main chain.
+
+Validation::
+Validation of blocks, transactions and scripts, with a view to permitting them to be added to either the blockchain (must pass consensus checks) or our local mempool (must pass policy checks).
+
+== Consensus in Bitcoin Core
+
+Naturally one might assume that all code related to consensus could be found in the _src/consensus/_ directory, however this is not entirely the case.
+Components of consensus-related code can be found across the Bitcoin Core codebase in a number of files, including but not limited to:
+
+[#consensus-components,listing]
+----
+📂 bitcoin
+  📂 src
+    📂 consensus
+    📂 script
+      📄interpreter.cpp
+    📄 validation.h
+    📄 validation.cpp
+----
+
+Consensus-critical functions can also be found in proximity to code which could affect whether a node considers a transaction or block valid.
+This could extend to, for example, block storage <<Database consensus,database>> code.
+
+An abbreviated list of some of the more notable consensus functions and variables is shown below.
+
+.Some consensus functions and variables
+[%autowidth]
+|===
+|File |Objects
+
+|_src/consensus/amount.h_
+|`COIN`, `MAX_MONEY`, `MoneyRange()`
+
+|_src/consensus/consensus.h_
+|`BLOCK{SIZE\|WEIGHT\|SIGOPS_COST}`, `COINBASE_MATURITY`, `WITNESS_SCALE_FACTOR`, `MIN_TX_WEIGHT`
+
+|_src/consensus/merkle.{h\|cpp}_
+|`ComputeMerkleRoot(),` `BlockMerkleRoot(),` `BlockWitnessMerkleRoot()`
+
+|_src/consensus/params.h_
+|`BuriedDeployment`, `Params`(buried blocks which are valid but known to fail default script verify checks, BIP height activations, PoW params)
+
+|_src/consensus/tx_check.{h\|cpp}_
+|`CheckTransaction()`
+
+|_src/consensus/tx_verify.{h\|cpp}_
+|`CheckTxInputs(),` `Get{Legacy}SigOpCount()`, `IsFinal(),` `SequenceLock(s)()`
+
+|_src/consensus/validation.h_
+|`TxValidationResult` (validation result reason), `BlockValidationresult` (validation result reason), `ValidationState`, `Get{Transaction\|Block\|TransactionInput}Weight()`
+
+|===
+
+== Validation in Bitcoin Core
+
+TODO?
+
+== Consensus vs Policy
+
+What is the difference between consensus and policy checks?
+Both seem to be related to validating transactions.
+We can learn a lot about the answer to this question from sdaftuar's StackExchange https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[answer].
+
+The answer teaches us that policy checks are a superset of validation checks --  that is to say that a transaction that passes policy checks has implicitly passed consensus checks too.
+Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
+Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
+
+== Consensus and validation bugs
+
+Consensus and validation bugs can arise both from inside the Bitcoin Core codebase itself, and from external dependencies.
+Bitcoin wiki https://en.bitcoin.it/wiki/Common_Vulnerabilities_and_Exposures[lists] some CVE and other Exposures.
+
+=== OpenSSL consensus failure
 
 Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed] the possibility of a consensus failure via usage of OpenSSL.
 The issue was that the OpenSSL signature verification was accepting *multiple* signature serialization formats (for the same signature) as valid.
@@ -108,51 +186,34 @@ Do you think this approach -- first altering policy, followed later by consensus
 Are there circumstances where it might not make sense?
 ====
 
-Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using libsecp256k1 for signature verification.
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954] which switched to using the in-house libsecp256k1 library (as a <<Subtrees,subtree>>) for signature verification.
 
-== Database consensus
+=== Database consensus
 
 Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indices.
 In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.
-What developers at the time could not foresee was that nodes that were still using BDB for these indices, all pre 0.8 nodes, were silently consensus-bound by a relatively obscure BDB-specific database lock counter.
+What developers at the time could not foresee was that nodes that were still using BDB, all pre 0.8 nodes, were silently consensus-bound by a relatively obscure BDB-specific database lock counter.
 
-BDB required a configuration setting for the total number of locks available to the database.
-Bitcoin Core was interpreting a failure to grab the required number of locks equivalent to block validation failing.
+TIP: BDB required a configuration setting for the total number of locks available to the database.
+
+Bitcoin Core was interpreting a failure to grab the required number of locks as equivalent to block validation failing.
 This caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus-level chain split.
 https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50] provides further explanation on this incident.
 
 WARNING: Although database code is not in close proximity to the `/src/consensus` region of the codebase it was still able to induce a consensus bug.
 
-== Consensus in Bitcoin Core
+BDB has caused other potentially-dangerous behaviour in the past.
+Developer Greg Maxwell https://btctranscripts.com/greg-maxwell/2015-04-29-gmaxwell-bitcoin-selection-cryptography/#qa[describes] in a Q&A how even the same versions of BDB running on the same system exhibited non-deterministic behaviour which might have been able to initiate chain re-orgs.
 
-Review of the design of Bitcoin Core from <<Architecture>>  will naturally lead to examining the https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region["src/consensus"] directory which one might conclude contains *all* the logic for maintaining consensus.
-However this is not entirely the case...
+=== An inflation bug
 
-The primary components of consensus-related code can be found across the Bitcoin Core codebase in a number of files, including notably:
+This Bitcoin Core https://bitcoincore.org/en/2018/09/20/notice/[disclosure] details a potential inflation bug.
 
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#validationhcpp[validation.{h|cpp}]
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#consensus_region[consensus/]
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification]
+It originated from trying to speed up transaction validation in `main.cpp#CheckTransaction()` which is now `consensus/tx_check.cpp#CheckTransaction()`, something which would in theory help speed up IBD (and less noticeably singular/block transaction validation).
+The result in Bitcoin Core versions 0.15.x -> 0.16.2 was that a coin that was created in a previous block, could be spent twice in the same block by a miner, without the block being rejected by other Bitcoin Core nodes (of the aforementioned versions).
 
-[#consensus-components,listing]
-----
-📂 bitcoin
-  📂 src
-    📂 consensus
-    📂 script
-      📄interpreter.cpp
-    📄 validation.h
-    📄 validation.cpp
-----
-
-Why is such a critical process split up between many files, and how do they all interact?
-////
-Part of the answer can be learned from sdaftuar's https://bitcoin.stackexchange.com/questions/100317/what-is-the-difference-between-policy-and-consensus-when-it-comes-to-a-bitcoin-c/100319#100319[Stack Exchange answer] to the question "What is the difference between policy and consensus when it comes to a Bitcoin Core node validating scripts?"
-
-The answer teaches us that policy checks are a superset of validation checks --  that is to say that a transaction that passes policy checks has implicitly passed consensus checks too.
-Nodes perform policy-level checks on all transactions they learn about before adding them to their local mempool.
-Many of the policy checks contained in `policy` are called from inside `validation`, in the context of adding a new transaction to the mempool.
-////
+Whilst this bug originates from validation, it can certainly be described as a breach of consensus parameters.
+In addition, nodes of version 0.14.x <= `node_version` >= 0.16.3 would reject inflation blocks, ultimately resulting in a chain split provided that miners existed using both inflation-resistant and inflation-permitting clients.
 
 == Hard & Soft Forks
 
@@ -169,11 +230,11 @@ Some good resources to read up on this further are found in the table below.
 |https://bitcoin.stackexchange.com/questions/30817/what-is-a-soft-fork-what-is-a-hard-fork-what-are-their-differences[link]
 
 |Soft forks
-|en.bitcoin.it/wiki
+|bitcoin.it/wiki
 |https://en.bitcoin.it/wiki/Softfork[link]
 
 |Hard forks
-| en.bitcoin.it/wiki
+|bitcoin.it/wiki
 |https://en.bitcoin.it/wiki/Hardfork[link]
 
 |Soft fork activation
@@ -184,45 +245,86 @@ Some good resources to read up on this further are found in the table below.
 |BitMex research
 |https://blog.bitmex.com/bitcoins-consensus-forks/[link]
 
+|A taxonomy of forks (BIP99)
+|BIP
+|https://github.com/bitcoin/bips/blob/master/bip-0099.mediawiki[link]
+
+|Modern Soft Fork Activation
+|bitcoin-dev mailing list
+|https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2020-January/017547.html[link]
+
+|Chain splits and Resolutions
+|BitcoinMagazine guest
+|https://bitcoinmagazine.com/technical/guest-post-chain-splits-and-resolutions[link]
+
 |===
 
 When making changes to Bitcoin Core its important to consider whether they could have any impact on the **consensus rules**, or the interpretation of those rules.
 If they do, then the changes will end up being either a soft or hard fork, depending on the nature of the rule change.
 
-WARNING: As described above, certain Bitcoin Core components, such as the block database can also unwittingly introduce forking behaviour, even though they do not directly modify consensus rules.
+WARNING: As <<Database consensus,described>>, certain Bitcoin Core components, such as the block database can also unwittingly introduce forking behaviour, even though they do not directly modify consensus rules.
 
-Bitcoin Core components which alter consensus behaviour, and should therefore be approached with caution, are listed (not exclusively!) in the section <<consensus-components>>.
+Some of the components which are known to alter consensus behaviour, and should therefore be approached with caution, are listed in the section <<consensus-components,consensus components>>.
 
-Changes which modify the **consensus rules** can be thought of as distinct from changes to areas of consensus code.
-Changes are made to consensus code files, for example refactoring, which are determined _not_ to modify the **consensus rules**, and therefore do not introduce forking behaviour.
+Changes are not made to consensus values or computations without extreme levels of review and necessity.
+In contrast, changes such as refactoring can be (and are) made to areas of consensus code, when we can be sure that they will not alter consensus validation.
 
-== Fork wishlists
+== Making forking changes
 
-There are a number of items that developers have had on their wishlists to tidy up in future fork events.
-These have been collated into two lists:
+There is some debate around whether it's preferable to make changes via soft or hard fork.
+Each technique has advantages and disadvantages.
 
-. <<The Great Consensus Cleanup>> (soft forking changes)
-. <<The Hard Fork Wishlist>> (hard forking changes)
+.Hard vs soft forks for changes
+[%autowidth]
+|===
+|Type |Advantages |Disadvantages
 
+|Soft fork
+a|
 
-=== The Great Consensus Cleanup
+* Backwards compatible
+* **Low risk of chain split**
 
-An https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-March/016714.html[email] from Matt Corallo with the subject "The Great Consensus Cleanup" described a "wishlist" of items developers were keen to tidy up in a future soft fork.
+a|
 
-=== The Hard Fork Wishlist
+* Might require clever programming tricks
+* Might introduce "technical debt" and associated comprehension burden on reviewers and future programmers
+
+|Hard fork
+a|
+
+* Might be cleaner (code-wise) and therefore easier to reason about
+
+a|
+
+* Not backwards compatible
+** Requires all nodes to upgrade in lock-step
+* **High risk of chainsplit**
+* We have no experience
+* Other changes often required
+* See bitcoincore.org for https://bitcoincore.org/en/2015/12/23/capacity-increases-faq/[more information]
+
+|===
+
+== Fork wish lists
+
+There are a number of items that developers have had on their wish lists to tidy up in future fork events.
+
+An https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-March/016714.html[email] from Matt Corallo with the subject "The Great Consensus Cleanup" described a "wish list" of items developers were keen to tidy up in a future soft fork.
 
 The Hard Fork Wishlist is described on this en.bitcoin.it/wiki https://en.bitcoin.it/wiki/Hardfork_Wishlist[page].
 The rationale for collecting these changes together, is that if backwards-incompatible (hard forking) changes are being made, then we "might as well" try and get a few in at once, as these events are so rare.
 
 == Bitcoin core consensus specification
 
-A common question is where the bitcoin protocol is documented, i.e. in a specification.
+A common question is where the bitcoin protocol is documented, i.e. specified.
 However bitcoin does not have a formal specification, even though many ideas have some specification (in <<BIPs>>) to aid re-implementation.
-In fact the general requirement to be "compliant" with "the bitcoin spec", is to be bug-for-bug compatible with the Bitcoin Core implementation.
+
+IMPORTANT: The requirements to be compliant with "the bitcoin spec", are to be bug-for-bug compatible with the Bitcoin Core implementation.
 
 The reasons for this are historical; Satoshi never released a bitcoin protocol specification.
 Instead in true "Cypherpunks write code" style, and after releasing a general whitepaper, they simply released the first client.
-This client existed on it's own for the best part of two years before others sought to re-implement the ruleset in other clients:
+This client existed on it's own for the best part of two years before others sought to re-implement the rule-set in other clients:
 
 * https://github.com/libbitcoin/libbitcoin-system/commit/9dea4682bf0e4247f3c4cb8a6c140ade61bf7df7[libbitcoin]
 * https://github.com/bitcoinj/bitcoinj/commit/d1036b101f01b7ab79fc3e10e5199f80f478674d[BitcoinJ]
@@ -236,17 +338,13 @@ ____
 I don't believe a second, compatible implementation of Bitcoin will ever be a good idea.  So much of the design depends on all nodes getting exactly identical results in lockstep that a second implementation would be a menace to the network.  The MIT license is compatible with all other licenses and commercial uses, so there is no need to rewrite it from a licensing standpoint.
 ____
 
-It is still a point of contention amongst dome developers in the community, however the fact remains that if you wish to remain in consensus with the majority of (Bitcoin Core) nodes on the network, you must be _exactly_ bug-for-bug compatible with Bitcoin Core's consensus code.
+It is still a point of contention amongst some developers in the community, however the fact remains that if you wish to remain in consensus with the majority of (Bitcoin Core) nodes on the network, you must be _exactly_ bug-for-bug compatible with Bitcoin Core's consensus code.
 
-== libbitcoinkernel
-
-The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project seeks to modularise Bitcoin Cores' consensus engine and make it easier for developers to reason about when they are modifying code which could be consensus-critical.
-
-Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
+TIP: If Satoshi _had_ launched Bitcoin by providing a specification, could it have ever been specified well-enough to enable us to have multiple node implementations?
 
 == libbitcoinconsensus
 
-libbitcoinkernel is distinct from the libbitcoinconsensus library which is described in the 0.10.0 release notes:
+The libbitcoinconsensus library is described in the 0.10.0 release notes:
 
 [quote]
 ____
@@ -272,6 +370,18 @@ The functionality is planned to be extended to e.g. UTXO management in upcoming 
 for existing methods should remain stable.
 ____
 
+== libbitcoinkernel
+
+The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project seeks to modularise Bitcoin Cores' consensus engine and make it easier for developers to reason about when they are modifying code which could be consensus-critical.
+
+This project differs from `libbitcoinconsensus` in that it is designed to be a stateful engine, with a view to being able to spawn its own threads, do caching (e.g. of script and signature verification), do its own I/O, and manage dynamic objects like a mempool.
+Another benefit of fully extracting the consensus engine in this way may be that it becomes easier to write and reason about consensus tests.
+
+In the future, if a full de-coupling is successfully completed, other Bitcoin applications might be able to use `libbitcoinkernel` as their own consensus engine, permitting multiple full node implementations to operate on the network in a somewhat safer manner than many of them operate under today.
+
+Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
+It also has its own project https://github.com/bitcoin/bitcoin/projects/18[board] to track progress.
+
 == Hardcoded consensus values
 
 _consensus/consensus.h_ contains a number of `static const` values relating to consensus rules.
@@ -280,7 +390,7 @@ These consensus-critical values are marked as `const` so that there is no possib
 
 [TIP]
 ====
-There are other values in the codebase (not contained within this file) that are consensus-critical -- can you find any?
+There are other values in the codebase not contained within this file that are consensus-critical -- can you find any?
 ====
 
 == Transaction validation
