@@ -1,5 +1,7 @@
 = Architecture
 
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0]
+
 == bitcoind overview
 
 The following diagram gives a brief overview of how some of the major components in bitcoind are related.
@@ -83,7 +85,7 @@ NOTE: dashed lines indicate optional components
 flowchart LR
     ScriptPubKeyMan --> DescriptorScriptPubKeyMan
     ScriptPubKeyMan --> LegacyScriptPubKeyMan
-    subgraph Legacy or descriptor
+    subgraph Descriptor or Legacy wallet
     DescriptorScriptPubKeyMan
     LegacyScriptPubKeyMan
     end
@@ -93,7 +95,7 @@ flowchart LR
     WalletDatabase --> CWallet
     cs_wallet{{cs_wallet}} ---> CWallet
 
-    subgraph BDB or sqlite
+    subgraph BDB or sqlite database
     BDB
     sqlite
     end
@@ -144,12 +146,20 @@ WARNING: This diagram is **not** exhaustive and includes simplifications.
 [mermaid, target=bitcoin-cli-overview, format=svg]
 ....
 flowchart LR
-    BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> GenerateToAddressHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> DefaultRequestHandler --> ConnectAndCallRPC
-    ConnectAndCallRPC <---> bitcoin-cli
+    base_request["BaseRequestHandler()"]
+    connect_call["ConnectAndCallRPC()"]
+    addr_request["AddrInfoRequestHandler()"]
+    get_info["GetInfoRequestHandler()"]
+    net_info["NetInfoRequestHandler()"]
+    generate["GenerateToAddressHandler()"]
+    default["DefaultRequestHandler()"]
+
+    base_request --> addr_request --> connect_call
+    base_request --> get_info --> connect_call
+    base_request --> net_info --> connect_call
+    base_request --> generate --> connect_call
+    base_request --> default --> connect_call
+    connect_call <---> bitcoin-cli
     ArgsManager --> bitcoin-cli
 ....
 
@@ -304,7 +314,7 @@ Below is shown the contents of a file `threads.brk` which can be sourced into gd
 The file also loads break points where new threads are spawned.
 
 .threads.brk
-[source]
+[source,bash]
 ----
 set follow-fork-mode child
 break node::ThreadImport

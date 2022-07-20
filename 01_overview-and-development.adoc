@@ -1,6 +1,6 @@
 = Overview & Development process 
 
-This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6]
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0]
 
 WARNING: Whilst this disclaimer is present this documentation is considered a work in progress and may be subject to minor or major changes at any time without notice.
 
@@ -74,7 +74,8 @@ Bitcoin Magazine describes what a BIP is in their article https://bitcoinmagazin
 
 The BIPs are currently hosted on GitHub in the bitcoin/bips https://github.com/bitcoin/bips[repo].
 
-[example]
+[TIP]
+.BIP process
 ====
 The BIPs include https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki[BIP 2] which self-describes the BIP process in more detail.
 Of particular interest might be the sections https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_types[BIP Types] and https://github.com/bitcoin/bips/tree/master/bip-0002.mediawiki#BIP_workflow[BIP Workflow].
@@ -162,7 +163,7 @@ Jon Atack provides a guide to reviewing a Bitcoin Core PR in his article https:/
 
 // Archived @ https://archive.is/MyohE
 Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/master/review-checklist.md[review checklist] details what a "good" review might look like, along with some examples of what she personally considers good reviews.
-In addition to this it details how potential Reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review.
+In addition to this, it details how potential Reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review.
 Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and documentation needed.
 
 === Contributing code
@@ -186,7 +187,7 @@ Instead, you should use either the native https://git-scm.com/downloads[`git`] o
 ==== Commit messages
 
 When writing commit messages be sure to have read Chris Beams' "How to Write a Git Commit Message" https://chris.beams.io/posts/git-commit/[blog post].
-As described in CONTRIBUTING.md PRs should be prefixed with the component or area the PR affects.
+As described in CONTRIBUTING.md, PRs should be prefixed with the component or area the PR affects.
 Common areas are listed in CONTRIBUTING.md section: https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request].
 Individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.
 
@@ -213,9 +214,9 @@ Or you can install all requirements and run all checks with:
 
 NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python.
 
-Linting your changes helps avoid the avoidable scenario of pushing some changes as a PR which are then quickly marked as failing CI.
+Linting your changes reduces the chances of pushing them as a PR and then having them quickly being marked as failing CI. The GitHub PR page auto-updates the CI status.
 
-TIP: If you do fail a lint or any other CI check, force-pushing the fix to your branch will cancel currently-running the currently-running CI checks and replace them.
+TIP: If you do fail a lint or any other CI check, force-pushing the fix to your branch will cancel the currently-running CI checks and restart them.
 
 ==== Build issues
 
@@ -456,7 +457,7 @@ Here's an example session (after you've built `bitcoind` and `bitcoin-cli`):
 [source,bash,options="nowrap"]
 ----
 $ mkdir -p /tmp/regtest-datadir
-$ src/bitcoind -regtest -daemon -datadir=/tmp/regtest-datadir
+$ src/bitcoind -regtest -datadir=/tmp/regtest-datadir
 $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
 {
   "chain": "regtest",
@@ -494,17 +495,18 @@ $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getbalances
 $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir stop
 ----
 
-Monitor `/tmp/regtest-datadir/regtest/debug.log` to see what `bitcoind` is doing.
 You may stop and restart the node and it will use the existing state.
 (Simply remove the data directory to start again from scratch.)
 
 ==== Manual testing while running a functional test
 
 Running regtest as described allows you to start from scratch with an empty chain, empty wallet, and no existing state.
-A particularly effective alternate way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test] and cause it to pause during execution (after it's created some state), and then interact with the test using `bitcoin-cli` as described above.
-Add `import time; time.sleep(600)` somewhere into a functional test (which is just a Python script) to suspend the test at that point for 10 minutes.
 
-When the test is paused (you may want to add a `print("paused")` statement just before the call to `sleep()` to know it's been reached), find the data directory for the nodes, for example:
+An effective way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test] and insert a python debug breakpoint.
+You can set a breakpoint in a test by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
+
+While the (Python) test is paused, you can still control the node using `bitcoin-cli`.
+First you need to look up the data directory for the node(s), as below:
 
 [source,bash,options=nowrap]
 ----
@@ -513,17 +515,21 @@ $ ps alx | grep bitcoind
 0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
 ----
 
-You can look at the `bitcoin.conf` files within the data directories to see what config options are being specified for the test (there's always `regtest=1`) in addition to the runtime options, which is a good way to learn about some advanced uses of regtest.
+With the `-datadir` path you can look at the `bitcoin.conf` files within the data directories to see what config options are being specified for the test (there's always `regtest=1`) in addition to the runtime options, which is a good way to learn about some advanced uses of regtest.
 
-While the (python) test is paused you can still submit RPC requests to a specific node, for example:
+In addition to this, we can use the `-datadir=` option with `bitcoin-cli` to control specific nodes, e.g.:
 
 [source,bash,options=nowrap]
 ----
 $ src/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchaininfo
 ----
 
-Another way to pause test execution is to set a breakpoint, either by using a Python debugger, or by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
+////
+Add `import time; time.sleep(600)` somewhere into a functional test (which is just a Python script) to suspend the test at that point for 10 minutes. (you may want to add a `print("paused")` statement just before the call to `sleep()` to know it's been reached)
+
 This has the further advantage (over calling `time.sleep()`), in that you can single-step through the test while also manually interacting with the nodes, combining automated and manual testing.
+
+////
 
 === Getting started with development
 
