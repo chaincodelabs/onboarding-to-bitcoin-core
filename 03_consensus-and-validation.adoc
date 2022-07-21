@@ -1,5 +1,7 @@
 = Consensus & validation
 
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0]
+
 One of the fundamental concepts underlying bitcoin is that nodes on the network are able to maintain decentralized consensus on the ordering of transactions in the system.
 
 The primary mechanism at work is that all nodes validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
@@ -283,16 +285,18 @@ Each technique has advantages and disadvantages.
 a|
 
 * Backwards compatible
-* **Low risk of chain split**
+* **Low risk of chain split** in worst case
 
 a|
 
+* Cannot change all values (e.g. block size, money supply)
 * Might require clever programming tricks
 * Might introduce "technical debt" and associated comprehension burden on reviewers and future programmers
 
 |Hard fork
 a|
 
+* Can change any values you want (e.g. block size, money supply)
 * Might be cleaner (code-wise) and therefore easier to reason about
 
 a|
@@ -300,7 +304,7 @@ a|
 * Not backwards compatible
 ** Requires all nodes to upgrade in lock-step
 * **High risk of chainsplit**
-* We have no experience
+* We have no experience with them
 * Other changes often required
 * See bitcoincore.org for https://bitcoincore.org/en/2015/12/23/capacity-increases-faq/[more information]
 
@@ -320,10 +324,10 @@ The rationale for collecting these changes together, is that if backwards-incomp
 A common question is where the bitcoin protocol is documented, i.e. specified.
 However bitcoin does not have a formal specification, even though many ideas have some specification (in <<BIPs>>) to aid re-implementation.
 
-IMPORTANT: The requirements to be compliant with "the bitcoin spec", are to be bug-for-bug compatible with the Bitcoin Core implementation.
+IMPORTANT: The requirements to be compliant with "the bitcoin spec" are to be bug-for-bug compatible with the Bitcoin Core implementation.
 
-The reasons for this are historical; Satoshi never released a bitcoin protocol specification.
-Instead in true "Cypherpunks write code" style, and after releasing a general whitepaper, they simply released the first client.
+The reasons for Bitcoin not having a codified specification are historical; Satoshi never released one.
+Instead, in true "Cypherpunks write code" style and after releasing a general whitepaper, they simply released the first client.
 This client existed on it's own for the best part of two years before others sought to re-implement the rule-set in other clients:
 
 * https://github.com/libbitcoin/libbitcoin-system/commit/9dea4682bf0e4247f3c4cb8a6c140ade61bf7df7[libbitcoin]
@@ -341,6 +345,13 @@ ____
 It is still a point of contention amongst some developers in the community, however the fact remains that if you wish to remain in consensus with the majority of (Bitcoin Core) nodes on the network, you must be _exactly_ bug-for-bug compatible with Bitcoin Core's consensus code.
 
 TIP: If Satoshi _had_ launched Bitcoin by providing a specification, could it have ever been specified well-enough to enable us to have multiple node implementations?
+
+[TIP]
+====
+One mechanism often employed by those who want to run custom node software is to position an up-to-date Bitcoin Core node to act as a "gateway" to the network.
+Internally your own node can then make a single connection to this Bitcoin Core node.
+This means that your custom internal node will now only receive transactions and blocks which have passed Bitcoin Core's consensus (or policy) checks, allowing you to be sure that your custom node is not accepting objects which could cause you to split onto a different chain tip.
+====
 
 == libbitcoinconsensus
 
@@ -374,10 +385,10 @@ ____
 
 The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel] project seeks to modularise Bitcoin Cores' consensus engine and make it easier for developers to reason about when they are modifying code which could be consensus-critical.
 
-This project differs from `libbitcoinconsensus` in that it is designed to be a stateful engine, with a view to being able to spawn its own threads, do caching (e.g. of script and signature verification), do its own I/O, and manage dynamic objects like a mempool.
-Another benefit of fully extracting the consensus engine in this way may be that it becomes easier to write and reason about consensus tests.
+This project differs from `libbitcoinconsensus` in that it is designed to be a stateful engine, with a view to eventually: being able to spawn its own threads, do caching (e.g. of script and signature verification), do its own I/O, and manage dynamic objects like a mempool.
+Another benefit of fully extracting the consensus engine in this way may be that it becomes easier to write and reason about consensus test cases.
 
-In the future, if a full de-coupling is successfully completed, other Bitcoin applications might be able to use `libbitcoinkernel` as their own consensus engine, permitting multiple full node implementations to operate on the network in a somewhat safer manner than many of them operate under today.
+In the future, if a full de-coupling is successfully completed, other Bitcoin applications might be able to use `libbitcoinkernel` as their own consensus engine permitting multiple full node implementations to operate on the network in a somewhat safer manner than many of them operate under today.
 
 Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR].
 It also has its own project https://github.com/bitcoin/bitcoin/projects/18[board] to track progress.
@@ -388,15 +399,132 @@ _consensus/consensus.h_ contains a number of `static const` values relating to c
 These are globally shared between files such as _validation.cpp_, _rpc_mining.cpp_ and _rpc/mining.cpp_.
 These consensus-critical values are marked as `const` so that there is no possibility that they can be changed at any point during program execution.
 
+One example of this would be the maximum block weight which should not ever be exceeded:
+
+[source,cpp]
+----
+static const unsigned int MAX_BLOCK_WEIGHT = 4000000;
+----
+
+_consensus/amount.h_ contains the conversion rate between satoshis and one "bitcoin", as well as a `MAX_MONEY` constant.
+These are marked as `constexpr` to indicate that they should be evaluated at compile time and then remain as `const` during execution.
+
+[source,cpp]
+----
+/** The amount of satoshis in one BTC. */
+static constexpr CAmount COIN = 100000000;
+
+/** No amount larger than this (in satoshi) is valid.
+ *
+ * Note that this constant is *not* the total money supply, which in Bitcoin
+ * currently happens to be less than 21,000,000 BTC for various reasons, but
+ * rather a sanity check. As this sanity check is used by consensus-critical
+ * validation code, the exact value of the MAX_MONEY constant is consensus
+ * critical; in unusual circumstances like a(nother) overflow bug that allowed
+ * for the creation of coins out of thin air modification could lead to a fork.
+ * */
+static constexpr CAmount MAX_MONEY = 21000000 * COIN;
+----
+
 [TIP]
 ====
-There are other values in the codebase not contained within this file that are consensus-critical -- can you find any?
+Do you think that the `COIN` constant is necessary at a consensus level, or is it a Bitcoin Core-specific abstraction?
 ====
 
 == Transaction validation
 
-We can follow most of the journey of a transaction through Bitcoin Core by following glozow's excellent notes on transaction https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[Validation and Submission to the Mempool].
-glozow details the different types of checks that are run on a new transaction before it's accepted into the nodes' local mempool: consensus vs policy, script vs non-script, contextual vs context-free.
+Transactions can originate from the wallet, RPC commands, the P2P network or from tests.
+They can be in the form of either a `CTransaction` or `CTransactionRef`, which is a shared pointer to a `CTransaction`.
+
+.Transaction origination
+[mermaid,target=tx-origination,format=svg,id=tx-origination]
+....
+flowchart LR
+    process_tx["ProcessTransaction()"]
+    process_msg["ProcessMessage()"]
+    process_block["ProcessBlock()"]
+    check_block["CheckBlock()"]
+    check_transaction["CheckTransaction()"]
+    process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
+    broadcast_tx["BroadcastTransaction()"]
+    srt["sendrawtransaction()"]
+    tmpa["testmempoolaccept()"]
+    submit_relay["CWallet::SubmitTxMemoryPoolAndRelay()"]
+    atmp["AcceptToMemoryPool()"]
+
+    subgraph net_processing.cpp
+        process_msg
+        process_orphan
+    end
+    process_msg -- NetMessage::TX --> process_tx
+    process_msg --> process_block
+    process_block --> check_block
+    check_block --> check_transaction
+    process_orphan ---> process_tx
+    subgraph 2 ["rpc/rawtransaction.cpp"]
+        srt
+        tmpa
+    end
+    subgraph 3 [wallet/wallet.cpp]
+        submit_relay
+    end
+    tmpa --> process_tx
+    submit_relay --> broadcast_tx
+    srt --> broadcast_tx
+    broadcast_tx --> process_tx
+    process_tx --> atmp
+....
+
+.Curiosities surrounding P2P block validation
+====
+We call `ProcessBlock()` when processing new blocks received from the P2P network (in _net_processing.cpp_) from net message types: `NetMsgType::CMPCTBLOCK`, `NetMsgType::BLOCKTXN` and `NetMsgType::BLOCK`.
+
+Inside inner function `ProcessNewBlock()` we end up calling `CheckBlock()` twice: once on the outer `CheckBlock()` and once internally to `AcceptBlock()`
+We find the following code comment inside `ProcessBlock()`:
+
+._validation.cpp#ChainstateManager::ProcessNewBlock()_
+[source,cpp,options=nowrap]
+----
+    // Skipping AcceptBlock() for CheckBlock() failures means that we will never mark a block as invalid if
+    // CheckBlock() fails.  This is protective against consensus failure if there are any unknown forms of block
+    // malleability that cause CheckBlock() to fail; see e.g. CVE-2012-2459 and
+    // https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-February/016697.html.  Because CheckBlock() is
+    // not very expensive, the anti-DoS benefits of caching failure (of a definitely-invalid block) are not substantial.
+    bool ret = CheckBlock(*block, state, chainparams.GetConsensus());
+    if (ret) {
+        // Store to disk
+        ret = ActiveChainstate().AcceptBlock(block, state, &pindex, force_processing, nullptr, new_block);
+    }
+----
+
+The threat vector being addressed is that a malicious node could create a block (with malleated merkle tree interior) but still have it compute the same merkle root.
+This would lead to nodes marking this block as invalid as expected.
+However, a valid un-malleated block **with the same merkle root**, which we might receive later from an honest peer, would be rejected by our node because we cache "bad" blocks using the `m_blockman.m_dirty_blockindex` set:
+
+._validation.cpp#CChainState::AcceptBlock()_
+[source,cpp,highlight=5,options=nowrap]
+----
+    if (!CheckBlock(block, state, m_params.GetConsensus()) ||
+        !ContextualCheckBlock(block, state, m_params.GetConsensus(), pindex->pprev)) {
+        if (state.IsInvalid() && state.GetResult() != BlockValidationResult::BLOCK_MUTATED) {
+            pindex->nStatus |= BLOCK_FAILED_VALID;
+            m_blockman.m_dirty_blockindex.insert(pindex);
+        }
+        return error("%s: %s", __func__, state.ToString());
+    }
+----
+
+The rationale for caching bad blocks is so that we don't expend resources re-validating and propagating them, opening ourselves and the wider network up to a DoS vector, where an attacker can flood nodes with invalid blocks and hope they expend resources gossiping and re-validating them.
+
+Therefore we call `CheckBlock()` first, and only try `AcceptBlock()` if this passes.
+
+Note here how the developers have had to balance consideration for sensitive validation code, staying in consensus with the rest of the network and avoiding potential P2P DoS attacks.
+This type of thinking is common across the codebase.
+
+====
+
+We can follow the journey of a transaction through the Bitcoin Core mempool by following glozow's excellent https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[notes] on transaction "Validation and Submission to the Mempool".
+glozow details the different types of checks that are run on a new transaction before it's accepted into the mempool, as well as breaking down how these checks are different from each other: consensus vs policy, script vs non-script, contextual vs context-free.
 
 glozow continues with sections on P2P transaction relay, orphans and mining, but https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[Block Validation] is highly consensus-related, describing the consensus checks performed on newly-learned blocks, specifically:
 
@@ -425,23 +553,63 @@ ____
 * when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block]
 ____
 
-Having considered both transactions that have entered into the mempool, and any new transactions that were first learned about in the block itself (as part of block validation), we now understand both ways a transaction can be deemed consensus-valid.
+Having considered both transactions that have entered into the mempool, and any new transactions that were first learned about in the block itself, we now understand both ways a transaction can be deemed consensus-valid.
 
-Calls to transaction and block validation code come largely from _validation.cpp_.
+TIP: As you read through the following sub-sections, consider whether making changes to them could affect consensus, policy, or neither.
 
-== AcceptSingleTransaction
+=== `AcceptToMemoryPool`
 
-`MemPoolAccept::AcceptSingleTransaction()` is where the policy and validation checks on local transactions, and individual transactions we learn about from the P2P network occur before they enter the mempool.
+`AcceptToMemoryPool()` (ATMP) is where the checks on transactions occur before they enter the mempool.
 
-First we run https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L524-L528[PreChecks], followed by https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L530-L532[PolicyScriptChecks] and finally https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L534-L538[ConsensusScriptChecks].
+.`ATMP` call graph
+[mermaid,target=ATMP-call-graph,format=svg,id=ATMP-call-graph]
+....
+flowchart TB
+    success[MempoolAcceptResult::Success]
+    failure[MempoolAcceptResult::Failure]
+    process_tx["ChainstateManager::ProcessTransaction()"]
+    process_msg["PeerManagerImpl::ProcessMessage()"]
+    process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
+    broadcast_tx["BroadcastTransaction()"]
+    maybe_update["CChainState::MaybeUpdateMempoolForReorg()"]
+    load_mempool["LoadMempool()"]
+    atmp["AcceptToMemoryPool()"]
+    accept_single["AcceptSingleTransaction()"]
+    finalise["Finalize()"]
 
-.Click to see additional information on replacement transaction checks
-[%collapsible]
-====
-Since https://github.com/bitcoin/bitcoin/pull/23381[PR#23381] checks on BIP125 Replace By Fee (RBF) replacement transactions have been moved out into their own check function, `ReplacementChecks()`, which is still called from within `AcceptSingleTransaction()`:
+    process_msg --> process_tx
+    process_orphan --> process_tx
+    broadcast_tx --> process_tx
 
-.src/validation.cpp#MemPoolAccept::AcceptSingleTransaction()
-[source,cpp,highlight=10,options=nowrap]
+    maybe_update --> atmp
+    process_tx --> atmp
+    load_mempool --> atmp
+
+    atmp --> accept_single
+    accept_single --> PreChecks
+    PreChecks --> ReplacementChecks
+    PreChecks -- fail --> failure
+    ReplacementChecks --> PolicyScriptChecks
+    ReplacementChecks -- fail --> failure
+    PolicyScriptChecks --> ConsensusScriptChecks
+    PolicyScriptChecks -- fail --> failure
+    ConsensusScriptChecks -- if test_accept --> success
+    ConsensusScriptChecks -- fail ---> failure
+    ConsensusScriptChecks --> finalise
+    finalise --> success
+
+    classDef green fill:green,color:white,stroke:green;
+    classDef red fill:red,color:white,stroke:red;
+    class AcceptToMemoryPool,success green
+    class failure, red
+....
+
+You can see the calls to the various `Checks()` functions in the <<ATMP-call-graph,call graph>>, and the order in which they are run.
+
+ATMP gets called both from _src/net_processing.cpp_ when we hear about new transactions from the P2P network (`ProcessMessage` and `ProcessOrphanTx`), and by _node/transaction.cpp_ when we are trying to send one of our own transactions (`BroadcastTransaction`).
+
+.src/validation.cpp
+[source,cpp,options=nowrap]
 ----
 MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
 {
@@ -472,58 +640,18 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
     return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
 }
 ----
-====
-
-This function is called when a new transaction is learned about before we add it to our mempool.
-This means that it gets called both from _src/net_processing.cpp_ when we hear about new transactions from the P2P network, and by _node/transaction.cpp_ when we are trying to send one of our own transactions.
-
-.src/validation.cpp
-[source,cpp,options=nowrap]
-----
-MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
-{
-    AssertLockHeld(cs_main);
-    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
-
-    Workspace ws(ptx);
-
-    if (!PreChecks(args, ws)) return MempoolAcceptResult(ws.m_state);
-
-    // Only compute the precomputed transaction data if we need to verify
-    // scripts (ie, other policy checks pass). We perform the inexpensive
-    // checks first and avoid hashing and signature verification unless those
-    // checks pass, to mitigate CPU exhaustion denial-of-service attacks.
-    PrecomputedTransactionData txdata;
-
-    if (!PolicyScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
-
-    if (!ConsensusScriptChecks(args, ws, txdata)) return MempoolAcceptResult(ws.m_state);
-
-    // Tx was accepted, but not added
-    if (args.m_test_accept) {
-        return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
-    }
-
-    if (!Finalize(args, ws)) return MempoolAcceptResult(ws.m_state);
-
-    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
-
-    return MempoolAcceptResult(std::move(ws.m_replaced_transactions), ws.m_base_fees);
-}
-----
 
 If the various checks pass, and this was not a test submission, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, trimming the mempool size and updating any affected RBF transactions as required.
 
 [TIP]
 ====
-As the comments on those functions allude to, we purposefully run the checks in that order so that the least computationally-expensive checks are fun first.
-
+We purposefully run checks in this order so that the least computationally-expensive checks are fun first.
 This means that we can hopefully "fail early" (and cheaply) on invalid transactions.
 ====
 
-=== PreChecks
+==== PreChecks
 
-Once `AcceptSingleTransaction` has acquired the `cs_main` and  `m_pool.cs` locks, it calls `MemPoolAccept::PreChecks()` passing in a `Workspace` (`ws`), which is essentially a storage area for (validation status) state which can be shared by the different validation checks, along with a struct of `ATMPArgs`.
+Once `AcceptSingleTransaction` has acquired the `cs_main` and `m_pool.cs` locks, it calls `MemPoolAccept::PreChecks()` passing in a `Workspace` (`ws`), which is essentially a storage area for (validation status) state which can be shared by the different validation checks, along with a struct of `ATMPArgs`.
 
 .Click to see the code comments on why we hold _two_ locks before performing consensus checks on transactions
 [%collapsible]
@@ -641,7 +769,7 @@ If we are mining blocks we may want to ensure our own transaction would pass mem
 This happens when we want to broadcast one of our own transactions, done by calling `BroadcastTransaction` from `node/transaction.cpp#BroadcastTransaction()`.
 ****
 
-The code comments for `PreChecks` give a good indication of what the PreChecks are for:
+The code comments for `PreChecks` give a clear description of what the PreChecks are for:
 
 .src/validation.cpp#MemPoolAccept::PreChecks()
 [source,cpp,options=nowrap]
@@ -652,11 +780,17 @@ The code comments for `PreChecks` give a good indication of what the PreChecks a
 // only tests that are fast should be done here (to avoid CPU DoS).
 ----
 
-The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/validation.cpp#L576-L949[`PreChecks` function] is very long but is worth examining to see exactly what checks are undertaken at this stage.
+The `PreChecks` https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L668-L906[function] is very long but is worth examining to see which checks are undertaken at this stage.
 
-=== PolicyScriptChecks
+==== `ReplacementChecks`
 
-Following PreChecks we initialise a `PrecomputedTransactionData` struct which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
+During `PreChecks` the `m_rbf` bool will have been set to `true` if it is determined that this transaction would have to replace an existing transaction from our mempool.
+If this bool is set, then `ReplacementChecks` will be run.
+These checks are designed to check that BIP125 RBF rules are being adhered to.
+
+==== `PolicyScriptChecks`
+
+Following `ReplacementChecks`` we initialise a `PrecomputedTransactionData` struct which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
 
 .Click to show the `PrecomputedTransactionData` struct
 [%collapsible]
@@ -743,7 +877,7 @@ Calling `CheckInputScripts()` involves ECDSA signature verification and is there
 If the script type is SegWit an additional round of checking is performed, this time including the `CLEANSTACK` rule.
 The call(s) flag `cacheSigStore` as `true`, and `cacheFullScriptStore` as `false`, which means that matched signatures will be persisted in the cache, but matched full scripts will be removed.
 
-=== ConsensusScriptChecks
+==== ConsensusScriptChecks
 
 If the PolicyScriptChecks return `true` we will move on to consensus script checks, again passing in the same `ATMPArgs`, `Workspace` and now `PrecomputedTransactionData` that we used previously with `PolicyScriptChecks`.
 
@@ -801,13 +935,13 @@ static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationS
 ----
 ====
 
-=== Finalize
+==== Finalize
 
 Provided that consensus script checks pass and this was not a test ATMP call, we will call `Finalize()` on the transaction.
 This will remove any conflicting (lower fee) transactions from the mempool before adding this one, finishing by trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
 In the event that *this* transaction got trimmed, we ensure that we return a `TxValidationResult::TX_MEMPOOL_POLICY, "mempool full"` result.
 
-== AcceptMultipleTransactions
+=== AcceptMultipleTransactions
 
 TODO: Can mention `PackageMempoolChecks()`?
 
