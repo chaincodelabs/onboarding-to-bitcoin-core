@@ -433,15 +433,21 @@ Do you think that the `COIN` constant is necessary at a consensus level, or is i
 
 == Transaction validation
 
-Transactions can originate from the wallet, RPC commands, the P2P network or from tests.
-They can be in the form of either a `CTransaction` or `CTransactionRef`, which is a shared pointer to a `CTransaction`.
+Transactions can originate from the P2P network, the wallet, RPCs or from tests.
 
-.Transaction origination
+Transactions which originate from the wallet, RPCs or individually from the P2P network (from a `NetMsgType::TX` message) will follow a validation pathway which includes adding them to the mempool.
+This implies passing both consensus and policy checks.
+See the sections on <<Single transactions>> and <<multiple_transactions,Multiple transactions>> to learn more about transaction validation via the mempool.
+
+Transactions which are learned about in a new block from the P2P network (from a `NetMsgType::BLOCK` or `NetMsgType::BLOCKTXN` message) do not have to be added to the mempool and so do not have to pass policy checks.
+See the section <<Transactions from blocks>> to learn more about transaction validation bypassing the mempool.
+
+.Transaction origination (excluding tests)
 [mermaid,target=tx-origination,format=svg,id=tx-origination]
 ....
 flowchart LR
-    process_tx["ProcessTransaction()"]
-    process_msg["ProcessMessage()"]
+    process_tx["ChainstateManager::ProcessTransaction()"]
+    process_msg["PeerManagerImpl::ProcessMessage()"]
     process_block["ProcessBlock()"]
     check_block["CheckBlock()"]
     check_transaction["CheckTransaction()"]
@@ -451,16 +457,15 @@ flowchart LR
     tmpa["testmempoolaccept()"]
     submit_relay["CWallet::SubmitTxMemoryPoolAndRelay()"]
     atmp["AcceptToMemoryPool()"]
+    accept_single["AcceptSingleTransaction()"]
+    process_package["ProcessNewPackage()"]
+    accept_package["AcceptPackage()"]
+    accept_multiple["AcceptMultipleTransactions()"]
 
     subgraph net_processing.cpp
         process_msg
         process_orphan
     end
-    process_msg -- NetMessage::TX --> process_tx
-    process_msg --> process_block
-    process_block --> check_block
-    check_block --> check_transaction
-    process_orphan ---> process_tx
     subgraph 2 ["rpc/rawtransaction.cpp"]
         srt
         tmpa
@@ -468,19 +473,321 @@ flowchart LR
     subgraph 3 [wallet/wallet.cpp]
         submit_relay
     end
+    process_msg -. Packages ..-> process_package
+    process_msg ---> process_block --> check_block --> check_transaction
+    process_msg -- NetMessage::TX --> process_tx
+    process_orphan ---> process_tx
     tmpa --> process_tx
     submit_relay --> broadcast_tx
     srt --> broadcast_tx
     broadcast_tx --> process_tx
-    process_tx --> atmp
+    process_tx --> atmp --> accept_single
+    srt -- Packages --> process_package
+    process_package --> accept_package
+    accept_package --> accept_multiple
 ....
 
-.Curiosities surrounding P2P block validation
+NOTE: Dotted lines represent potential future upgrades
+
+Transactions are internally represented as either a `CTransaction`, a `CTransactionRef` (a shared pointer to a `CTransaction`) or in the case of packages a `Package` which is a `std::vector<CTransactionRef>`.
+
+We can follow the journey of a transaction through the Bitcoin Core mempool by following glozow's https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[notes] on transaction "Validation and Submission to the Mempool".
+glozow details the different types of checks that are run on a new transaction before it's accepted into the mempool, as well as breaking down how these checks are different from each other: consensus vs policy, script vs non-script, contextual vs context-free.
+
+The section on block validation https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[describes] the consensus checks performed on newly-learned blocks, specifically:
+
+[quote,glozow]
+____
+Since v0.8, Bitcoin Core nodes have used a https://github.com/bitcoin/bitcoin/pull/1677[UTXO set] rather than blockchain lookups to represent state and validate transactions.
+To fully validate new blocks nodes only need to consult their UTXO set and knowledge of the current consensus rules.
+Since consensus rules depend on block height and time (both of which can *decrease* during a reorg), they are recalculated for each block prior to validation.
+
+Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935[total sigop cost], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866[duplicate transactions], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179[timestamps], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255[witness commitments] https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946[input scripts]) for each block.
+
+Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887[work queue] delegated to a set of threads while the main validation thread is working on other things.
+While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
+
+If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just https://github.com/bitcoin/bitcoin/tree/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430[uses the script cache]!
+____
+
+The section from bitcoin-core-architecture on script verification also https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[highlights] how the script interpreter is called from at least 3 distinct sites within the codebase:
+
+[quote]
+____
+* when the node https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001[receives a new transaction].
+
+* when the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29[node wants to broadcast a new transaction].
+
+* when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block]
+____
+
+Having considered both transactions that have entered into the mempool and transactions that were learned about in a new block we now understand both ways a transaction can be considered for validation.
+
+TIP: As you read through the following sub-sections, consider whether making changes to them could affect policy or consensus.
+
+=== Single transactions
+
+`AcceptToMemoryPool()` (ATMP) is where the checks on single transactions occur before they enter the mempool.
+
+.Simplified `ATMP` call graph
+[mermaid,target=ATMP-call-graph,format=svg,id=ATMP-call-graph]
+....
+flowchart TB
+    success[MempoolAcceptResult::Success]
+    failure[MempoolAcceptResult::Failure]
+    process_tx["ChainstateManager::ProcessTransaction()"]
+    maybe_update["CChainState::MaybeUpdateMempoolForReorg()"]
+    load_mempool["LoadMempool()"]
+    atmp["AcceptToMemoryPool()"]
+    accept_single["AcceptSingleTransaction()"]
+    finalise["Finalize()"]
+
+    %% think this is too much detail
+    %% process_msg["PeerManagerImpl::ProcessMessage()"]
+    %% process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
+    %% broadcast_tx["BroadcastTransaction()"]
+    %% process_msg --> process_tx
+    %% process_orphan --> process_tx
+    %% broadcast_tx --> process_tx
+
+    maybe_update --> atmp
+    process_tx --> atmp
+    load_mempool --> atmp
+
+    atmp --> accept_single
+    accept_single --> PreChecks
+    PreChecks --> ReplacementChecks
+    PreChecks -- fail --> failure
+    ReplacementChecks --> PolicyScriptChecks
+    ReplacementChecks -- fail --> failure
+    PolicyScriptChecks --> ConsensusScriptChecks
+    PolicyScriptChecks -- fail --> failure
+    ConsensusScriptChecks -- if test_accept --> success
+    ConsensusScriptChecks -- fail ---> failure
+    ConsensusScriptChecks --> finalise
+    finalise --> success
+
+    classDef green fill:#00A000,color:white,stroke:green;
+    classDef red fill:#BA3925,color:white,stroke:red;
+    class AcceptToMemoryPool,success green
+    class failure, red
+....
+
+You can see the calls to the various `*Checks()` functions in the <<ATMP-call-graph,call graph>>, and the order in which they are run.
+
+Let's take a look inside ``AcceptToMemoryPool()``'s inner function `AcceptSingleTransaction()` which handles running the checks:
+
+.src/validation.cpp
+[source,cpp,highlight=8;10;14;16,options=nowrap,id=accept_single_transaction]
+----
+MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
+{
+    AssertLockHeld(cs_main);
+    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
+
+    Workspace ws(ptx);
+
+    if (!PreChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    if (m_rbf && !ReplacementChecks(ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    // Perform the inexpensive checks first and avoid hashing and signature verification unless
+    // those checks pass, to mitigate CPU exhaustion denial-of-service attacks.
+    if (!PolicyScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    if (!ConsensusScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    // Tx was accepted, but not added
+    if (args.m_test_accept) {
+        return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
+    }
+
+    if (!Finalize(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
+
+    return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
+}
+----
+
+[TIP]
+====
+We purposefully run checks in this order so that the least computationally-expensive checks are fun first.
+This means that we can hopefully fail early and minimise CPU cycles used on invalid transactions.
+====
+
+WARNING: If an attacker could force us to perform many expensive computations simply by sending us many invalid transactions then it would be inexpensive to bring our node to a halt.
+
+Once `AcceptSingleTransaction` has acquired the `cs_main` and `m_pool.cs` locks it initializes a `Workspace` struct -- a storage area for (validation status) state which can be shared by the different validation checks.
+Caching this state avoids performing the same computations multiple times and is important for performance.
+It will pass this workspace, along with the struct of `ATMPArgs` it received as argument, to the checks.
+
+.Click to see the code comments on why we hold _two_ locks before performing consensus checks on transactions
+[%collapsible,id=multiple_locks]
+====
+.src/txmempool.h#CTxMemPool
+[source,cpp,options=nowrap]
+----
+/**
+ * This mutex needs to be locked when accessing `mapTx` or other members
+ * that are guarded by it.
+ *
+ * @par Consistency guarantees
+ *
+ * By design, it is guaranteed that:
+ *
+ * 1. Locking both `cs_main` and `mempool.cs` will give a view of mempool
+ *    that is consistent with current chain tip (`::ChainActive()` and
+ *    `CoinsTip()`) and is fully populated. Fully populated means that if the
+ *    current active chain is missing transactions that were present in a
+ *    previously active chain, all the missing transactions will have been
+ *    re-added to the mempool and should be present if they meet size and
+ *    consistency constraints.
+ *
+ * 2. Locking `mempool.cs` without `cs_main` will give a view of a mempool
+ *    consistent with some chain that was active since `cs_main` was last
+ *    locked, and that is fully populated as described above. It is ok for
+ *    code that only needs to query or remove transactions from the mempool
+ *    to lock just `mempool.cs` without `cs_main`.
+ *
+ * To provide these guarantees, it is necessary to lock both `cs_main` and
+ * `mempool.cs` whenever adding transactions to the mempool and whenever
+ * changing the chain tip. It's necessary to keep both mutexes locked until
+ * the mempool is consistent with the new chain tip and fully populated.
+ */
+mutable RecursiveMutex cs;
+----
+====
+
+The `Workspace` is initialized with a pointer to the transaction (as a `CTransactionRef`) and holds some https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L553-L593[additional] information related to intermediate state.
+
+We can look at the https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L469-L534[`ATMPArgs` struct] to see what other information our mempool wants to know about in addition to transaction information.
+
+.ATMPArgs
 [sidebar]
 ****
+`m_accept_time` is the local time when the transaction entered the mempool.
+It's used during the mempool transaction eviction selection process as part of `CTxMemPool::Expire()` where it is referenced by the name `entry_time`:
+
+.Click to see `entry_time` being used in `Expire()`
+[%collapsible]
+====
+.src/txmempool.cpp#CTXMemPool::Expire()
+[source,cpp,highlight=4;6,options=nowrap]
+----
+int CTxMemPool::Expire(std::chrono::seconds time)
+{
+    AssertLockHeld(cs);
+    indexed_transaction_set::index<entry_time>::type::iterator it = mapTx.get<entry_time>().begin();
+    setEntries toremove;
+    while (it != mapTx.get<entry_time>().end() && it->GetTime() < time) {
+        toremove.insert(mapTx.project<0>(it));
+        it++;
+    }
+    setEntries stage;
+    for (txiter removeit : toremove) {
+        CalculateDescendants(removeit, stage);
+    }
+    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY);
+    return stage.size();
+}
+----
+====
+
+`m_bypass_limits` is used to determine whether we should enforce mempool fee limits for this transaction.
+If we are a miner we may want to ensure _our own_ transactions would pass mempool checks, even if we don't attach a fee to them.
+
+`m_test_accept` is used if we just want to run mempool checks to test validity, but not actually add the transaction into the mempool yet.
+This happens when we want to broadcast one of our own transactions, done by calling `BroadcastTransaction` from `node/transaction.cpp#BroadcastTransaction()` or from the `testmempoolaccept()` RPC.
+****
+
+If all the checks pass and this was not a `test_accept` submission then we will `MemPoolAccept::Finalize` the transaction, adding it to the mempool, before trimming the mempool size and updating any affected RBF transactions as required.
+
+[#multiple_transactions]
+=== Multiple transactions (and packages)
+
+TODO: This section should start from `AcceptPackage()` and flow through from there, including `AcceptMultipleTransactions()` as a sub-section.
+
+It's possible to consider multiple transactions for validation together, via `AcceptMultipleTransactions()` found in _src/net_processing.cpp_.
+It's currently only available from tests (`test/tx_package_tests.cpp`) and the `testmempoolaccept` RPC (via `ProcessNewPackage()`), but the intention is for it to be available to packages received from the P2P network in the future.
+
+This validation flow has been created for usage with Package Mempool Accept, which glozow has written up in a https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[gist] (https://archive.ph/Uhewe[archive]).
+
+The flow here is similar to <<accept_single_transaction, `AcceptSingleTransaction()`>> in that we start by grabbing `cs_main` before initializing validation state and workspaces, however this time we use `PackageValidationState` and a vector of workspaces, `std::vector<Workspace>`.
+Each transaction therefore has it's own workspace but all transactions in the package share a single validation state.
+This aligns with the goal of either accepting or rejecting the entire package as a single entity.
+
+Next come two `for` loops over the vector of workspaces (i.e. transactions).
+The first performs the <<PreChecks,`PreChecks()`>>, but this time also freeing up coins to be spent by other transactions in this package.
+This would not usually be possible (nor make sense) _within_ an `AcceptTransaction()` flow, but within a package we want to be able to validate transactions who use as inputs, other transactions not yet added to our mempool:
+
+[source,cpp,options=nowrap]
+----
+    // Make the coins created by this transaction available for subsequent transactions in the
+    // package to spend. Since we already checked conflicts in the package and we don't allow
+    // replacements, we don't need to track the coins spent. Note that this logic will need to be
+    // updated if package replace-by-fee is allowed in the future.
+    assert(!args.m_allow_bip125_replacement);
+    m_viewmempool.PackageAddTransaction(ws.m_ptx);
+----
+
+If the `PreChecks` do not fail, we call `m_viewmempool.PackageAddTransaction()` passing in the workspace.
+This adds the transaction to a map in our Mempool called `std::unordered_map<COutPoint, Coin, SaltedOutpointHasher> m_temp_added;`, which is essentially a temporary cache somewhere in-between being validated and being fully added to the mempool.
+
+TODO: Fix after adding section on `AcceptPackage`
+
+After this first loop we perform `PackageMempoolChecks()` which first asserts that transactions are not already in the mempool, before checking the "PackageLimits".
+
+=== Transactions from blocks
+
+Transactions learned about from blocks:
+
+* might not be present in our mempool
+* are not being considered for entry into our mempool
+** are therefore not subject to policy-level checks
+
+This means that we can validate these transactions based only on our copy of the UTXO set and the data contained within the block itself.
+
+.Transaction validation from blocks
+[mermaid,target=block-tx-validation,format=svg,id=block-tx-validation]
+....
+flowchart LR
+    process_block["ProcessBlock()"]
+    process_new_block["ProcessNewBlock()"]
+    check_block_header["CheckBlockHeader()"]
+    block_merkle["BlockMerkleRoot()"]
+    check_transaction["CheckTransaction()"]
+    subgraph sub_check_block ["Checkblock()"]
+        direction TB
+        check_block_header --> block_merkle
+        block_merkle --> check_transaction
+    end
+
+    accept_block_header["AcceptBlockHeader()"]
+    check_block_index["CheckBlockIndex()"]
+    check_block["CheckBlock()"]
+    contextual_check_block["ContextualCheckBlock()"]
+    save_block_disk["SaveBlockToDisk()"]
+    recv_block_tx["ReceivedBlockTransactions()"]
+    subgraph sub_accept_block ["AcceptBlock()"]
+        direction TB
+        accept_block_header --> check_block_index
+        check_block_index --> check_block
+        check_block --> contextual_check_block
+        contextual_check_block --> save_block_disk
+        save_block_disk --> recv_block_tx
+    end
+
+    activate_chain["ActivateBestChain()"]
+    process_block --> process_new_block
+    process_new_block --> sub_check_block
+    sub_check_block --> sub_accept_block
+    sub_accept_block --> activate_chain
+....
+
 We call `ProcessBlock()` when processing new blocks received from the P2P network (in _net_processing.cpp_) from net message types: `NetMsgType::CMPCTBLOCK`, `NetMsgType::BLOCKTXN` and `NetMsgType::BLOCK`.
 
-Inside inner function `ProcessNewBlock()` we end up calling `CheckBlock()` twice: once on the outer `CheckBlock()` and once internally to `AcceptBlock()`
+As part of `ProcessBlock()` we end up calling `CheckBlock()` twice: once on the inner `ProcessNewBlock()` and, if this first is successful, once again inside of `AcceptBlock()`.
 We find the following code comment inside `ProcessBlock()`:
 
 ._validation.cpp#ChainstateManager::ProcessNewBlock()_
@@ -522,216 +829,7 @@ Therefore we call `CheckBlock()` first, and only try `AcceptBlock()` if this pas
 Note here how the developers have had to balance consideration for sensitive validation code, staying in consensus with the rest of the network and avoiding potential P2P DoS attacks.
 This type of thinking is common across the codebase.
 
-****
-
-We can follow the journey of a transaction through the Bitcoin Core mempool by following glozow's excellent https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[notes] on transaction "Validation and Submission to the Mempool".
-glozow details the different types of checks that are run on a new transaction before it's accepted into the mempool, as well as breaking down how these checks are different from each other: consensus vs policy, script vs non-script, contextual vs context-free.
-
-glozow continues with sections on P2P transaction relay, orphans and mining, but https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[Block Validation] is highly consensus-related, describing the consensus checks performed on newly-learned blocks, specifically:
-
-[quote,glozow]
-____
-Since v0.8, Bitcoin Core nodes have used a https://github.com/bitcoin/bitcoin/pull/1677[UTXO set] rather than blockchain lookups to represent state and validate transactions.
-To fully validate new blocks nodes only need to consult their UTXO set and knowledge of the current consensus rules.
-Since consensus rules depend on block height and time (both of which can *decrease* during a reorg), they are recalculated for each block prior to validation.
-
-Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935[total sigop cost], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866[duplicate transactions], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179[timestamps], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255[witness commitments] https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969[block subsidy amount]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946[input scripts]) for each block.
-
-Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887[work queue] delegated to a set of threads while the main validation thread is working on other things.
-While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
-
-If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just https://github.com/bitcoin/bitcoin/tree/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430[uses the script cache]!
-____
-
-The section on https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[script verification] also highlights how the script interpreter is called from at least 3 distinct sites within the codebase:
-
-[quote]
-____
-* when the node https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001[receives a new transaction].
-
-* when the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29[node wants to broadcast a new transaction].
-
-* when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block]
-____
-
-Having considered both transactions that have entered into the mempool, and any new transactions that were first learned about in the block itself, we now understand both ways a transaction can be deemed consensus-valid.
-
-TIP: As you read through the following sub-sections, consider whether making changes to them could affect consensus, policy, or neither.
-
-=== `AcceptToMemoryPool`
-
-`AcceptToMemoryPool()` (ATMP) is where the checks on transactions occur before they enter the mempool.
-
-.`ATMP` call graph
-[mermaid,target=ATMP-call-graph,format=svg,id=ATMP-call-graph]
-....
-flowchart TB
-    success[MempoolAcceptResult::Success]
-    failure[MempoolAcceptResult::Failure]
-    process_tx["ChainstateManager::ProcessTransaction()"]
-    process_msg["PeerManagerImpl::ProcessMessage()"]
-    process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
-    broadcast_tx["BroadcastTransaction()"]
-    maybe_update["CChainState::MaybeUpdateMempoolForReorg()"]
-    load_mempool["LoadMempool()"]
-    atmp["AcceptToMemoryPool()"]
-    accept_single["AcceptSingleTransaction()"]
-    finalise["Finalize()"]
-
-    process_msg --> process_tx
-    process_orphan --> process_tx
-    broadcast_tx --> process_tx
-
-    maybe_update --> atmp
-    process_tx --> atmp
-    load_mempool --> atmp
-
-    atmp --> accept_single
-    accept_single --> PreChecks
-    PreChecks --> ReplacementChecks
-    PreChecks -- fail --> failure
-    ReplacementChecks --> PolicyScriptChecks
-    ReplacementChecks -- fail --> failure
-    PolicyScriptChecks --> ConsensusScriptChecks
-    PolicyScriptChecks -- fail --> failure
-    ConsensusScriptChecks -- if test_accept --> success
-    ConsensusScriptChecks -- fail ---> failure
-    ConsensusScriptChecks --> finalise
-    finalise --> success
-
-    classDef green fill:green,color:white,stroke:green;
-    classDef red fill:red,color:white,stroke:red;
-    class AcceptToMemoryPool,success green
-    class failure, red
-....
-
-You can see the calls to the various `*Checks()` functions in the <<ATMP-call-graph,call graph>>, and the order in which they are run.
-
-Let's take a look inside ``AcceptToMemoryPool()``'s inner function `AcceptSingleTransaction()`:
-
-.src/validation.cpp
-[source,cpp,highlight=8;10;14;16,options=nowrap]
-----
-MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
-{
-    AssertLockHeld(cs_main);
-    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
-
-    Workspace ws(ptx);
-
-    if (!PreChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
-
-    if (m_rbf && !ReplacementChecks(ws)) return MempoolAcceptResult::Failure(ws.m_state);
-
-    // Perform the inexpensive checks first and avoid hashing and signature verification unless
-    // those checks pass, to mitigate CPU exhaustion denial-of-service attacks.
-    if (!PolicyScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
-
-    if (!ConsensusScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
-
-    // Tx was accepted, but not added
-    if (args.m_test_accept) {
-        return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
-    }
-
-    if (!Finalize(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
-
-    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
-
-    return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
-}
-----
-
-Once `AcceptSingleTransaction` has acquired the `cs_main` and `m_pool.cs` locks, initializes a `Workspace` (`ws`), which is essentially a storage area for (validation status) state which can be shared by the different validation checks, along with the struct of `ATMPArgs` passed in as argument.
-
-.Click to see the code comments on why we hold _two_ locks before performing consensus checks on transactions
-[%collapsible]
-====
-.src/txmempool.h#CTxMemPool
-[source,cpp,options=nowrap]
-----
-/**
- * This mutex needs to be locked when accessing `mapTx` or other members
- * that are guarded by it.
- *
- * @par Consistency guarantees
- *
- * By design, it is guaranteed that:
- *
- * 1. Locking both `cs_main` and `mempool.cs` will give a view of mempool
- *    that is consistent with current chain tip (`::ChainActive()` and
- *    `CoinsTip()`) and is fully populated. Fully populated means that if the
- *    current active chain is missing transactions that were present in a
- *    previously active chain, all the missing transactions will have been
- *    re-added to the mempool and should be present if they meet size and
- *    consistency constraints.
- *
- * 2. Locking `mempool.cs` without `cs_main` will give a view of a mempool
- *    consistent with some chain that was active since `cs_main` was last
- *    locked, and that is fully populated as described above. It is ok for
- *    code that only needs to query or remove transactions from the mempool
- *    to lock just `mempool.cs` without `cs_main`.
- *
- * To provide these guarantees, it is necessary to lock both `cs_main` and
- * `mempool.cs` whenever adding transactions to the mempool and whenever
- * changing the chain tip. It's necessary to keep both mutexes locked until
- * the mempool is consistent with the new chain tip and fully populated.
- */
-mutable RecursiveMutex cs;
-----
-====
-
-The `Workspace` struct is initialized with a pointer to the transactions' `CTransactionRef` and holds some https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L553-L593[additional] information related to intermediate state.
-
-We can look at ATMPArgs https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L469-L534[struct] to see what other information our mempool wants to know about in addition to transaction information.
-
-.A look at some key ATMPArgs
-[sidebar]
-****
-`m_accept_time` is the local time when the transaction entered the mempool.
-This gets used during the mempool transaction eviction selection process as part of `CTxMemPool::Expire()` (where it is referenced by the name `entry_time`):
-
-.Click to see `entry_time` being used in `Expire()`
-[%collapsible]
-====
-.src/txmempool.cpp#CTXMemPool::Expire()
-[source,cpp,highlight=4;6,options=nowrap]
-----
-int CTxMemPool::Expire(std::chrono::seconds time)
-{
-    AssertLockHeld(cs);
-    indexed_transaction_set::index<entry_time>::type::iterator it = mapTx.get<entry_time>().begin();
-    setEntries toremove;
-    while (it != mapTx.get<entry_time>().end() && it->GetTime() < time) {
-        toremove.insert(mapTx.project<0>(it));
-        it++;
-    }
-    setEntries stage;
-    for (txiter removeit : toremove) {
-        CalculateDescendants(removeit, stage);
-    }
-    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY);
-    return stage.size();
-}
-----
-====
-
-`m_bypass_limits` is used to determine whether we should enforce mempool fee limits for this transaction.
-If we are mining blocks we may want to ensure our own transaction would pass mempool checks, even if we don't attach a fee to it.
-
-`m_test_accept` is used if we just want to run mempool checks but not actually add the transaction into the mempool yet.
-This happens when we want to broadcast one of our own transactions, done by calling `BroadcastTransaction` from `node/transaction.cpp#BroadcastTransaction()`.
-****
-
-If the various checks pass, and this was not a test submission, then we will `Finalize` (`MemPoolAccept::Finalize`) the transaction, adding it to the mempool, before trimming the mempool size and updating any affected RBF transactions as required.
-
-[TIP]
-====
-We purposefully run checks in this order so that the least computationally-expensive checks are fun first.
-This means that we can hopefully "fail early" (and cheaply) on invalid transactions.
-====
-
-==== PreChecks
+=== PreChecks
 
 The code comments for `PreChecks` give a clear description of what the PreChecks are for:
 
@@ -744,15 +842,15 @@ The code comments for `PreChecks` give a clear description of what the PreChecks
 // only tests that are fast should be done here (to avoid CPU DoS).
 ----
 
-The `PreChecks` https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L668-L906[function] is very long but is worth examining to see which checks are undertaken at this stage.
+The `PreChecks` function is very https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L668-L906[long] but is worth examining to understand better which checks are undertaken as part of this first stage.
 
-==== ReplacementChecks
+=== ReplacementChecks
 
 During `PreChecks` the `m_rbf` bool will have been set to `true` if it is determined that this transaction would have to replace an existing transaction from our mempool.
 If this bool is set, then `ReplacementChecks` will be run.
 These checks are designed to check that BIP125 RBF rules are being adhered to.
 
-==== PolicyScriptChecks
+=== PolicyScriptChecks
 
 Following `ReplacementChecks`` we initialise a `PrecomputedTransactionData` struct in the `Workspace` which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
 
@@ -842,7 +940,7 @@ bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws, Prec
 If the script type is SegWit an additional round of checking is performed, this time including the `CLEANSTACK` rule.
 The call(s) flag `cacheSigStore` as `true`, and `cacheFullScriptStore` as `false`, which means that matched signatures will be persisted in the cache, but matched full scripts will be removed.
 
-==== ConsensusScriptChecks
+=== ConsensusScriptChecks
 
 If the `PolicyScriptChecks` return `true` we will move on to consensus script checks, again passing in the same `ATMPArgs`, `Workspace` and now `PrecomputedTransactionData` that we used previously with `PolicyScriptChecks`.
 
@@ -900,15 +998,22 @@ static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationS
 ----
 ====
 
-==== Finalize
+=== PackageMempoolChecks
+
+`PackageMempoolChecks` are designed to "Enforce package mempool ancestor/descendant limits (distinct from individual ancestor/descendant limits done in PreChecks)".
+They take a vector of ``CTransactionRef``s and a `PackageValidationState`.
+
+Again we take <<multiple_locks,two locks>> before checking that the transactions are not in the mempool.
+Any transactions which are part of the package and were in the mempool will have already been removed by `MemPoolAccept::AcceptPackage()`.
+
+Finally we check the package limits, which consists of checking the {ancestor|descendant} {count|size}.
+This check is unique to packages because we can now add descendants whose ancestors would not otherwise qualify for entry into our mempool with their low effective fee rate.
+
+=== Finalize
 
 Provided that consensus script checks pass and this was not a test ATMP call, we will call `Finalize()` on the transaction.
 This will remove any conflicting (lower fee) transactions from the mempool before adding this one, finishing by trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
 In the event that *this* transaction got trimmed, we ensure that we return a `TxValidationResult::TX_MEMPOOL_POLICY, "mempool full"` result.
-
-=== AcceptMultipleTransactions
-
-TODO: Can mention `PackageMempoolChecks()`?
 
 == Multiple chains
 
