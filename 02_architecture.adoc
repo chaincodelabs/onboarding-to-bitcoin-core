@@ -1,13 +1,17 @@
 = Architecture
 
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0]
+
 == bitcoind overview
 
 The following diagram gives a brief overview of how some of the major components in bitcoind are related.
 
 WARNING: This diagram is **not** exhaustive and includes simplifications.
 
+NOTE: dashed lines indicate optional components
+
 .`bitcoind` overview
-[mermaid, target=bitcoind-overview, format=svg]
+[mermaid, target=bitcoind-overview, format=svg, id=bitcoind-overview]
 ....
 flowchart LR
     bitcoind
@@ -32,7 +36,7 @@ flowchart LR
     LevelDB --> BlockManager
 ....
 
-.Brief description of components
+.Brief description of components in <<bitcoind-overview>>
 [%autowidth]
 |===
 |Component |Simplified description
@@ -45,9 +49,6 @@ flowchart LR
 
 |`Interfaces::Chain`
 |Give clients access to chain state, fee rate estimates, notifications and allow tx submission
-
-|`CBlockPolicyEstimator`
-|Provide fee rate estimations
 
 |`ChainstateManager`
 |An interface for interacting with 1 or 2 chainstates (1. IBD-verified, 2. optional snapshot)
@@ -83,7 +84,7 @@ NOTE: dashed lines indicate optional components
 flowchart LR
     ScriptPubKeyMan --> DescriptorScriptPubKeyMan
     ScriptPubKeyMan --> LegacyScriptPubKeyMan
-    subgraph Legacy or descriptor
+    subgraph Descriptor or Legacy wallet
     DescriptorScriptPubKeyMan
     LegacyScriptPubKeyMan
     end
@@ -93,7 +94,7 @@ flowchart LR
     WalletDatabase --> CWallet
     cs_wallet{{cs_wallet}} ---> CWallet
 
-    subgraph BDB or sqlite
+    subgraph BDB or sqlite database
     BDB
     sqlite
     end
@@ -115,7 +116,7 @@ flowchart LR
 |Represents a single wallet. Handles reads and writes to disk
 
 |`ScriptPubKeyman`
-|Base class for the below SPKM classes to overrider before being used by `CWallet`
+|Base class for the below SPKM classes to override before being used by `CWallet`
 
 |`DescriptorScriptPubKeyMan`
 |A SPKM for https://github.com/bitcoin/bitcoin/pull/16528[descriptor-based] wallets
@@ -141,9 +142,16 @@ The following diagram gives a brief overview of how bitcoin-cli operates.
 WARNING: This diagram is **not** exhaustive and includes simplifications.
 
 .`bitcoin-cli` overview
-[mermaid, target=bitcoin-cli-overview, format=svg]
+[mermaid, target=bitcoin-cli-overview, format=svg, id=bitcoin-cli-overview-chart]
 ....
 flowchart LR
+    BaseRequestHandler["BaseRequestHandler()"]
+    AddrInfoRequestHandler["AddrInfoRequestHandler()"]
+    ConnectAndCallRPC["ConnectAndCallRPC()"]
+    GetInfoRequestHandler["GetInfoRequestHandler()"]
+    NetInfoRequestHandler["NetInfoRequestHandler()"]
+    GenerateToAddressHandler["GenerateToAddressHandler()"]
+    DefaultRequestHandler["DefaultRequestHandler()"]
     BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
     BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
     BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
@@ -304,7 +312,7 @@ Below is shown the contents of a file `threads.brk` which can be sourced into gd
 The file also loads break points where new threads are spawned.
 
 .threads.brk
-[source]
+[source,bash]
 ----
 set follow-fork-mode child
 break node::ThreadImport
