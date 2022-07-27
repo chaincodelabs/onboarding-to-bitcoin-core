@@ -8,8 +8,10 @@ The following diagram gives a brief overview of how some of the major components
 
 WARNING: This diagram is **not** exhaustive and includes simplifications.
 
+NOTE: dashed lines indicate optional components
+
 .`bitcoind` overview
-[mermaid, target=bitcoind-overview, format=svg]
+[mermaid, target=bitcoind-overview, format=svg, id=bitcoind-overview]
 ....
 flowchart LR
     bitcoind
@@ -34,7 +36,7 @@ flowchart LR
     LevelDB --> BlockManager
 ....
 
-.Brief description of components
+.Brief description of components in <<bitcoind-overview>>
 [%autowidth]
 |===
 |Component |Simplified description
@@ -47,9 +49,6 @@ flowchart LR
 
 |`Interfaces::Chain`
 |Give clients access to chain state, fee rate estimates, notifications and allow tx submission
-
-|`CBlockPolicyEstimator`
-|Provide fee rate estimations
 
 |`ChainstateManager`
 |An interface for interacting with 1 or 2 chainstates (1. IBD-verified, 2. optional snapshot)
@@ -117,7 +116,7 @@ flowchart LR
 |Represents a single wallet. Handles reads and writes to disk
 
 |`ScriptPubKeyman`
-|Base class for the below SPKM classes to overrider before being used by `CWallet`
+|Base class for the below SPKM classes to override before being used by `CWallet`
 
 |`DescriptorScriptPubKeyMan`
 |A SPKM for https://github.com/bitcoin/bitcoin/pull/16528[descriptor-based] wallets
@@ -143,23 +142,22 @@ The following diagram gives a brief overview of how bitcoin-cli operates.
 WARNING: This diagram is **not** exhaustive and includes simplifications.
 
 .`bitcoin-cli` overview
-[mermaid, target=bitcoin-cli-overview, format=svg]
+[mermaid, target=bitcoin-cli-overview, format=svg, id=bitcoin-cli-overview-chart]
 ....
 flowchart LR
-    base_request["BaseRequestHandler()"]
-    connect_call["ConnectAndCallRPC()"]
-    addr_request["AddrInfoRequestHandler()"]
-    get_info["GetInfoRequestHandler()"]
-    net_info["NetInfoRequestHandler()"]
-    generate["GenerateToAddressHandler()"]
-    default["DefaultRequestHandler()"]
-
-    base_request --> addr_request --> connect_call
-    base_request --> get_info --> connect_call
-    base_request --> net_info --> connect_call
-    base_request --> generate --> connect_call
-    base_request --> default --> connect_call
-    connect_call <---> bitcoin-cli
+    BaseRequestHandler["BaseRequestHandler()"]
+    AddrInfoRequestHandler["AddrInfoRequestHandler()"]
+    ConnectAndCallRPC["ConnectAndCallRPC()"]
+    GetInfoRequestHandler["GetInfoRequestHandler()"]
+    NetInfoRequestHandler["NetInfoRequestHandler()"]
+    GenerateToAddressHandler["GenerateToAddressHandler()"]
+    DefaultRequestHandler["DefaultRequestHandler()"]
+    BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GenerateToAddressHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> DefaultRequestHandler --> ConnectAndCallRPC
+    ConnectAndCallRPC <---> bitcoin-cli
     ArgsManager --> bitcoin-cli
 ....
 
