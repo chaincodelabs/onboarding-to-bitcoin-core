@@ -248,6 +248,7 @@ One of the best ways to do this is by using a combination of git tools:
 * `git log -S`
 * `git log -G`
 * `git log -p`
+* `git log -L`
 
 As well as the discussions in various places on the GitHub repo.
 
@@ -341,6 +342,19 @@ We learn now that John also originally added this to _net.{cpp|h}_, before later
 
 `git log -p` (usually also given with a file name argument) follows each commit message with a _patch_ (diff) of the changes made by that commit to that file (or files).
 This is similar to `git blame` except that `git blame` shows the source of only lines _currently_ in the file.
+
+==== git log -L
+
+The `-L` parameter provided to git log will allow you to trace certain lines of a file through a range given by `<start,<end>`.
+
+However, newer versions of git will also allow you to provide `git log -L` with a function name and a file, using:
+
+[source,shell]
+----
+git log -L :<funcname>:<file>
+----
+
+This will then display commits which modified this function in your pager.
 
 ==== git log --follow _file..._
 
