@@ -1,5 +1,26 @@
 = Wallet
 
+== Purpose
+
+Bitcoin Core includes an optional wallet component.
+The wallet allows users to make and receive transactions using their own node, so that they can be sure of the validity of incoming payments.
+
+The wallet aims to:
+
+* Have best-in-class security
+* Have good privacy by default
+* Be extremely well tested
+* Be reviewed by competent developers
+* Be backwards compatible with old (Bitcoin Core) wallet files where possible
+** Perhaps in the future this will involve a stand-alone migration tool
+* Be smart about coin selection with respect to:
+** Transaction fees
+** Privacy
+* Implement state of the art features
+** Taproot
+** Wallet descriptors
+** Miniscript
+
 == Overview
 
 . Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
