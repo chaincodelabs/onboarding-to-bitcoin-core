@@ -8,23 +8,32 @@ WARNING: This documentation can temporarily be found hosted at https://obc.256k1
 
 == Organisation & roles
 
+The objective of the Bitcoin Core Organisation is to represent an entity that is decentralized as much as practically possible on a centralised platform
+One where no single Contributor, Member, or Maintainer has unilateral control over what is/isn't merged into the project.
+Having multiple Maintainers, Members, Contributors, and Reviewers gives this objective the best chance of being realised.
+
+=== Contributors
+
 Anyone who contributes code to the codebase is labelled a Contributor by GitHub and also by the community.
-As of Version 22.0 of Bitcoin Core, there are ~820 individual Contributors credited with changes.
+As of Version 23.0 of Bitcoin Core, there are > 850 individual Contributors credited with changes.
+
+=== Members
 
 Some Contributors are also labelled as Members of the https://github.com/orgs/bitcoin/people[Bitcoin organisation].
-There are currently ~30 Members of the organisation.
 There are no defined criteria for becoming a Member of the organisation; persons are usually nominated for addition or removal by current Maintainer/Member/Admin on an ad-hoc basis.
 Members are typically frequent Contributors/Reviewers and have good technical knowledge of the codebase.
-Some members also have some additional permissions over Contributors, such as adding/removing tags on issues and PRs; however, being a Member **does not** permit you to merge PRs into the project.
+
+Some members also have some additional permissions over Contributors, such as adding/removing tags on issues and Pull Requests (PRs); however, being a Member **does not** permit you to merge PRs into the project.
 Members can also be assigned sections of the codebase in which they have specific expertise to be more easily requested for review as Suggested Reviewers by PR authors.
 
+////
 NOTE: It is neither necessary nor desirable to "request reviews" from suggested reviewers in a normal workflow. Doing so without a good reason might be interpreted as being pushy and having the opposite result than intended.
+////
 
-There are also members of the https://github.com/orgs/bitcoin-core/people[Bitcoin Core organisation].
+=== Maintainers
 
-Some Members are also project Maintainers.
-There are currently 7 Maintainers on the Bitcoin Core project.
-This number is arbitrary and is subject to change as people join and leave the project.
+Some organisation Members are also project Maintainers.
+The number of maintainers is arbitrary and is subject to change as people join and leave the project, but has historically been less than 10.
 PRs can only be merged into the main project by Maintainers.
 While this might give the illusion that Maintainers are in control of the project, the Maintainers' role dictates that they *should not* be unilaterally deciding which PRs get merged and which don't.
 Instead, they should be determining the mergability of changes based primarily on the reviews and discussions of other Contributors on the GitHub PR.
@@ -38,13 +47,9 @@ As the document states, these are *not* the only people who should be reviewing 
 The project needs as many reviews on each PR as possible, ideally from a diverse range of Reviewers.
 ////
 
-The objective of the Bitcoin Core Organisation is to represent an entity that is decentralized as much as practically possible on a centralised platform
-One where no single Contributor, Member, or Maintainer has unilateral control over what is/isn't merged into the project.
-Having multiple Maintainers, Members, Contributors, and Reviewers gives this objective the best chance of being realised.
-
 === Organisation fail-safes
 
-It is possible for a "rogue PR" to be submitted by a Contributor; however, we rely on systematic and thorough peer review to catch these.
+It is possible for a "rogue PR" to be submitted by a Contributor; we rely on systematic and thorough peer review to catch these.
 There has been https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019490.html[discussion] on the mailing list about purposefully submitting malicious PRs to test the robustness of this review process.
 
 In the event that a Maintainer goes rogue and starts merging controversial code, or conversely, _not_ merging changes that are desired by the community at large, then there are two possible avenues of recourse:
@@ -99,10 +104,11 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
 
 == Developer guidelines
 
-The Bitcoin Core project itself contains two documents of particular interest to Contributors:
+The Bitcoin Core project itself contains three documents of particular interest to Contributors:
 
 . https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md[CONTRIBUTING.md] -- How to get started contributing to the project.
 . https://github.com/bitcoin/bitcoin/tree/master/doc/developer-notes.md[developer-notes.md] -- Development guidelines, coding style etc.
+. https://github.com/bitcoin/bitcoin/blob/master/doc/productivity.md[productivity.md] -- Many tips for improving developer productivity.
 
 == Development workflow
 
