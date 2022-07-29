@@ -1,37 +1,296 @@
 = Wallet
 
-== Purpose
-
 Bitcoin Core includes an optional wallet component.
 The wallet allows users to make and receive transactions using their own node, so that they can be sure of the validity of incoming payments.
 
-The wallet aims to:
+The wallet component has the following general aims:
 
-* Have best-in-class security
-* Have good privacy by default
-* Be extremely well tested
-* Be reviewed by competent developers
-* Be backwards compatible with old (Bitcoin Core) wallet files where possible
-** Perhaps in the future this will involve a stand-alone migration tool
-* Be smart about coin selection with respect to:
+. Have best-in-class security
+** Be extremely well tested
+** Be reviewed by competent developers
+. Have good privacy by default
+. Be backwards compatible with old (Bitcoin Core) wallet files where possible
+. Be smart about coin selection with respect to:
 ** Transaction fees
 ** Privacy
-* Implement state of the art features
+. Implement state of the art features
 ** Taproot
 ** Wallet descriptors
 ** Miniscript
 
-== Overview
+Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
 
-. Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
-+
-TIP: The version of BDB we used for the wallet is unmaintained, so all new wallets should choose sqlite format
-. These wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/doc/descriptors.md["descriptor"].
-. Wallets do *not* have to store the private keys associated with the addresses and public keys they are monitoring.
+TIP: The version of BDB we used for the wallet is unmaintained, so new wallets should prefer sqlite format
 
-== Wallet architecture
+Wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/blob/v23.0/doc/descriptors.md["descriptor"].
 
+[TIP]
+====
+Bitcoin Core moved to descriptor wallets as they are unambiguous as to which public keys and scripts should be used.
+
+They also simplify backups and make {im|ex}porting wallet keys into other software less error-prone.
+====
+
+== Wallet overview
+
+////
 * https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets.
+////
+
+=== Wallet Database
+
+The wallet is stored on disk as a Key Value store.
+
+.Wallet database
+[mermaid,target=wallet-database,format=svg]
+....
+flowchart BT
+   database["database\n(KV store)"]
+
+    Transactions --> database
+    Keys --> database
+    Key_metadata --> database
+    wallet_metadata --> database
+    database -- load db --> CWallet
+....
+
+These are some of the key https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L30-L62[records] which help us regenerate a descriptor wallet from the database:
+
+[source,cpp,options=nowrap]
+----
+// walletdb.cpp
+const std::string WALLETDESCRIPTOR{"walletdescriptor"};
+const std::string WALLETDESCRIPTORCACHE{"walletdescriptorcache"};
+const std::string WALLETDESCRIPTORLHCACHE{"walletdescriptorlhcache"};
+const std::string WALLETDESCRIPTORCKEY{"walletdescriptorckey"};
+const std::string WALLETDESCRIPTORKEY{"walletdescriptorkey"};
+----
+
+For `LegacyScriptPubKeyMan` (LSPKM) we use the records with `*.KEY` & `SCRIPT`.
+
+Wallet metadata includes `tipLocator`, the most recent tip, and `version` which is used in database upgrades.
+
+To load the wallet we read the database by iterating the records and loading them to `CWallet`, using `ReadKeyValue()` to deserialize:
+
+.Database record loading
+[cols="2,3"]
+|===
+|Record |Loaded to
+
+|`DBKeys::TX`
+|(Bitcoin) transactions end up in `mapWallet` via the call to `pwallet->LoadToWallet(hash, fill_wtx)`
+
+|`DBKeys::KEY`
+|Keys for legacy wallets are loaded into `CKey` or `Key`, then read into the appropriate SPKM (or one is created and keys added to it) using `pwallet->GetOrCreateLegacyScriptPubKeyMan()`.
+
+a|`DBKeys::WALLETDESCRIPTOR` +
+`DBKeys::WALLETDESCRIPTORCACHE` +
+`DBKeys::WALLETDESCRIPTORLHCACHE` +
+`DBKeys::WALLETDESCRIPTORKEY` +
+`DBKeys::WALLETDESCRIPTORCKEY`
+
+|Descriptor wallet information generally goes into `descriptorspk_man`.
+
+a|`DBKeys::NAME` +
+`DBKeys::PURPOSE`
+
+|Addresses go into `m_address_book`
+
+|===
+
+You can see where all the other DB records are deserialized to by examining the `ReadKeyValue()` https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L321-L746[function].
+
+[TIP]
+====
+`cKey` = encrypted ("crypted") private key
+
+`Key` = unencrypted private key
+====
+
+The various `scriptPubkeyMan` objects are owned by the `CWallet` instance eventually, however `LegacyScriptPubKeyMan` is both created and owned by `CWallet`, whereas `DescriptorScriptPubKeyMan` (DSPKM) is created externally to `CWallet`, and only after loading exists in the `CWallet` context.
+
+Note that `TxSpends` is **not** tracked in the database (and loaded), but instead is rebuilt from scratch at startup because it's fast to do so.
+Also, we must reload every transaction anyway so it's not much more work to regenerate `TxSpends` while we do this.
+////
+TODO: Why do we reload every transaction anyway ^?
+////
+
+=== Encryption
+
+There is encryption in the wallet code, but it is found within both `CWallet` and `*ScriptPubKeyMan` so is not yet well encapsulated.
+
+IMPORTANT: When encryption is enabled secret data must only ever reside in memory and should **never** be written to disk.
+
+When you unlock an encrypted wallet you can set a `timeout`.
+When the timeout expires secret data is deleted from memory, and the wallet "re-locked".
+
+==== Decrypting the wallet
+
+`CWallet` stores `CMasterKey` (**not** `masterPrivateKey`) which is actually our encryption key (not our master key).
+The encryption key is the key we use to encrypt the (master) private key.
+
+`CMasterKey` is what is encrypted by the user's passphrase.
+If you change your passphrase, you are only changing the encryption applied to the `CMasterKey`.
+
+`CWallet` has a map of ``CMasterKey``s and when a wallet unlock is performed it will try each one to see if it can decrypt and then unlock the wallet.
+
+==== Encrypting the wallet
+
+Only private keys are encrypted.
+This allows us to watch for new transactions _without_ having to decrypt the wallet as each new block|transaction arrives.
+
+CAUTION: Decrypting the Bitcoin Core wallet requires the user to enter their passphrase, so is not convenient to do at every new block.
+
+When **en**crypting a wallet, an encryption key is generated, which is then sent to the `ScriptPubKeyMan` to encrypt using its `.Encrypt()` method.
+
+Once the wallet is encrypted for the first time, we re-generate all of our keys.
+This means a new HD seed for `LegacyScriptPubKeyMan` and 8 new descriptors for `DescriptorScriptPubKeyMan`.
+This is to avoid the wallet using things which were not "born encrypted" in the future.
+
+If the wallet has already been used before, old ``ScriptPubKeyMan``'s **are** retained, and so remain usable, but are not marked as `active`.
+The wallet will switch to the new SPKM after encryption.
+
+[TIP]
+====
+We take extra care during the encryption phase to either complete atomically or fail.
+This includes database writes where we don't want to write half and crash, for example.
+
+Therefore we will throw an assertion if the write fails.
+====
+
+[CAUTION]
+====
+When you instruct a BDB database to delete a record, they are actually kept but "marked as" deleted, and _might_ be fully deleted some time in the future.
+
+This is not appropriate for our use case, for example when asking the DB to delete private keys after the wallet is encrypted for the first time.
+Therefore we use some hacks so that when we request deletion of unencrypted private keys from the DB, they are properly deleted immediately and not "marked as" deleted.
+====
+
+[IMPORTANT]
+====
+When encryption is enabled secret data must only ever exist in decrypted form in memory.
+====
+
+=== Transaction tracking
+
+When we learn about a new block the `BlockConnected` signal is https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L2940[fired] after successful validation.
+This prompts the wallet to https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1317-L1328[iterate] all inputs and outputs, calling `IsMine()` on all of them.
+As part of the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1100[check], we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1394-L1396[loop] over the wallet's ``scriptPubkeyMan``s to check if any of the scripts belong to us.
+
+If a script does belong to us, it will be inserted into `mapWallet` along with some metadata related to the time.
+
+When we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L237[load] a wallet into memory, we iterate all `TxSpends`.
+`TxSpends` stores wallet transactions which were already spend and confirmed.
+
+Therefore When the wallet needs to select coins to spend, it can select from the coins:
+
+`mapWallet - TxSpends - notMine`
+
+=== Calculating a balance
+
+For balance calculation we https://github.com/bitcoin/bitcoin/blob/master/src/wallet/receive.cpp#L293-L320[iterate] `mapWallet` and add values to a `Balance` struct.
+
+[source,cpp,options=nowrap]
+----
+struct Balance {
+    CAmount m_mine_trusted{0};           //!< Trusted, at depth=GetBalance.min_depth or more
+    CAmount m_mine_untrusted_pending{0}; //!< Untrusted, but in mempool (pending)
+    CAmount m_mine_immature{0};          //!< Immature coinbases in the main chain
+    CAmount m_watchonly_trusted{0};
+    CAmount m_watchonly_untrusted_pending{0};
+    CAmount m_watchonly_immature{0};
+};
+----
+
+////
+(does this call `availableCoins`?)
+////
+
+We do some caching during iteration so that we avoid re-calculating the same values for multiple transactions.
+
+[sidebar]
+****
+* `debit` = amount in +
+* `credit` = amount out +
+* `availableCredit` = amount available to send out (not dirty or immature)
+****
+
+Calculating the above requires using `TxSpends` and `IsMine`.
+
+When a new transaction involving the wallet takes place, really what happens is that it's marked as `dirty`, which deletes the cached entry for the parent transaction.
+This means that the next time `GetBalance()` is called, `debit` is recalculated correctly.
+
+`TxSpends` is calculated by looking at the outpoints in the transaction itself.
+
+TIP: `COutPoint` is a pair of `txid : index`, good when you want to know which UTXO an input spends.
+
+``COutput``s (**not** `COutPoint`) are created for coin selection and contain the entire previous UTXO (script, amount), along with helpers for calculating fees and effective value.
+``COutput``s are ephemeral -- we create them, perform another operation with them and discard them.
+They are stored in `availableCoins` which is recreated when calling functions such as `GetAvailableBalance()`, `ListCoins()` and `CreateTransactionInternal()`.
+
+In a spending transaction all inputs have their corresponding `OutPoints`, and we map these to spending transactions in `TxSpends`.
+
+IMPORTANT: We assume anything (i.e. transactions) that reach the wallet have already been validated by the node and we therefore blindly assume that it is valid in wallet code.
+
+If a transaction is our own we check for validity with `testMempoolAccept` before submitting to the P2P network.
+
+=== IsMine
+
+For DSPKM running `IsMine()` is really simple.
+Descriptors generate a list of ScriptPubKeys, and, if it's in the list, then it's `IsMine`.
+
+`IsMine` returns an https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/ismine.h#L20-L49[enum].
+This is used as a return value, a filter and set of flags simultaneously.
+There is more background on the general `IsMine` semantics in the v0.21.0 https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.21.0.md#ismine-semantics[release notes].
+
+LSPKM can have watch-only and spendable flags set at the same time, but DSPKM is either or.
+Because LSPKM wallets are all key-based, we will need to see if a script _could have been generated by one of our keys_; what type of script it is, and if we have a (private) key for it?
+
+For watch-only we simply check "do we have this script stored as a script?" (where db `CScripts` are our watch-only scripts)".
+If we don't have a key for a script but it exists in `mapScripts` then it's implicitly watch-only.
+
+The problem with this current method of `IsMine` is that it's tough to figure out what your wallet considers "Mine" -- it's probably a finite set, but maybe not...
+Another consideration along this same vein is that `IsMine` includes P2PK outputs which don't have addresses.
+This un-enumerability can be an issue in migration of legacy to descriptor wallets.
+
+There is also the possibility that someone can mutate address to different address type and you will still see it as `IsMine`. E.g. mutate P2PK into P2PKH address and wallet will still detect.
+
+With descriptors we only look for scripts explicitly.
+With descriptor wallets `IsMine` might not recognise script hashes from scripts, because it was not told to watch for them and consider them as belonging to it.
+
+We use the `IsMine` filters in many places, primarily to distinguish between spendable and watch-only:
+
+* `IsMine::All` = spendable and watch-only (use for legacy wallet)
+* `IsMine::Used` not used by `IsMine`, but instead used as a filter for tracking when addresses have been reused.
+
+There is a PR https://github.com/bitcoin/bitcoin/pull/19602[open] which aims to permit migration of legacy wallets -> descriptor form.
+But for now (2022) it's still relevant to have stuff related to legacy wallet in documentation.
+
+=== Conflict tracking
+
+Conflict tracking is related to changing the state as the mempool tells us about conflicting transactions.
+
+`mapTxSpends` is a multimap which permits having the same `COutPoint` mapping to _two_ transactions. (i.e. two transactions spending the same input)
+This is how we can tell if things are conflicted: look up an outpoint and check to see how many transactions are there, if > 1 then we know that there was a conflict.
+
+If there is a conflict we can look up the wallet transaction and see what state it's in, and we can be sure about whether it is currently or previously conflicted.
+
+Conflict tracking is particularly relevant for coin selection...
+////
+TODO: Why?
+////
+
+[id=coin-selection2]
+=== Coin selection
+
+See https://bitcoinops.org/en/topics/coin-selection/[Bitcoin Optech] for more information on what coin selection is.
+There is also a section digging deeper into coin selection found <<coin-selection,below>>.
+
+Iterate `mapWallet` and check for ismine, notspend and notconflicted, (conf) depth, immature coinbase stored in `availabelCoints`, list of `COutputs`.
+
+`GroupOutputs()` takes those and turns them into OutputGroups. All outputs with the same script are counted as a signle Output by this function.
+Also calculate values, fees, and dependatnt 
+effective value is coins value - fee
 
 === Separation of wallet and node functionality
 
@@ -501,7 +760,6 @@ if (time_first_key) {
 }
 
 // ...
-
 ----
 
 Finally, the `walletinterface` is setup for the wallet before the `WalletInstance` is returned to the caller.
@@ -823,7 +1081,7 @@ isminetype CWallet::IsMine(const CScript& script) const
 }
 ----
 
-Note the `CWallet::IsMine(const CScript& script)` is just a proxy to the `ScriptPubKeyMan::IsMine(const CScript &script)`. This is an important distiction, because in Bitcoin Core the class `CWallet` does not manage the keys. This work is done by `ScriptPubKeyMan` subclasses: `DescriptorScriptPubKeyMan` and `LegacyScriptPubKeyMan`. All `ScriptPubKeyMan` instances belonging to the wallet are stored in `CWallet::m_spk_managers`.
+Note the `CWallet::IsMine(const CScript& script)` is just a proxy to the `ScriptPubKeyMan::IsMine(const CScript &script)`. This is an important distinction, because in Bitcoin Core the class `CWallet` does not manage the keys. This work is done by `ScriptPubKeyMan` subclasses: `DescriptorScriptPubKeyMan` and `LegacyScriptPubKeyMan`. All `ScriptPubKeyMan` instances belonging to the wallet are stored in `CWallet::m_spk_managers`.
 
 Another important aspect of that method is the return type, the `enum isminetype`. This type is defined in `src/wallet/ismine.h`.
 
@@ -1308,6 +1566,7 @@ After available coins have been determined, we check to see if the user has prov
 The change outputs' `size`, `discard_free_rate` and `effective_fee_rate` are then calculated.
 The `discard_fee_rate` refers to any change output which would be dust at the `discard_rate`, and that you would be willing to discard completely and add to fee (as well as continuing to pay the fee that would have been needed for creating the change).
 
+[id=coin-selection]
 === Coin selection
 
 Now that we have a vector of available coins and our fee rate settings estimated, we are ready to start coin selection itself.
