@@ -1,7 +1,7 @@
 = Wallet
 
 Bitcoin Core includes an optional wallet component.
-The wallet allows users to make and receive transactions using their own node, so that they can be sure of the validity of incoming payments.
+The wallet allows users to make and receive transactions using their own node, so that they can validate incoming payment against their own node.
 
 The wallet component has the following general aims:
 
@@ -9,20 +9,16 @@ The wallet component has the following general aims:
 ** Be extremely well tested
 ** Be reviewed by competent developers
 . Have good privacy by default
-. Be backwards compatible with old (Bitcoin Core) wallet files where possible
 . Be smart about coin selection with respect to:
 ** Transaction fees
 ** Privacy
-. Implement state of the art features
+. Implement state of the art features:
 ** Taproot
 ** Wallet descriptors
 ** Miniscript
+. Be backwards compatible with old (Bitcoin Core) wallet files where possible
 
-Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
-
-TIP: The version of BDB we used for the wallet is unmaintained, so new wallets should prefer sqlite format
-
-Wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/blob/v23.0/doc/descriptors.md["descriptor"].
+Wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/blob/v23.0/doc/descriptors.md["descriptor"^].
 
 [TIP]
 ====
@@ -34,10 +30,14 @@ They also simplify backups and make {im|ex}porting wallet keys into other softwa
 == Wallet overview
 
 ////
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets.
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/^] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets.
 ////
 
 === Wallet Database
+
+Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
+
+TIP: The version of BDB we used for the wallet is unmaintained, so new wallets should prefer sqlite format
 
 The wallet is stored on disk as a Key Value store.
 
@@ -54,7 +54,7 @@ flowchart BT
     database -- load db --> CWallet
 ....
 
-These are some of the key https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L30-L62[records] which help us regenerate a descriptor wallet from the database:
+These are some of the https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L30-L62[records^] which help us regenerate a descriptor wallet (populating a `DescriptorScriptPubKeyMan` (DSPKM)) from the database:
 
 [source,cpp,options=nowrap]
 ----
@@ -66,16 +66,16 @@ const std::string WALLETDESCRIPTORCKEY{"walletdescriptorckey"};
 const std::string WALLETDESCRIPTORKEY{"walletdescriptorkey"};
 ----
 
-For `LegacyScriptPubKeyMan` (LSPKM) we use the records with `*.KEY` & `SCRIPT`.
+For Legacy wallets (populating a `LegacyScriptPubKeyMan` (LSPKM)) we use the records with `*.KEY` & `SCRIPT`.
 
 Wallet metadata includes `tipLocator`, the most recent tip, and `version` which is used in database upgrades.
 
-To load the wallet we read the database by iterating the records and loading them to `CWallet`, using `ReadKeyValue()` to deserialize:
+To load the wallet we read the database by iterating the records and loading them to `CWallet`, using `ReadKeyValue()` to deserialize.
 
-.Database record loading
+.Loading wallet records from the database
 [cols="2,3"]
 |===
-|Record |Loaded to
+|Record |Load point
 
 |`DBKeys::TX`
 |(Bitcoin) transactions end up in `mapWallet` via the call to `pwallet->LoadToWallet(hash, fill_wtx)`
@@ -100,20 +100,31 @@ a|`DBKeys::NAME` +
 
 You can see where all the other DB records are deserialized to by examining the `ReadKeyValue()` https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L321-L746[function].
 
-[TIP]
-====
-`cKey` = encrypted ("crypted") private key
+The various `*ScriptPubkeyMan` objects are all owned by the `CWallet` instance eventually, however `LegacyScriptPubKeyMan` is both created and owned by `CWallet`, whereas `DescriptorScriptPubKeyMan` is created externally to `CWallet` and only after loading exists in the `CWallet` context.
 
-`Key` = unencrypted private key
-====
-
-The various `scriptPubkeyMan` objects are owned by the `CWallet` instance eventually, however `LegacyScriptPubKeyMan` is both created and owned by `CWallet`, whereas `DescriptorScriptPubKeyMan` (DSPKM) is created externally to `CWallet`, and only after loading exists in the `CWallet` context.
-
-Note that `TxSpends` is **not** tracked in the database (and loaded), but instead is rebuilt from scratch at startup because it's fast to do so.
-Also, we must reload every transaction anyway so it's not much more work to regenerate `TxSpends` while we do this.
+Note that `TxSpends` is **not** tracked in the wallet database (and loaded at startup), but instead is rebuilt from scratch because it's fast to do so and we must reload every transaction anyway, so it's not much more work to regenerate `TxSpends` at the same time.
 ////
 TODO: Why do we reload every transaction anyway ^?
 ////
+
+=== Key-type classes in the wallet
+
+There are a number of `Key` classes in the wallet code and keeping track of their functions can be confusing at times due to naming similarities.
+Below are listed some of the most common classes along with their general functions.
+
+[id=wallet-key-types]
+****
+[horizontal]
+`CKey`:: An encapsulated private key. Used for signing and deriving child keys.
+`CKeyID`:: A _reference_ to a `CKey` by the hash160 of its pubkey. Used for key lookups when fetching keys e.g. for signing.
+`CPrivKey`:: A serialized (OpenSSL format) private key with associated parameters. Used to read/write private keys to/from the database.
+`CPubKey`:: A public key. Used in many places.
+`CExtKey`:: An extended public key (includes private key and chaincode). Used for deriving BIP32 child keys.
+`CMasterKey`:: Contains an encryption salt `vchSalt` and a randomly generated encryption key `vchCryptedkey`. The `CMasterKey` object itself is what is encrypted by the user's passphrase and the inner `vchCryptedKey` is what is used to en/de-crypt the wallet keys.
+`CKeyingMaterial`:: Plain text which is to be encrypted or has been decrypted using the `CMasterKey`.
+`CKeyPool`:: A single key which has been taken from a ``CWallet``'s keypool for use. `CKeyPool` keys are stored in the wallet database.
+`CryptedKeyMap`:: A map of `CKeyID` to a pair of (`CPubKey` + an encrypted private key). Used to lookup keys (by `CKeyID`) when the wallet is encrypted.
+****
 
 === Encryption
 
@@ -126,44 +137,43 @@ When the timeout expires secret data is deleted from memory, and the wallet "re-
 
 ==== Decrypting the wallet
 
-`CWallet` stores `CMasterKey` (**not** `masterPrivateKey`) which is actually our encryption key (not our master key).
-The encryption key is the key we use to encrypt the (master) private key.
+As detailed in <<wallet-key-types, Key Types>>, the `CMasterKey.vchCryptedKey` is the actual secret key used to en/de-crypt the keys in the wallet.
 
-`CMasterKey` is what is encrypted by the user's passphrase.
-If you change your passphrase, you are only changing the encryption applied to the `CMasterKey`.
+`CWallet` stores a `CMasterKey`, which is **not** a https://github.com/bitcoinbook/bitcoinbook/blob/173974f69e263c7de536a334224d642e6dca7d71/ch05.asciidoc#HDWalletFromSeed[master private key^].
+The `CMasterKey` is encrypted by the user's passphrase.
 
-`CWallet` has a map of ``CMasterKey``s and when a wallet unlock is performed it will try each one to see if it can decrypt and then unlock the wallet.
+When the user changes their passphrase, they are only changing the encryption applied to the `CMasterKey`, the inner `vchCryptedKey` is not changed.
+This means that we do not have to read all items in the wallet database, decrypt them with the old key, encrypt them with the new key, and them write them, back to the database again.
+Instead, we only have to change the encryption applied to the `CMasterKey`, which is much less error-prone, and more secure.
+
+Each `CWallet` has a map of ``CMasterKey``s and when unlock is called it will try each one to see if it can decrypt and then unlock the wallet.
 
 ==== Encrypting the wallet
 
 Only private keys are encrypted.
 This allows us to watch for new transactions _without_ having to decrypt the wallet as each new block|transaction arrives.
 
-CAUTION: Decrypting the Bitcoin Core wallet requires the user to enter their passphrase, so is not convenient to do at every new block.
+Decrypting the Bitcoin Core wallet requires the user to enter their passphrase, so is not convenient to do at every new block.
 
-When **en**crypting a wallet, an encryption key is generated, which is then sent to the `ScriptPubKeyMan` to encrypt using its `.Encrypt()` method.
+When encrypting a wallet, a `CMasterKey` encryption key is generated, which is then sent to the `ScriptPubKeyMan` to encrypt using its `.Encrypt()` method.
 
 Once the wallet is encrypted for the first time, we re-generate all of our keys.
-This means a new HD seed for `LegacyScriptPubKeyMan` and 8 new descriptors for `DescriptorScriptPubKeyMan`.
 This is to avoid the wallet using things which were not "born encrypted" in the future.
+For `LegacyScriptPubKeyMan` this means creating a new HD seed, and for `DescriptorScriptPubKeyMan` 8 new descriptors.
 
-If the wallet has already been used before, old ``ScriptPubKeyMan``'s **are** retained, and so remain usable, but are not marked as `active`.
-The wallet will switch to the new SPKM after encryption.
+If the wallet has already been used before -- while it existed in un-encrypted state -- the old ``ScriptPubKeyMan``'s are retained and so remain usable, but are not marked as `active`.
+The wallet will switch to the new SPKM after encryption has completed by marking the new SPKM as `active`.
 
-[TIP]
-====
 We take extra care during the encryption phase to either complete atomically or fail.
 This includes database writes where we don't want to write half and crash, for example.
-
 Therefore we will throw an assertion if the write fails.
-====
 
 [CAUTION]
 ====
 When you instruct a BDB database to delete a record, they are actually kept but "marked as" deleted, and _might_ be fully deleted some time in the future.
 
 This is not appropriate for our use case, for example when asking the DB to delete private keys after the wallet is encrypted for the first time.
-Therefore we use some hacks so that when we request deletion of unencrypted private keys from the DB, they are properly deleted immediately and not "marked as" deleted.
+Therefore we use some https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L758-L765[hacks^] so that when we request deletion of unencrypted private keys from the DB, they are properly deleted immediately and not "marked as" deleted.
 ====
 
 [IMPORTANT]
@@ -173,13 +183,13 @@ When encryption is enabled secret data must only ever exist in decrypted form in
 
 === Transaction tracking
 
-When we learn about a new block the `BlockConnected` signal is https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L2940[fired] after successful validation.
-This prompts the wallet to https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1317-L1328[iterate] all inputs and outputs, calling `IsMine()` on all of them.
-As part of the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1100[check], we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1394-L1396[loop] over the wallet's ``scriptPubkeyMan``s to check if any of the scripts belong to us.
+When we learn about a new block the `BlockConnected` signal is https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L2940[fired^] after successful validation.
+This prompts the wallet to https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1317-L1328[iterate^] all inputs and outputs, calling `IsMine()` on all of them.
+As part of the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1100[check^], we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1394-L1396[loop^] over the wallet's ``scriptPubkeyMan``s to check if any of the scripts belong to us.
 
 If a script does belong to us, it will be inserted into `mapWallet` along with some metadata related to the time.
 
-When we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L237[load] a wallet into memory, we iterate all `TxSpends`.
+When we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L237[load^] a wallet into memory, we iterate all `TxSpends`.
 `TxSpends` stores wallet transactions which were already spend and confirmed.
 
 Therefore When the wallet needs to select coins to spend, it can select from the coins:
@@ -188,7 +198,7 @@ Therefore When the wallet needs to select coins to spend, it can select from the
 
 === Calculating a balance
 
-For balance calculation we https://github.com/bitcoin/bitcoin/blob/master/src/wallet/receive.cpp#L293-L320[iterate] `mapWallet` and add values to a `Balance` struct.
+For balance calculation we https://github.com/bitcoin/bitcoin/blob/master/src/wallet/receive.cpp#L293-L320[iterate^] `mapWallet` and add values to a `Balance` struct.
 
 [source,cpp,options=nowrap]
 ----
@@ -208,23 +218,31 @@ struct Balance {
 
 We do some caching during iteration so that we avoid re-calculating the same values for multiple transactions.
 
+.Wallet balance terminology
 [sidebar]
 ****
-* `debit` = amount in +
-* `credit` = amount out +
-* `availableCredit` = amount available to send out (not dirty or immature)
+[horizontal]
+`debit`:: amount in
+`credit`:: amount out
+`availableCredit`:: amount available to send out (not dirty or immature)
 ****
 
 Calculating the above requires using `TxSpends` and `IsMine`.
 
-When a new transaction involving the wallet takes place, really what happens is that it's marked as `dirty`, which deletes the cached entry for the parent transaction.
+When a new transaction involving the wallet takes place, really what happens is that it's marked as `DIRTY`, which deletes the cached entry for the parent transaction.
 This means that the next time `GetBalance()` is called, `debit` is recalculated correctly.
+https://bitcoincore.reviews/18113[This^] Bitcoincore PR review club goes into more detail on coins being marked as `DIRTY` and `fresh` in the cache.
 
 `TxSpends` is calculated by looking at the outpoints in the transaction itself.
 
-TIP: `COutPoint` is a pair of `txid : index`, good when you want to know which UTXO an input spends.
+.`COutput` vs `COutPoint`
+[sidebar]
+****
+[horizontal]
+`COutPoint`:: a pair of `txid : index`, useful when you want to know which UTXO an input spends.
+`COutput`:: created for coin selection and contains the entire previous UTXO (script, amount), along with helpers for calculating fees and effective value.
+****
 
-``COutput``s (**not** `COutPoint`) are created for coin selection and contain the entire previous UTXO (script, amount), along with helpers for calculating fees and effective value.
 ``COutput``s are ephemeral -- we create them, perform another operation with them and discard them.
 They are stored in `availableCoins` which is recreated when calling functions such as `GetAvailableBalance()`, `ListCoins()` and `CreateTransactionInternal()`.
 
@@ -236,22 +254,22 @@ If a transaction is our own we check for validity with `testMempoolAccept` befor
 
 === IsMine
 
-For DSPKM running `IsMine()` is really simple.
-Descriptors generate a list of ScriptPubKeys, and, if it's in the list, then it's `IsMine`.
+For DSPKM running `IsMine()` is really simple: descriptors generate a list of ScriptPubKeys, and, if the SPK we are interested in is in the list, then it's ours.
 
-`IsMine` returns an https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/ismine.h#L20-L49[enum].
+`IsMine` returns an https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/ismine.h#L20-L49[enum^].
 This is used as a return value, a filter and set of flags simultaneously.
-There is more background on the general `IsMine` semantics in the v0.21.0 https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.21.0.md#ismine-semantics[release notes].
+There is more background on the general `IsMine` semantics in the v0.21.0 https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.21.0.md#ismine-semantics[release notes^].
 
-LSPKM can have watch-only and spendable flags set at the same time, but DSPKM is either or.
-Because LSPKM wallets are all key-based, we will need to see if a script _could have been generated by one of our keys_; what type of script it is, and if we have a (private) key for it?
+LSPKM can have watch-only and spendable flags set at the same time, but DSPKM is either or, because descriptor wallets do not allow mixtures of spendable and watch-only keys in the same SPKM.
+Because Legacy wallets are all key-based, we will need to see if a script _could have been generated by one of our keys_; what type of script it is; and if we have a (private) key for it.
 
-For watch-only we simply check "do we have this script stored as a script?" (where db `CScripts` are our watch-only scripts)".
-If we don't have a key for a script but it exists in `mapScripts` then it's implicitly watch-only.
+For Legacy watch-only wallets we simply check "do we have this script stored as a script?" (where `CScripts` in the database are our watch-only scripts)".
+If we don't have a `CKey` for a script but it exists in `mapScripts` then it's implicitly watch-only.
 
-The problem with this current method of `IsMine` is that it's tough to figure out what your wallet considers "Mine" -- it's probably a finite set, but maybe not...
-Another consideration along this same vein is that `IsMine` includes P2PK outputs which don't have addresses.
-This un-enumerability can be an issue in migration of legacy to descriptor wallets.
+A problem with this current method of `IsMine` for legacy wallets is that it's tough to figure out what your wallet considers "Mine" -- it's probably a finite set, but maybe not...
+
+Another consideration is that the LSPKM `IsMine` includes P2PK outputs -- which don't have addresses!
+This un-enumerability can be an issue in migration of Legacy to Descriptor wallets.
 
 There is also the possibility that someone can mutate address to different address type and you will still see it as `IsMine`. E.g. mutate P2PK into P2PKH address and wallet will still detect.
 
@@ -260,11 +278,13 @@ With descriptor wallets `IsMine` might not recognise script hashes from scripts,
 
 We use the `IsMine` filters in many places, primarily to distinguish between spendable and watch-only:
 
-* `IsMine::All` = spendable and watch-only (use for legacy wallet)
-* `IsMine::Used` not used by `IsMine`, but instead used as a filter for tracking when addresses have been reused.
+`IsMine::All`:: spendable and watch-only (use for legacy wallet)
+`IsMine::Used`:: not used by `IsMine`, but instead used as a filter for tracking when addresses have been reused.
 
-There is a PR https://github.com/bitcoin/bitcoin/pull/19602[open] which aims to permit migration of legacy wallets -> descriptor form.
+There is a PR https://github.com/bitcoin/bitcoin/pull/19602[open^] which aims to permit migration of legacy wallets -> descriptor form.
 But for now (2022) it's still relevant to have stuff related to legacy wallet in documentation.
+
+See the section on <<ismine-enum,IsMine>> below for more in-depth information on `IsMine`.
 
 === Conflict tracking
 
@@ -280,61 +300,105 @@ Conflict tracking is particularly relevant for coin selection...
 TODO: Why?
 ////
 
-[id=coin-selection2]
+[id=coin-selection-overview]
 === Coin selection
 
-See https://bitcoinops.org/en/topics/coin-selection/[Bitcoin Optech] for more information on what coin selection is.
-There is also a section digging deeper into coin selection found <<coin-selection,below>>.
+See https://bitcoinops.org/en/topics/coin-selection/[Bitcoin Optech^] for more information on coin selection.
+There is a section digging deeper into the coin selection code found <<coin-selection,below>>.
+To select inputs to a transaction our primary considerations are privacy and fees.
 
-Iterate `mapWallet` and check for ismine, notspend and notconflicted, (conf) depth, immature coinbase stored in `availabelCoints`, list of `COutputs`.
+The below sections form an overview of creating a transaction via `CreateTransactionInternal()`.
 
-`GroupOutputs()` takes those and turns them into OutputGroups. All outputs with the same script are counted as a signle Output by this function.
-Also calculate values, fees, and dependatnt 
-effective value is coins value - fee
+==== `AvailableCoins()`
 
-=== Separation of wallet and node functionality
+The gist of how we generate a list of coins available to spend (via `AvailableCoins()`) is that we iterate `mapWallet` and check for coins that:
 
-Both the `bitcoind` and `bitcoin-qt` programs use the same source code for wallet, networking, consensus etc.
-`bitcoin-qt` is not simply a wallet/gui "frontend" for `bitcoind` but a stand-alone binary which happens to share much of the same code.
-There has been discussion since at least as early as 2014 about https://github.com/bitcoin/bitcoin/issues/3882[splitting wallet code] out from the rest of the codebase, however this has not been completed yet.
+* Are not immature coinbase outputs
+* Are not conflicted
+* Must be at least in our mempool
+* Not currently replacing or being replaced by another transaction
+* Are not locked
+* Are `IsMine`
+* Are `spendable`
 
-The https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Process-Separation[Process Separation] project is tracking development working towards separating out node, wallet and GUI code even further.
+...and return them as a `std::vector<COutput>`.
+
+[id=GroupOutputs]
+==== `GroupOutputs()`
+
+Once we have this vector of coins `GroupOutputs()` will turn them into ``OutputGroup``s.
+An `OutputGroup` consists of outputs with the same script, i.e. "coins sent to the same address".
+
+////
+Effective Value is = Coins value - Fee
+////
+
+[id=selectCoins]
+==== `selectCoins()`
+
+If you manually choose inputs, it will add outputs to the transaction automatically.
+It tries first to make sure that all outputs selected have 6 confirmations, if unsuccessful it then tries again with 1 confirmation as the lower bound.
+
+For change outputs it starts with 1 confirmation and then again with 0.
+If this is still unsuccessful it increases the number of ancestors and descendants that unconfirmed change can have.
+
+==== `AttemptSelection()`
+
+This function is orchestrating the <<GroupOutputs,Output group>> creation, and then the <<selectCoins,coin selection>>.
+Currently, this is always based on the <<coin-selection,waste metric>>.
+
+It is using 3 metrics and then selecting the "best" of the three (based on waste):
+
+. Branch n bound (bnb)
+. Knapsack
+. Single Random Draw (SRD)
+
+There is currently an idea that a limited SRD could replace Knapsack in the future.
+Due to this plan for removal, it would not make sense to focus development effort on improving the Knapsack algorithm at this time.
+
+=== Transaction creation
+
+Once the coins have been selected they are returned back to `CreateTransactionInternal()`, which will create the final transaction.
+
+Right now when we determine the change output, we don't use what `selectrionResult` says the change output should be.
+What we actually do is make the tx with in? ouputs and set the change amount to be the sum inputs-ouputs, so the change amount includes the transaction fee.
+To get the correct change amount we now calculate the size of this after signing, we use dummysigner to add a summy signature (74 0's and the correct script), and now we can calculate the correct fee.
+We reduce that fee from the change output amount, and if this now goes below *some threshold?* (the "cost of change" thing from BnB) or if it is dust we drop the change ouput and add it's value to the fee.
+
+So now we have an unsigned tx which we need to sign.
+
+=== Signing
+
+We pass the tx to `CWallet::SignTransaction()` which will call `IsMine()` on each input to figure out which ScriptPubKeyMan (spkman) owns that input, then ask the spkman to fetch its `SigningProviders` to provide the signer which can sign the transaction, and return that to us.
+
+With PSBTs we have the `fillPSBT()` method in `CWallet` which calls `*ScriptPubKeyMan::fillPSBT()`.
+We do this because we can add previous UTXOs due to transaction tracking; the SPKM adds the scripts and key derivation paths and will then optionally sign.
+
+== Separation of wallet and node
+
+Both the `bitcoind` and `bitcoin-qt` programs use the same source code for the wallet component.
+`bitcoin-qt` is not therefore a gui frontend for `bitcoind` but a stand-alone binary which happens to share much of the same code.
+There has been discussion since at least as early as 2014 about https://github.com/bitcoin/bitcoin/issues/3882[splitting wallet code^] out from the rest of the codebase, however this has not been completed yet.
+
+The https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Process-Separation[Process Separation^] project is tracking development working towards separating out node, wallet and GUI code even further.
 In the mean time developers have preferred to focus on improving the organisation of the (wallet) source code within the project and to focus on making wallet code more asynchronous and independent of node code, to avoid locking the node while wallet code-paths are executing.
 
 === Wallet interfaces
 
 In order to facilitate code separation, distinct interfaces between the node and the wallet have been created:
 
-* The node holds a https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/interfaces.cpp#L109[`WalletImpl`] interface to call functions on the wallet.
-* The wallet holds a https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/interfaces.cpp#L429[`ChainImpl`] interface to call functions on the node.
-* The node notifies the wallet about new transactions and blocks through the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/interfaces.cpp#L341[`CValidationInterface`].
+* The node holds a https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/interfaces.cpp#L114[`WalletImpl`^] interface to call functions on the wallet.
+* The wallet holds a https://github.com/bitcoin/bitcoin/blob/v23.0/src/node/interfaces.cpp#L452[`ChainImpl`^] interface to call functions on the node.
+* The node notifies the wallet about new transactions and blocks through the https://github.com/bitcoin/bitcoin/blob/v23.0/src/node/interfaces.cpp#L364[`CValidationInterface`^].
 
 == Wallet component initialisation
 
-The wallet component is initialized via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/walletinitinterface.h#L11-L23[_src/walletinitinterface.h_].
+The wallet component is initialized via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/blob/v23.0/src/walletinitinterface.h#L14-L26[_src/walletinitinterface.h_^].
 The member functions are marked as virtual in the `WalletInitInterface` definition, indicating that they are going to be overridden later by a derived class.
-
-.src/walletinitinterface.h
-[source,cpp,options=nowrap]
-----
-class WalletInitInterface {
-public:
-    /** Is the wallet component enabled */
-    virtual bool HasWalletSupport() const = 0;
-    /** Get wallet help string */
-    virtual void AddWalletOptions(ArgsManager& argsman) const = 0;
-    /** Check wallet parameter interaction */
-    virtual bool ParameterInteraction() const = 0;
-    /** Add wallets that should be opened to list of chain clients. */
-    virtual void Construct(NodeContext& node) const = 0;
-
-    virtual ~WalletInitInterface() {}
-}
-----
 
 Both _walletinit.cpp_ and _dummywallet.cpp_ include derived classes which override the member functions of `WalletInitInterface`, depending on whether the wallet is being compiled in or not.
 
-The primary https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/Makefile.am#L362-L367[_src/Makefile.am_] describes which of these modules is chosen to override: if `./configure` has been run with the wallet feature enabled (default), then _wallet/init.cpp_ is added to the sources, otherwise (`./configure --disable-wallet`) _dummywallet.cpp_ is added.
+The primary https://github.com/bitcoin/bitcoin/blob/v23.0/src/Makefile.am#L389-L394[_src/Makefile.am_^] describes which of these modules is chosen to override: if `./configure` has been run with the wallet feature enabled (default), then _wallet/init.cpp_ is added to the sources, otherwise (`./configure --disable-wallet`) _dummywallet.cpp_ is added:
 
 .src/Makefile.am
 [source,sh,options=nowrap]
@@ -349,24 +413,9 @@ endif
 
 _src/walletinitinterface.h_ declares the global `g_wallet_init_interface`  which will handle the configured `WalletInitInterface`.
 
-The wallet interface is created when the `Construct()` method is called on the `g_wallet_init_interface` object by https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1180-L1189[`AppInitInterfaces()`] in _init.cpp_.
+The wallet interface is created when the `Construct()` method is called on the `g_wallet_init_interface` object by https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1179-L1184[`AppInitMain()`^] in _init.cpp_.
 `Construct` takes a reference to a `NodeContext` as argument, and then checks that the wallet has not been disabled by a runtime argument before calling `interfaces::MakeWalletClient()` on the node.
 This initialises a new `WalletClientImpl` object which is then added to the `node` object, both to the general list of `node.chain_clients` (wallet processes or other clients which want chain information from the node) in addition to being assigned as the unique `node.wallet_client` role, which specifies the particular `node.chain_client` that should be used to load or create wallets.
-
-.src/wallet/init.cpp
-[source,cpp,options=nowrap]
-----
-void WalletInit::Construct(NodeContext& node) const
-{
-    ArgsManager& args = *Assert(node.args);
-    if (args.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
-        LogPrintf("Wallet disabled!\n");
-        return;
-    }
-    auto wallet_client = interfaces::MakeWalletClient(*node.chain, args);
-    node.wallet_client = wallet_client.get();
-    node.chain_clients.emplace_back(std::move(wallet_client));
-----
 
 The `NodeContext` struct is defined as the following:
 
@@ -390,81 +439,30 @@ Any wallets loaded during the life cycle of the main program are also unloaded a
 Wallet(s) to be loaded as part of program startup can be specified by passing `-wallet=` or `-walletdir=` arguments to `bitcoind`/`bitcoin-qt`.
 If the wallet has been compiled in but no `-wallet*=` arguments have been passed, then the default wallet directory (_$datadir/wallets_) will be checked as per `GetWalletDir()`:
 
-.src/wallet/walletutil.cpp#GetWalletDir()
-[source,cpp,options=nowrap]
-----
-fs::path GetWalletDir()
-{
-    fs::path path;
-
-    if (gArgs.IsArgSet("-walletdir")) {
-        path = gArgs.GetArg("-walletdir", "");
-        if (!fs::is_directory(path)) {
-            // If the path specified doesn't exist, we return the deliberately
-            // invalid empty string.
-            path = "";
-        }
-    } else {
-        path = GetDataDir();
-        // If a wallets directory exists, use that, otherwise default to GetDataDir
-        if (fs::is_directory(path / "wallets")) {
-            path /= "wallets";
-        }
-    }
-
-    return path;
-}
-----
-
 Wallets can also be loaded after program startup via the `loadwallet` RPC.
 
 === VerifyWallets
 
 Wallet verification refers to verification of the `-wallet` arguments as well as the underlying wallet database(s) on disk.
 
-Wallets loaded via program arguments are first verified as part of `AppInitMain()` which first https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1301-L1305[verifies wallet database integrity] by calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L19-L88[`VerifyWallets()`] via the `WalletClientImpl` override of `client->verify()`.
+Wallets loaded via program arguments are first verified as part of `AppInitMain()` which first https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1209-L1213[verifies wallet database integrity^] by calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/load.cpp#L25-L101[`VerifyWallets()`^] via the `WalletClientImpl` override of `client->verify()`.
 
 `VerifyWallets()` takes an `interfaces::Chain` object as argument, which is currently used to send init and error messages (about wallet verification) back to the GUI.
 `VerifyWallets()` starts by checking that the `walletdir` supplied by argument, or default of `""`, is valid.
-Next it loops through all wallets it finds in the `walletdir` and adds them to an `std::set` called `wallet_paths`, first deduplicating them by tracking their absolute paths, and then checking that  the `WalletDatabase` for each wallet exists (or is otherwise constructed successfully) and can be verified.
-
-.src/wallet/load.cpp#VerifyWallets()
-[source,cpp,options=nowrap]
-----
-// ...
-
-for (const auto& wallet_file : gArgs.GetArgs("-wallet")) {
-    const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), wallet_file);
-
-    if (!wallet_paths.insert(path).second) {
-        chain.initWarning(strprintf(_("Ignoring duplicate -wallet %s."), wallet_file));
-        continue;
-    }
-
-    DatabaseOptions options;
-    DatabaseStatus status;
-    options.require_existing = true;
-    options.verify = true;
-    bilingual_str error_string;
-    if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
-        if (status == DatabaseStatus::FAILED_NOT_FOUND) {
-            chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", error_string.original)));
-        } else {
-            chain.initError(error_string);
-            return false;
-        }
-    }
-}
-
-// ...
-----
+Next it loops through all wallets it finds in the `walletdir` and adds them to an `std::set` called `wallet_paths`, first de-duplicating them by tracking their absolute paths, and then checking that  the `WalletDatabase` for each wallet exists (or is otherwise constructed successfully) and can be verified.
 
 If this check passes for all wallets, then `VerifyWallets()` is complete and will return `true` to calling function `AppInitMain`, otherwise `false` will be returned.
 If `VerifyWallets()` fails and returns `false` (due to a corrupted wallet database, but notably not due to an incorrect wallet path), the main program process `AppInit()` will be immediately interrupted and shutdown.
 
+[IMPORTANT]
+====
+Program shutdown on a potentially-corrupt wallet database is a deliberate design decision.
+This is so that the wallet cannot display information to the user which is not guaranteed by the database.
+====
+
 === LoadWallets
 
-"Startup" wallet(s) are loaded  when `client->load()` is called on each `node.chain_client` as part of https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1728-L1732[init.cpp].
+"Startup" wallet(s) are loaded  when `client->load()` is called on each `node.chain_client` as part of https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1728-L1732[init.cpp^].
 
 .src/init.cpp#AppInitMain()
 [source,cpp,options=nowrap]
@@ -476,75 +474,29 @@ for (const auto& client : node.chain_clients) {
 }
 ----
 
-The call to  `load()` on the wallet `chain_client` has again been overridden, this time by ``WalletClientImpl``'s https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L90-L121[`LoadWallets()` method].
-This function works similarly to `VerifyWallets()`, first creating the `WalletDatabase` (memory) object for each wallet, although this time skipping the verify step, before creating a `CWallet` object from the database and adding it to the global list of wallets, the vector `vpwallets`, by calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L114[`AddWallet()`].
+The call to  `load()` on the wallet `chain_clients` has again been overridden, this time by ``WalletClientImpl``'s `LoadWallets()` https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/load.cpp#L103-L139[method^].
+This function works similarly to `VerifyWallets()`, first creating the `WalletDatabase` (memory) object for each wallet, although this time skipping the verify step, before creating a `CWallet` object from the database and adding it to the global list of wallets, the vector `vpwallets`, by calling `AddWallet()`.
 
-.src/wallet/load.cpp#LoadWallets()
-[source,cpp,options=nowrap]
-----
-for (const std::string& name : gArgs.GetArgs("-wallet")) {
-    if (!wallet_paths.insert(name).second) {
-        continue;
-    }
-    DatabaseOptions options;
-    DatabaseStatus status;
-    options.require_existing = true;
-    options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
-    bilingual_str error;
-    std::vector<bilingual_str> warnings;
-    std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
-    if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
-        continue;
-    }
-    std::shared_ptr<CWallet> pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error, warnings) : nullptr;
-    if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
-    if (!pwallet) {
-        chain.initError(error);
-        return false;
-    }
-    AddWallet(pwallet);
-}
-----
-
-[CAUTION]
+[IMPORTANT]
 ====
 There are a number of steps in `init.cpp` that happen before the wallet is loaded, notably the blockchain is synced first.
 This is a safeguard which means that wallet operations cannot be called on a wallet which has been loaded against stale blockchain data.
 ====
 
-[NOTE]
-====
 _init.cpp_ is run on a single thread.
 This means that calls to wallet code block further initialisation of the node.
-====
 
-The `interfaces::Chain` object taken as argument by `LoadWallets()` is used to pass back any error messages, exactly as it was in `VerifyWallets()`.
-`AddWallet()` is defined in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L98-L108[_src/wallet.cpp_].
+The `interfaces::Chain` object taken as argument by `LoadWallets()` is used to pass back any error messages, exactly as it was in <<VerifyWallets,`VerifyWallets()`>>.
+More information on `AddWallet()` can be https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L110-L120[found in _src/wallet.cpp_.
 
 === StartWallets
 
-The wallet is finally ready when (all) `chain_clients` have been started in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1939-L1941[_init.cpp_] which calls the overridden `client->start()` method from the `WalletClientImpl` class, resulting in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/load.cpp#L123-L134[src/wallet/load.cpp#StartWallets()] being called.
+The wallet is finally ready when (all) `chain_clients` have been started in _init.cpp_ which calls the overridden `client->start()` method from the `WalletClientImpl` class, resulting in https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/load.cpp#L141-L152[src/wallet/load.cpp#StartWallets()^] being called.
 
-This calls the `GetWallets()` function which returns the vector of pointers to the interfaces for loaded `CWallet` objects, `vpwallets`.
+This calls the `GetWallets()` function which returns a vector of pointers to the interfaces for all loaded `CWallet` objects, called `vpwallets`.
 As part of startup `PostInitProcess()` is called on each wallet which, after grabbing the main wallet lock `cs_wallet`, synchronises the wallet and mempool by adding wallet transactions not yet in a block to our mempool, and updating the wallet with any relevant transactions from the mempool.
 
-.src/wallet/wallet.cpp#CWallet::PostInitProcess()
-[source,cpp,options=nowrap]
-----
-void CWallet::postInitProcess()
-{
-    LOCK(cs_wallet);
-
-    // Add wallet transactions that aren't already in a block to mempool
-    // Do this here as mempool requires genesis block to be loaded
-    ReacceptWalletTransactions();
-
-    // Update wallet transactions with current mempool transactions.
-    chain().requestMempoolTransactions(*this);
-}
-----
-
-Also, as part of `StartWallets`, `flushwallet` might be scheduled (if configured by argument) scheduling wallet transactions to be re-broadcast every second, although this interval is https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L2104-L2147[delayed upstream with a random timer].
+Also, as part of `StartWallets`, `flushwallet` _might_ be scheduled (if configured by argument) scheduling wallet transactions to be re-broadcast every second, although this interval is https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1869-L1912[delayed^] upstream with a random timer.
 
 === FlushWallets
 
@@ -552,34 +504,20 @@ All wallets loaded into the program are "flushed" (to disk) before shutdown.
 As part of `init.cpp#Shutdown()` the `flush()` method is called on each member of `node.chain_clients` in sequence.
 `WalletClientImpl` again overrides this method to call `wallet/load.cpp#FlushWallets()` which makes sure all wallet changes have been successfully flushed to the wallet database.
 
-.src/init.cpp#shutdown()
-[source,cpp,options=nowrap]
-----
-// FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
-if (node.chainman) {
-    LOCK(cs_main);
-    for (CChainState* chainstate : node.chainman->GetAll()) {
-        if (chainstate->CanFlushToDisk()) {
-            chainstate->ForceFlushStateToDisk();
-        }
-    }
-}
-----
-
 // TODO: Find out why we flush again here?
 Finally the `stop()` method is called on each member of `node.chain_clients` which is overridden by `StopWallets()`, flushing again and this time calling `close()` on the database file.
 
 == Wallet Locks
 
 Grepping the _src/wallet_ directory for locks, conventionally of the form `cs_*`, yields ~500 matches.
-For comparison the entire remainder of the codebase excluding _src/wallet/*_ yields 925 matches.
-Many of these matches are asserts and declarations, however this still illustrates that the wallet code is highly reliant on locks to perform atomic operations.
+For comparison the entire remainder of the codebase excluding _src/wallet/*_ yields almost 1000 matches.
+Many of these matches are asserts and declarations, however this still illustrates that the wallet code is highly reliant on locks to perform atomic operations with respect to the current chain state.
 
 === The `cs_wallet` lock
 
 In order to not block the rest of the program during wallet operations, each `CWallet` has its own recursive mutex `cs_wallet`:
 
-NOTE: There is currently an https://github.com/bitcoin/bitcoin/issues/19303[issue] tracking replacement of RecursiveMutexes with Mutexes, to make locking logic easier to follow in the codebase.
+NOTE: There is currently an https://github.com/bitcoin/bitcoin/issues/19303[issue^] tracking replacement of Recursive Mutexes with Mutexes, to make locking logic easier to follow in the codebase.
 
 .src/wallet/wallet.h
 [source,cpp,options=nowrap]
@@ -638,70 +576,29 @@ The command line tool `bitcoin-cli` will allow interaction of any RPC server sta
 
 TIP: If using `bitcoin-qt` there is also an RPC console built into the GUI or you can run with `-server=1` to allow access via `bitcoin-cli`.
 
-If using the `bitcoin-qt` GUI itself then communication with the wallet is done directly via qt's https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/qt/walletmodel.h#L50-L242[`WalletModel` interface].
+If using the `bitcoin-qt` GUI itself then communication with the wallet is done directly via qt's https://github.com/bitcoin/bitcoin/blob/v23.0/src/qt/walletmodel.h#L51-L52[`WalletModel` interface^].
 
-Commands which can be used to control the wallet via RPC are listed in https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L4584-L4657[_rpcwallet.cpp_].
+Commands which can be used to control the wallet via RPC are listed in https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/rpc/wallet.cpp#L662-L731[_rpcwallet.cpp_^].
 
 === Wallet via RPC
 
-If we take a look at the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L2562-L2620[`loadwallet` RPC] we can see similarities to ``WalletClientImpl``'s `LoadWallets()` function.
+If we take a look at the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/rpc/wallet.cpp#L195-L238[`loadwallet` RPC^] we can see similarities to ``WalletClientImpl``'s `LoadWallets()` function.
 
 However this time the function will check the `WalletContext` to check that we have a wallet context (in this case a reference to a chain interface) loaded.
-Next it will call https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L237-L248[`wallet.cpp#LoadWallet`] which starts by grabbing `g_loading_wallet_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L207-L234[`LoadWalletInternal`] which adds the wallet to `vpwallets` and sets up various event notifications.
-
-.src/wallet/rpcwallet.cpp#loadwallet()
-[source,cpp,options=nowrap]
-----
-WalletContext& context = EnsureWalletContext(request.context);
-const std::string name(request.params[0].get_str());
-
-DatabaseOptions options;
-DatabaseStatus status;
-options.require_existing = true;
-bilingual_str error;
-std::vector<bilingual_str> warnings;
-std::optional<bool> load_on_start = request.params[1].isNull() ? std::nullopt : std::optional<bool>(request.params[1].get_bool());
-std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, load_on_start, options, status, error, warnings);
-if (!wallet) {
-    // Map bad format to not found, since bad format is returned when the
-    // wallet directory exists, but doesn't contain a data file.
-    RPCErrorCode code = RPC_WALLET_ERROR;
-    switch (status) {
-        case DatabaseStatus::FAILED_NOT_FOUND:
-        case DatabaseStatus::FAILED_BAD_FORMAT:
-            code = RPC_WALLET_NOT_FOUND;
-            break;
-        case DatabaseStatus::FAILED_ALREADY_LOADED:
-            code = RPC_WALLET_ALREADY_LOADED;
-            break;
-        default: // RPC_WALLET_ERROR is returned for all other cases.
-            break;
-----
+Next it will call https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L260-L271[`wallet.cpp#LoadWallet`^] which starts by grabbing `g_loading_wallet_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L227-L257[`LoadWalletInternal`^] which adds the wallet to `vpwallets` and sets up various event notifications.
 
 Further operation of the wallet RPCs are detailed in their man pages, but one thing to take note of is that whilst `loadwallet()` (and `unloadwallet()`) both take a `wallet_name` argument, the other wallet RPCs do not.
-Therefore in order to control a specific wallet from an instance of `bitcoin{d|-qt}` that has multiple wallets loaded, bitcoin-cli must be called with the -rpcwallet argument, to specify the wallet which the action should be performed against, e.g. `bitcoin-cli --rpcwallet=your_wallet_name getbalance`
+Therefore in order to control a specific wallet from an instance of `bitcoin{d|-qt}` that has multiple wallets loaded, bitcoin-cli must be called with the `-rpcwallet` argument, to specify the wallet which the action should be performed against, e.g. `bitcoin-cli --rpcwallet=your_wallet_name getbalance`
 
 == CWallet
 
 The `CWallet` object is the fundamental wallet representation inside Bitcoin Core.
-CWallet stores transactions and balances and has the ability to create new transactions.
-CWallet also contains references to the chain interface for the wallet along with storing wallet metadata such as `nWalletVersion`, wallet flags, wallet name and address book.
+`CWallet` stores transactions and balances and has the ability to create new transactions.
+`CWallet` also contains references to the chain interface for the wallet along with storing wallet metadata such as `nWalletVersion`, wallet flags, wallet name and address book.
 
 === CWallet creation
 
 The `CWallet` constructor takes a pointer to the chain interface for the wallet, a wallet name and a pointer to the underlying `WalletDatabase`:
-
-.src/wallet/wallet.h
-[source,cpp,options=nowrap]
-----
-/** Construct wallet with specified name and database implementation. */
-CWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database)
-    : m_chain(chain),
-      m_name(name),
-      m_database(std::move(database))
-{
-}
-----
 
 The constructor is not called directly, but instead from the public function `CWallet::Create()`, which is itself called from `CreateWallet()`, `LoadWallets()` (or `TestLoadWallet()`).
 In addition to the arguments required by the constructor, `CWallet::Create()` also has a `wallet_flags` argument.
@@ -720,78 +617,55 @@ enum WalletFlags : uint64_t {
 };
 ----
 
-See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/walletutil.h#L35-L66[_src/wallet/walletutil.h_] for additional information on the meanings of the wallet flags.
+See https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/walletutil.h#L36-L70[_src/wallet/walletutil.h_^] for additional information on the meanings of the wallet flags.
 
 `CWallet::Create()` will first attempt to create the `CWallet` object and load it, returning if any errors are encountered.
+
 If `CWallet::Create` is creating a new wallet -- on its 'first run' -- the wallet version and wallet flags will be set, before either `LegacyScriptPubKeyMan` or ``DescriptorScriptPubKeyMan``'s are setup, depending on whether the `WALLET_FLAG_DESCRIPTORS` flag was set on the wallet.
 
-Following successful creation, various `bitcoind` program arguments are checked and applied to the wallet.
-These include options such as "-addresstype", "-changetype", "-mintxfee" and "-maxtxfee" amongst others.
+Following successful creation, various program arguments are checked and applied to the wallet.
+These include options such as `-addresstype`, `-changetype`, `-mintxfee` and `-maxtxfee` amongst others.
 It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
 
 After the wallet is fully initialized and setup, its keypool will be topped up before the wallet is locked and registered with the <<Validation interface>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
-The rescan is smart in detecting the wallet "birthday" using metadata stored in the `ScriptPubKeyMan` and won't scan blocks produced before this date:
-
-.src/wallet/wallet.cpp#CWallet::Create()
-[source,cpp,options=nowrap]
-----
-// ...
-
-chain.initMessage(_("Rescanning...").translated);
-walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
-
-// No need to read and scan block if block was created before
-// our wallet birthday (as adjusted for block time variability)
-std::optional<int64_t> time_first_key;
-for (auto spk_man : walletInstance->GetAllScriptPubKeyMans()) {
-    int64_t time = spk_man->GetTimeFirstKey();
-    if (!time_first_key || time < *time_first_key) time_first_key = time;
-}
-if (time_first_key) {
-    chain.findFirstBlockWithTimeAndHeight(*time_first_key - TIMESTAMP_WINDOW, rescan_height, FoundBlock().height(rescan_height));
-}
-
-{
-    WalletRescanReserver reserver(*walletInstance);
-    if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(chain.getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
-        error = _("Failed to rescan the wallet during initialization");
-        return nullptr;
-    }
-}
-
-// ...
-----
+The rescan is smart in detecting the wallet "birthday" using metadata stored in the <<scriptpubkeymanagers,SPKM>> and won't scan blocks produced before this date.
 
 Finally, the `walletinterface` is setup for the wallet before the `WalletInstance` is returned to the caller.
 
+[id=scriptpubkeymanagers]
 == ScriptPubKeyManagers (SPKM)
 
-Each wallet contains one or more https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/scriptpubkeyman.h#L169[``ScriptPubKeyManager``s], which are in control of storing the ``scriptPubkey``s managed by that wallet.
+Each wallet contains one or more ``ScriptPubKeyManager``s which are derived from the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/scriptpubkeyman.h#L166[base^] SPKM class and are in control of storing the ``scriptPubkey``s managed by that wallet.
 
-A `CWallet` in the general sense therefore becomes "a collection of ``ScriptPubKeyManager``s", which are each managing an address type.
-In the current implementation, this means that a default (descriptor) wallet consists of 6 ``ScriptPubKeyManager``s, one for each of combination of {legacy && p2sh && bech32} for {receive && change} addresses.
+****
+"A wallet" in the general sense therefore becomes "a collection of ``ScriptPubKeyManager``s", which are each managing an address type.
+****
 
-.src/wallet/wallet.cpp#SetupLegacyScriptPubKeyMan()
-[source,cpp,options=nowrap]
-----
-void CWallet::SetupLegacyScriptPubKeyMan()
-{
-    if (!m_internal_spk_managers.empty() || !m_external_spk_managers.empty() || !m_spk_managers.empty() || IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
-        return;
-    }
+In the current implementation, this means that a default (descriptor) wallet consists of 8 ``ScriptPubKeyManager``s, one SPKM for each combination shown in the table <<descriptor-spkmans,below>>.
 
-    auto spk_manager = std::unique_ptr<ScriptPubKeyMan>(new LegacyScriptPubKeyMan(*this));
-    for (const auto& type : OUTPUT_TYPES) {
-        m_internal_spk_managers[type] = spk_manager.get();
-        m_external_spk_managers[type] = spk_manager.get();
-    }
-    m_spk_managers[spk_manager->GetID()] = std::move(spk_manager);
-}
-----
+[id=descriptor-spkmans]
+.Descriptor wallet SPKMans
+[%autowidth.stretch]
+|===
 
-TIP: `SetupLegacyScriptPubKeyMan()` as shown above really only has a single SPKM which is then aliased and shared between all 6 script pubkey types.
+|{nbsp} |LEGACY |P2SH-SEGWIT |BECH32 |BECH32M
 
-Here is the equivalent _descriptor_ wallet code fragment which *does* set up an SPKM for each output type:
+|Receive
+|✓
+|✓
+|✓
+|✓
+
+
+|Change
+|✓
+|✓
+|✓
+|✓
+
+|===
+
+Here is the _descriptor_ wallet code fragment which sets up an SPKM for each `OUTPUT_TYPE`:
 
 .src/wallet/wallet.cpp#SetupDescriptorScriptPubKeyMans()
 [source,cpp,options=nowrap]
@@ -800,7 +674,7 @@ Here is the equivalent _descriptor_ wallet code fragment which *does* set up an 
 
 for (bool internal : {false, true}) {
     for (OutputType t : OUTPUT_TYPES) {
-        auto spk_manager = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this, internal));
+        auto spk_manager = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this));
         if (IsCrypted()) {
             if (IsLocked()) {
                 throw std::runtime_error(std::string(__func__) + ": Wallet is locked, cannot setup new descriptors");
@@ -809,7 +683,7 @@ for (bool internal : {false, true}) {
                 throw std::runtime_error(std::string(__func__) + ": Could not encrypt new descriptors");
             }
         }
-        spk_manager->SetupDescriptorGeneration(master_key, t);
+        spk_manager->SetupDescriptorGeneration(master_key, t, internal);
         uint256 id = spk_manager->GetID();
         m_spk_managers[id] = std::move(spk_manager);
         AddActiveScriptPubKeyMan(id, t, internal);
@@ -819,27 +693,28 @@ for (bool internal : {false, true}) {
 // ...
 ----
 
-Script pubkey managers are stored in a map inside a `CWallet` according to output type:
+By contrast a Legacy wallet will set up a **single** SPKM which will then be _aliased_ to a SPKM for each of the 6 `LEGACY_OUTPUT_TYPES`: `LEGACY`, `P2SH-SEGWIT` and `BECH32`.
+This gives it the external appearance of 6 distinct SPKMans, when really it only has 1:
 
-.src/wallet/wallet.h
+.src/wallet/wallet.cpp#SetupLegacyScriptPubKeyMan()
 [source,cpp,options=nowrap]
 ----
-class CWallet final : public WalletStorage, public interfaces::Chain::Notifications
-{
-private
-
 // ...
 
-    std::map<OutputType, ScriptPubKeyMan*> m_external_spk_managers;
-    std::map<OutputType, ScriptPubKeyMan*> m_internal_spk_managers;
-
-// ...
+auto spk_manager = std::unique_ptr<ScriptPubKeyMan>(new LegacyScriptPubKeyMan(*this));
+for (const auto& type : LEGACY_OUTPUT_TYPES) {
+    m_internal_spk_managers[type] = spk_manager.get();
+    m_external_spk_managers[type] = spk_manager.get();
 }
+m_spk_managers[spk_manager->GetID()] = std::move(spk_manager);
+
+// ...
 ----
 
-TIP: "external" and "internal" (SPKMs) refer to whether the addresses generated are designated for giving out "externally" and receiving new payments to, or for "internal", i.e. change addresses.
+SPKMans are stored in maps inside a `CWallet` according to output type.
+"External" and "Internal" (SPKMans) refer to whether the addresses generated are designated for giving out "externally", i.e. for receiving new payments to, or for "internal", i.e. change addresses.
 
-Prior to https://github.com/bitcoin/bitcoin/commit/c729afd0a3b74a3943e4c359270beaf3e6ff8a7b[c729afd0] the equivalent SPKM functionality (fetching new addresses and signing transactions) was contained within `CWallet` itself, now however is split out for better maintainability and upgradability properties as brought about by the https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Wallet-Class-Structure-Changes[wallet box class structure changes].
+Prior to https://github.com/bitcoin/bitcoin/commit/c729afd0a3b74a3943e4c359270beaf3e6ff8a7b[c729afd0^] the equivalent SPKM functionality (fetching new addresses and signing transactions) was contained within `CWallet` itself, now however is split out for better maintainability and upgradability properties as brought about by the https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Wallet-Class-Structure-Changes[wallet box class structure changes^].
 Therefore `CWallet` objects no longer handle keys and addresses.
 
 The change to a `CWallet` made up of (multiple) ``{Descriptor|Legacy}ScriptPubKeyMan``'s is also sometimes referred to as the "Wallet Box model", where each SPKM is thought of as a distinct "box" within the wallet, which can be called upon to perform new address generation and signing functions.
@@ -849,7 +724,7 @@ The change to a `CWallet` made up of (multiple) ``{Descriptor|Legacy}ScriptPubKe
 ==== Legacy wallet keys
 
 Legacy wallets used the "keypool" model which stored a bunch of keys.
-See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/scriptpubkeyman.h#L52-L100[_src/wallet/scriptbpubkeyman.h_#L52-L100] for historical context on the "keypool" model.
+See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/scriptpubkeyman.h#L52-L100[_src/wallet/scriptbpubkeyman.h_#L52-L100^] for historical context on the "keypool" model.
 
 The wallet would then simply iterate over each public key and generate a create scriptPubKey (a.k.a. pubkey script) and address for each type of script the wallet supported.
 However this approach has a number of shortcomings (from least to most important):
@@ -867,25 +742,22 @@ These descriptors can be of *any* valid script type, including arbitrary scripts
 
 Descriptors not only contain what is needed to generate an address, they also include all the script template data needed to "solve" (i.e. spend) outputs received at them.
 In other words they permit a valid `scriptSig` (`redeemScript` or `witnessScript`) to be generated.
-The document https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/doc/descriptors.md[Support for Output Descriptors in Bitcoin Core] provides more details and examples of these output descriptors.
+The document https://github.com/bitcoin/bitcoin/blob/v23.0/doc/descriptors.md[Support for Output Descriptors in Bitcoin Core^] provides more details and examples of these output descriptors.
 
 === How wallets identify relevant transactions
 
 ==== 1. Receiving notifications about new transactions or new blocks
 
-When a Bitcoin Core node learns about a new transaction, how does it know if it is related to one or more of its wallets?
-
-The first thing to notice is that the `class CWallet` implements the `interfaces::Chain::Notifications`.
+When a Bitcoin Core node learns about a new transaction, the wallet component needs to determine whether it's related to one of it's loaded ``CWallet``s.
+The first thing to notice is that `CWallet` implements the `interfaces::Chain::Notifications`.
 
 [source,cpp,options=nowrap]
 ----
 class CWallet final : public WalletStorage, public interfaces::Chain::Notifications
-{
-    // ...
-}
 ----
 
-This interface givers the wallet the ability to access to receive a series of notifications, such as `transactionAddedToMempool`, `transactionRemovedFromMempool`, `blockConnected` and so on. The names of these methods are self-explanatory.
+This interface givers the wallet the ability to receive notifications such as `transactionAddedToMempool`, `transactionRemovedFromMempool`, `blockConnected` and so on.
+The names of these methods are self-explanatory.
 
 To register itself as notification client, the wallet has the `std::unique_ptr<interfaces::Handler> m_chain_notifications_handler` attribute and it is initialized in `CWallet::AttachChain(...)` method.
 
@@ -905,14 +777,15 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
 }
 ----
 
-This briefly explains how the wallet is able to listen to new transactions or blocks. More information about the notification mechanism can be seen in the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc#notifications-mechanism-validationinterface[Notifications Mechanism (ValidationInterface)] section of https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture] article.
-
+This briefly explains how the wallet is able to listen to new transactions or blocks.
+More information about the notification mechanism can be seen in the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc#notifications-mechanism-validationinterface[Notifications Mechanism (ValidationInterface)^] section of https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture^] article.
 
 ==== 2. Notification Handlers
 
 The next step is to filter which transactions interest the wallet.
 
-Four of these notification handlers are the ones that are relevant to filter transactions. All of them call `CWallet::SyncTransaction(...)`.
+Four of these notification handlers are the ones that are relevant to filter transactions.
+All of them call `CWallet::SyncTransaction(...)`.
 
 [source,cpp,options=nowrap]
 ----
@@ -963,7 +836,7 @@ void CWallet::blockDisconnected(const CBlock& block, int height)
 }
 ----
 
-Note that `CWallet::SyncTransaction(...)` adds the transactions to wallet if it is relevant and then marks each input of the transaction (`const std::vector<CTxIn> CTransaction::vin`) as dirty so they can be recalculated.
+Note that `CWallet::SyncTransaction(...)` adds the transaction(s) to wallet if it is relevant and then marks each input of the transaction (`const std::vector<CTxIn> CTransaction::vin`) as dirty so the balance can be recalculated correctly.
 
 ==== 3. Scanning the block chain
 
@@ -985,21 +858,23 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
 
 ==== 4. `AddToWalletIfInvolvingMe(...)`
 
-`CWallet::AddToWalletIfInvolvingMe` basically perfoms the following steps:
+`CWallet::AddToWalletIfInvolvingMe` performs the following steps:
 
-* If the transaction is confirmed, it checks if it conflicts with another. If so, marks the transaction (and its in-wallet descendants) as conflicting with a particular block (`if (auto* conf = std::get_if<TxStateConfirmed>(&state))`).
+. If the transaction is confirmed, it checks if it conflicts with another.
+If so, marks the transaction (and its in-wallet descendants) as conflicting with a particular block (`if (auto* conf = std::get_if<TxStateConfirmed>(&state))`).
+. It checks if the wallet already contains the transaction.
+If so, updates if requested in the `fUpdate` parameter or finishes the execution (`if (fExisted && !fUpdate) return false;`).
+. It checks if the transaction interests the wallet (`if (fExisted || IsMine(tx) || IsFromMe(tx))`)
+** If so, it checks if any keys in the wallet keypool that were supposed to be unused have appeared in a new transaction.
+*** If so, removes those keys from the keypool (`for (auto &dest : spk_man->MarkUnusedAddresses(txout.scriptPubKey))`).
+. Finally, it adds the transaction to the wallet (`AddToWallet(...)`).
+This function inserts the new transaction in `CWallet::mapWallet`, updates it with relevant information such as `CWalletTx::nTimeReceived` (time it was received by the node), `CWalletTx::nOrderPos` (position in ordered transaction list) and so on.
++
+This function also writes the transaction to database (`batch.WriteTx(wtx)`) and mark the transaction as dirty to recalculate balance.
 
-* It checks if the wallet already contains the transaction. If so, updates if requested in the `fUpdate` parameter or finishes the execution (`if (fExisted && !fUpdate) return false;`).
-
-* It checks if the transaction interests the wallet (`if (fExisted || IsMine(tx) || IsFromMe(tx))`)
-
-* If so, it checks if any keys in the wallet keypool that were supposed to be unused have appeared in a new transaction. If so, removes those keys from the keypool (`for (auto &dest : spk_man->MarkUnusedAddresses(txout.scriptPubKey))`).
-
-* Finally, it adds the transaction to the wallet (`AddToWallet(...)`). This function inserts the new transaction in `CWallet::mapWallet`, updates it with relevant information such as `CWalletTx::nTimeReceived` (time it was received by the node), `CWalletTx::nOrderPos` (position in ordered transaction list) and so on. This function also writes the transaction to database (`batch.WriteTx(wtx)`) and mark the transaction as dirty to recalculate balance.
-
+._src/wallet/wallet.cpp_
 [source,cpp,options=nowrap]
 ----
-// src/wallet/wallet.cpp
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const SyncTxState& state, bool fUpdate, bool rescanning_old_block)
 {
     const CTransaction& tx = *ptx;
@@ -1081,10 +956,15 @@ isminetype CWallet::IsMine(const CScript& script) const
 }
 ----
 
-Note the `CWallet::IsMine(const CScript& script)` is just a proxy to the `ScriptPubKeyMan::IsMine(const CScript &script)`. This is an important distinction, because in Bitcoin Core the class `CWallet` does not manage the keys. This work is done by `ScriptPubKeyMan` subclasses: `DescriptorScriptPubKeyMan` and `LegacyScriptPubKeyMan`. All `ScriptPubKeyMan` instances belonging to the wallet are stored in `CWallet::m_spk_managers`.
+Note the `CWallet::IsMine(const CScript& script)` is just a proxy to the `ScriptPubKeyMan::IsMine(const CScript &script)`.
+This is an important distinction, because in Bitcoin Core the class `CWallet` does not manage the keys.
+This work is done by `ScriptPubKeyMan` subclasses: `DescriptorScriptPubKeyMan` and `LegacyScriptPubKeyMan`.
+All `ScriptPubKeyMan` instances belonging to the wallet are stored in `CWallet::m_spk_managers`.
 
-Another important aspect of that method is the return type, the `enum isminetype`. This type is defined in `src/wallet/ismine.h`.
+Another important aspect of that method is the return type, the `enum isminetype`.
+This type is defined in `src/wallet/ismine.h`.
 
+[id=ismine-enum]
 [source,cpp,options=nowrap]
 ----
 enum isminetype : unsigned int {
@@ -1116,7 +996,7 @@ For `DescriptorScriptPubKeyMan` and future `ScriptPubKeyMan`:
 ====
 `IsMine` historically was located outside of the wallet code, but now takes a more logical position as a member function of `CWallet` which returns an `isminetype` value from an enum.
 
-More information on the `IsMine` semantics can be found in https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.21.0.md#ismine-semantics[release-notes-0.21.0.md#ismine-semantics].
+More information on the `IsMine` semantics can be found in https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.21.0.md#ismine-semantics[release-notes-0.21.0.md#ismine-semantics^].
 ====
 
 ==== 6. `DescriptorScriptPubKeyMan::IsMine(...)`
@@ -1262,9 +1142,12 @@ Note that the compressed format has a total of 33 bytes (x coordinate + marker).
 More recently, taproot address `P2TR` was introduced and it uses a format called `x-only`, with only x coordinate - 32 bytes, big endian.
 ====
 
-The next step is the segwit format (`P2WPKH`). First the function invalidates the script if this has a `P2WPKH` nested inside `P2WSH`. It then checks that the script is in the expected format with the `OP_0` before the witness output.
+The next step is the SegWit format (`P2WPKH`).
+First the function invalidates the script if this has a `P2WPKH` nested inside `P2WSH`.
+It then checks that the script is in the expected format with the `OP_0` before the witness output.
 
-If these two validations pass, the script will be recreated as Public Key Hash and the function will be called recursively. Note that in this second call, the script will be handled as `TxoutType::PUBKEYHASH`.
+If these two validations pass, the script will be recreated as Public Key Hash and the function will be called recursively.
+Note that in this second call, the script will be handled as `TxoutType::PUBKEYHASH`.
 
 [source,cpp,options=nowrap]
 ----
@@ -1315,7 +1198,10 @@ IsMineResult IsMineInner(...)
 }
 ----
 
-The next item to be dealt with is `TxoutType::SCRIPTHASH`. The logic is very similiar to the one seen before. First the script is validated (`P2SH` inside `P2WSH` or `P2SH` is invalid) and the function checks if the script exists in THE wallet keystore. As with `TxoutType::WITNESS_V0_KEYHASH`, the function will recurse into nested p2sh and p2wsh scripts or will simply treat any script that has been stored in the keystore as spendable.
+The next item to be dealt with is `TxoutType::SCRIPTHASH`.
+The logic is very similar to the one seen before.
+First the script is validated (`P2SH` inside `P2WSH` or `P2SH` is invalid) and the function checks if the script exists in THE wallet keystore.
+As with `TxoutType::WITNESS_V0_KEYHASH`, the function will recurse into nested p2sh and p2wsh scripts or will simply treat any script that has been stored in the keystore as spendable.
 
 [source,cpp,options=nowrap]
 ----
@@ -1339,7 +1225,8 @@ IsMineResult IsMineInner(...)
 }
 ----
 
-`TxoutType::WITNESS_V0_SCRIPTHASH` has the same logic seen in the previous item. The only difference is that the has `Hash160` is recreated with the solved script hash, since `P2SH-P2WSH` is allowed.
+`TxoutType::WITNESS_V0_SCRIPTHASH` has the same logic seen in the previous item.
+The only difference is that the has `Hash160` is recreated with the solved script hash, since `P2SH-P2WSH` is allowed.
 
 [source,cpp,options=nowrap]
 ----
@@ -1368,7 +1255,9 @@ IsMineResult IsMineInner(...)
 }
 ----
 
-The last type of script is `TxoutType ::MULTISIG`, whose logic is straightforward. `Solver (...)` returns all the keys of the script and then they are validated in the same way as the previous scripts. Transactions are only considered `ISMINE_SPENDABLE` if the node has all keys.
+The last type of script is `TxoutType ::MULTISIG`, whose logic is straightforward.
+`Solver (...)` returns all the keys of the script and then they are validated in the same way as the previous scripts.
+Transactions are only considered `ISMINE_SPENDABLE` if the node has all keys.
 
 [source,cpp,options=nowrap]
 ----
@@ -1398,56 +1287,20 @@ IsMineResult IsMineInner(...)
 }
 ----
 
-Thus, we cover most of the code responsible for identifying which transactions belong to the wallet. The code related to `IsMine(...)` or `IsMineInner(...)` is used either when the transactions arrive through the mempool or by blocks.
+Thus, we cover most of the code responsible for identifying which transactions belong to the wallet.
+The code related to `IsMine(...)` or `IsMineInner(...)` is used either when the transactions arrive through the mempool or by blocks.
 
 == Constructing transactions
 
 In order to construct a transaction the wallet will validate the outputs, before selecting some coins to use in the transaction.
-This involves multiple steps and we can follow an outline of the process by walking through the https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/rpcwallet.cpp#L429-L529[`sendtoaddress` RPC command], which returns by calling `SendMoney()`, shown below:
-
-.src/wallet/rpcwallet.cpp#SendMoney()
-[source,cpp,options=nowrap]
-----
-UniValue SendMoney(CWallet& wallet, const CCoinControl &coin_control, std::vector<CRecipient> &recipients, mapValue_t map_value, bool verbose)
-{
-    EnsureWalletIsUnlocked(wallet);
-
-    // This function is only used by sendtoaddress and sendmany.
-    // This should always try to sign, if we don't have private keys, don't try to do anything here.
-    if (wallet.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Error: Private keys are disabled for this wallet");
-    }
-
-    // Shuffle recipient list
-    std::shuffle(recipients.begin(), recipients.end(), FastRandomContext());
-
-    // Send
-    CAmount nFeeRequired = 0;
-    int nChangePosRet = -1;
-    bilingual_str error;
-    CTransactionRef tx;
-    FeeCalculation fee_calc_out;
-    const bool fCreated = wallet.CreateTransaction(recipients, tx, nFeeRequired, nChangePosRet, error, coin_control, fee_calc_out, true);
-    if (!fCreated) {
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, error.original);
-    }
-    wallet.CommitTransaction(tx, std::move(map_value), {} /* orderForm */);
-    if (verbose) {
-        UniValue entry(UniValue::VOBJ);
-        entry.pushKV("txid", tx->GetHash().GetHex());
-        entry.pushKV("fee_reason", StringForFeeReason(fee_calc_out.reason));
-        return entry;
-    }
-    return tx->GetHash().GetHex();
-}
-----
+This involves multiple steps and we can follow an outline of the process by walking through the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/rpc/spend.cpp#L125-L223[`sendtoaddress` RPC command^], which returns by calling `SendMoney()`.
 
 After initialisation `SendMoney()` will call `wallet.CreateTransaction()` (`CWallet::CreateTransaction()`) followed by `wallet.CommitTransaction()` if successful.
-If we follow `wallet.CreateTransaction()` we see that it is pretty much a wrapper function which calls private member function `CWallet::CreateTransactionInternal()`.
+If we follow `wallet.CreateTransaction()` we see that it is a wrapper function which calls private member function `CWallet::CreateTransactionInternal()`.
 
 === CreateTransactionInternal
 
-It is inside `CreateTransactionInternal()` that a change address of an "appropriate type" is fetched, where "appropriate" means that it should try to minimise revealing that it is a change address, for example by being a different type to the other outputs.
+We fetch change addresses of an "appropriate type" here, where "appropriate" means that it should try to minimise revealing that it is a change address, for example by being a different `OUTPUT_TYPE` to the other outputs.
 Once a suitable change address is selected A new `ReserveDestination` object is created which keeps track of reserved addresses to prevent address re-use.
 
 TIP: The address is not "fully" reserved until `GetReservedDestination()` is called later.
@@ -1476,7 +1329,7 @@ int nBytes;
     // ...
 ----
 
-Bitcoin Core chooses to set `nLockTime` to the current block to discourage https://bitcoinops.org/en/topics/fee-sniping/[fee sniping].
+Bitcoin Core chooses to set `nLockTime` to the current block to discourage https://bitcoinops.org/en/topics/fee-sniping/[fee sniping^].
 
 // TODO: Check if I've missed any reasons for the locks.
 [TIP]
@@ -1558,7 +1411,7 @@ After we have determined solvablility, "spendability" is calculated for each pot
         // ...
 ----
 
-See the full https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L2209-L2334[`CWallet::AvailableCoins()`] implementation for additional details and caveats.
+See the full https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/wallet.cpp#L2209-L2334[`CWallet::AvailableCoins()`^] implementation for additional details and caveats.
 
 === CreateTransactionInternal continued
 
@@ -1624,15 +1477,15 @@ The Branch and Bound algorithm is described in detail in Murch's Master Thesis: 
 
 ----
 
-You can read a little more about the differences between these two coin selection algorithms in this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer].
+You can read a little more about the differences between these two coin selection algorithms in this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer^].
 
-You can read more about `waste` and the waste metric in this https://bitcoin.stackexchange.com/questions/113622/what-does-waste-metric-mean-in-the-context-of-coin-selection/113625#113625[StackExchange answer].
+You can read more about `waste` and the waste metric in this https://bitcoin.stackexchange.com/questions/113622/what-does-waste-metric-mean-in-the-context-of-coin-selection/113625#113625[StackExchange answer^].
 
 Coin selection is performed as a loop, as it may take multiple iterations to select the optimal coins for a given transaction.
 
 == Multiwallet
 
-Work on the https://github.com/bitcoin/bitcoin/projects/2[multiwallet project] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
+Work on the https://github.com/bitcoin/bitcoin/projects/2[multiwallet project^] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
 
 == Validation interface
 
