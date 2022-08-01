@@ -42,7 +42,7 @@ This could extend to, for example, block storage <<Database consensus,database>>
 An abbreviated list of some of the more notable consensus functions and variables is shown below.
 
 .Some consensus functions and variables
-[%autowidth]
+[cols="2,4"]
 |===
 |File |Objects
 
@@ -223,7 +223,7 @@ Before continuing with this section, ensure that you have a good understanding o
 Some good resources to read up on this further are found in the table below.
 
 .Hard and soft fork resources
-[%autowidth]
+[%autowidth.stretch]
 |===
 |Title |Resource |Link
 
