@@ -1,6 +1,6 @@
 = Architecture
 
-TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0]
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
 
 == bitcoind overview
 
@@ -119,7 +119,7 @@ flowchart LR
 |Base class for the below SPKM classes to override before being used by `CWallet`
 
 |`DescriptorScriptPubKeyMan`
-|A SPKM for https://github.com/bitcoin/bitcoin/pull/16528[descriptor-based] wallets
+|A SPKM for https://github.com/bitcoin/bitcoin/pull/16528[descriptor-based^] wallets
 
 |`LegacyScriptPubKeyMan`
 |A SPKM for legacy wallets
@@ -178,7 +178,7 @@ flowchart LR
 |`test/lint/all-lint.py`
 
 |fuzz
-|See the https://github.com/bitcoin/bitcoin/blob/master/doc/fuzzing.md[documentation]
+|See the https://github.com/bitcoin/bitcoin/blob/master/doc/fuzzing.md[documentation^]
 
 |util tests
 |`test/util/test_runner.py`
@@ -195,7 +195,7 @@ NOTE: dashed lines indicate optional components
 
 NOTE: The `fuzz_targets` themselves are located in the `test` folder, however the fuzz tests are run via the `test_runner` in src/test so we point fuzz to there.
 
-NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate] repo altogether, as they are quite large (~3.5GB repo size and ~13.4GB on clone).
+NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate^] repo altogether, as they are quite large (~3.5GB repo size and ~13.4GB on clone).
 
 .Test directory Structure
 [mermaid, target=bitcoin-core-tests, format=svg]
@@ -227,7 +227,7 @@ flowchart LR
 The `main()` function starts the main bitcoind process thread, usefully named `bitcoind`.
 All subsequent threads are currently started as children of the `bitcoind` thread, although this is not an explicit design requirement.
 
-The Bitcoin Core Developer https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#threads=[docs] contains a section on threads, which is summarised below in two tables, one for net threads, and one for other threads.
+The Bitcoin Core Developer https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#threads=[docs^] contains a section on threads, which is summarised below in two tables, one for net threads, and one for other threads.
 
 .Non-net threads
 [%autowidth]
@@ -336,7 +336,7 @@ break ThreadI2PAcceptIncoming
 Bitcoin Core compilation outputs a number of libraries, some which are designed to be used internally, and some which are designed to be re-used by external applications.
 The internally-used libraries generally have unstable APIs making them unsuitable for re-use, but `libbitcoin_consensus` and `libbitcoin_kernel` are designed to be re-used by external applications.
 
-Bitcoin Core has a https://github.com/bitcoin/bitcoin/blob/master/doc/design/libraries.md[guide] which describes the various libraries, their conventions, and their various dependencies.
+Bitcoin Core has a https://github.com/bitcoin/bitcoin/blob/master/doc/design/libraries.md[guide^] which describes the various libraries, their conventions, and their various dependencies.
 The dependency graph is shown below for convenience, but may not be up-to-date with the Bitcoin Core document.
 
 .Bitcoin library dependency graph
@@ -386,7 +386,7 @@ It follows that API changes to the libraries which are internally-facing can be 
 
 === Library source code organization
 
-Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732] describes how the Bitcoin Core project is striving to organize library files, copied below for convenience:
+Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732^] describes how the Bitcoin Core project is striving to organize library files, copied below for convenience:
 
 > Here is how I am thinking about the organization:
 > 
@@ -401,23 +401,23 @@ Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732] describes how the 
 
 You can track the progress of these changes by following links from the issue to associated PRs.
 
-The `libbitcoin-kernel` https://github.com/bitcoin/bitcoin/issues/24303[project] will provide further clean-ups and improvements in this area.
+The `libbitcoin-kernel` https://github.com/bitcoin/bitcoin/issues/24303[project^] will provide further clean-ups and improvements in this area.
 
 If you want to explore for yourself which sources certain libraries require on the current codebase, you can open the file `src/Makefile.am` and search for `_SOURCES`.
 
 == Deep technical dive (WIP)
 
-lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the Bitcoin Core Onboarding Documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture].
+lsilva01 has written a deep technical dive into the architecture of Bitcoin Core as part of the Bitcoin Core Onboarding Documentation in https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.0_bitcoin_core_architecture.asciidoc[Bitcoin Architecture^].
 
-Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality from the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions] document.
+Once you've gained some insight into the architecture of the program itself you can learn further details about which code files implement which functionality from the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/1.1_regions.asciidoc[Bitcoin Core regions^] document.
 
 James O'Beirne has recorded 3 videos which go into detail on how the codebase is laid out, how the build system works, what developer tools there are, as well as what the primary function of many of the files in the codebase are:
 
-. https://www.youtube.com/watch?v=J1Ru8V36z_Y[Architectural tour of Bitcoin Core (part 1 of 3)]
-. https://www.youtube.com/watch?v=RVWcUnpZX4E[Architectural tour of Bitcoin Core (part 2 of 3)]
-. https://www.youtube.com/watch?v=UiD5DZU9Zp4[Architectural tour of Bitcoin Core (part 3 of 3)]
+. https://www.youtube.com/watch?v=J1Ru8V36z_Y[Architectural tour of Bitcoin Core (part 1 of 3)^]
+. https://www.youtube.com/watch?v=RVWcUnpZX4E[Architectural tour of Bitcoin Core (part 2 of 3)^]
+. https://www.youtube.com/watch?v=UiD5DZU9Zp4[Architectural tour of Bitcoin Core (part 3 of 3)^]
 
-ryanofsky has written a handy https://github.com/ryanofsky/bitcoin/blob/pr/libs/doc/design/libraries.md[guide] covering the different libraries contained within Bitcoin Core, along with some of their conventions and a dependency graph for them.
+ryanofsky has written a handy https://github.com/ryanofsky/bitcoin/blob/pr/libs/doc/design/libraries.md[guide^] covering the different libraries contained within Bitcoin Core, along with some of their conventions and a dependency graph for them.
 Generally speaking, the desire is for the Bitcoin Core project to become more modular and less monolithic over time.
 
 == Directory structure
@@ -435,4 +435,4 @@ Others are external projects without a tight relationship with our project.
 
 There is a tool in `test/lint/git-subtree-check.sh` to check a subtree directory for consistency with its upstream repository.
 
-See the full https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#subtrees[subtrees] documentation for more information.
+See the full https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#subtrees[subtrees^] documentation for more information.

@@ -15,7 +15,7 @@ ____
 Usually we refer to the _challenge_ as a "locking script", or in the codebase `ScriptPubKey`, and the _solution_ as the "unlocking script" or `scriptSig`.
 Often the locking script itself is hashed before being represented as an address and therefore the full "redeem script" must be retained by the party that generated the address (the receiver), because they will need to provide a full copy of the script along with it's satisfaction in order to spend the coins in the future.
 
-Learn Me a Bitcoin has a webpage which demonstrates some common script types, https://learnmeabitcoin.com/technical/script[Learn Me a Bitcoin - Script], as well as including a run-down of how script is crafted and interpreted.
+Learn Me a Bitcoin has a webpage which demonstrates some common script types, https://learnmeabitcoin.com/technical/script[Learn Me a Bitcoin - Script^], as well as including a run-down of how script is crafted and interpreted.
 
 == What is a script made of
 
@@ -24,7 +24,7 @@ Bitcoin script consists of two components:
 . Data
 . OPCODES
 
-A full list of available (and disabled) OPCODES can be found in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/script/script.h#L64-L205[script.h].
+A full list of available (and disabled) OPCODES can be found in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/script/script.h#L64-L205[script.h^].
 
 == Where does script come from
 
@@ -49,7 +49,7 @@ Each `CTxOut` contains:
 * `CAmount nValue;`
 * `CScript scriptPubKey;`
 
-Transactions are stored in memory by the program as `CTransactions` and defined in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/primitives/transaction.h#L256-L341[src/primitives/transaction.h#CTransaction].
+Transactions are stored in memory by the program as `CTransactions` and defined in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/primitives/transaction.h#L256-L341[src/primitives/transaction.h#CTransaction^].
 
 == Building a transaction
 
@@ -390,7 +390,7 @@ As the name implies a valid script is created before being hashed.
 This hash is then used to generate an address which coins can be sent to.
 Once coins have been received to this address a (redeem / witness) script which hashes to the same hash must be provided (`scriptPubKey`), along with a satisfactory `scriptSig` in order to authorize a new spend.
 
-The origins of this revolutionary (at the time) style of address are touched upon in this https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-May/020429.html[email] from ZmnSCPxj.
+The origins of this revolutionary (at the time) style of address are touched upon in this https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-May/020429.html[email^] from ZmnSCPxj.
 The general context of the email is recursive covenants.
 A portion of the email is quoted below for convenience:
 
@@ -431,7 +431,7 @@ In particular, `OP_CAT` in combination with `OP_CHECKSIGFROMSTACK` and `OP_CHECK
 Because of those concerns, the modern P2SH is now "just a template" with an implicit `OP_EVAL` of the `redeemScript`, but without any `OP_EVAL` being actually enabled.
 ____
 
-For more details refer to https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki[BIP16] which introduced P2SH addresses.
+For more details refer to https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki[BIP16^] which introduced P2SH addresses.
 
 == Removed text
 

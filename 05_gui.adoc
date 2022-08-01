@@ -1,10 +1,10 @@
 = GUI
 
-This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e]
+This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e^]
 
-The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui].
+The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui^].
 PRs which primarily target the GUI should be made here, and then they will get merged into the primary repo.
-Developer Marco Falke created https://github.com/MarcoFalke/bitcoin-core/issues/26[an issue] in his fork which detailed some of the rationale for the split, but essentially it came down to:
+Developer Marco Falke created https://github.com/MarcoFalke/bitcoin-core/issues/26[an issue^] in his fork which detailed some of the rationale for the split, but essentially it came down to:
 
 . Separate issue and patch management
 . More focused review and interests
@@ -17,7 +17,7 @@ ____
 Splitting up the GUI (and splitting out modules in general) has been brought up often in recent years. Now that the GUI is primarily connected through interfaces with a bitcoin node, it seems an appropriate time to revive this discussion.
 ____
 
-https://github.com/bitcoin/bitcoin/pull/19071[PR#19071] contained the documentation change now contained in the Bitcoin Core primary repository, along with details of the monotree approach that was ultimately taken.
+https://github.com/bitcoin/bitcoin/pull/19071[PR#19071^] contained the documentation change now contained in the Bitcoin Core primary repository, along with details of the monotree approach that was ultimately taken.
 The documentation change provides guidance on what a "GUI change" is: 
 
 [quote, src/CONTRIBUTING.md]
@@ -38,7 +38,7 @@ is agreement to proceed with the changes, a PR with the build system
 and interfaces changes can be submitted to the node repository.
 ____
 
-On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue] was recently opened by Marco, to discuss the possibility of instituting the same monotree changes for wallet code.
+On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue^] was recently opened by Marco, to discuss the possibility of instituting the same monotree changes for wallet code.
 
 == Building the GUI
 
@@ -65,7 +65,7 @@ Developers would ideally like to reduce these dependencies even further.
 
 == Qt documentation
 
-There is useful documentation for developers looking to contribute to the Qt side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code].
+There is useful documentation for developers looking to contribute to the Qt side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code^].
 
 == Main GUI program
 
@@ -98,15 +98,15 @@ The bulk of the Qt GUI classes are defined in _src/qt/bitcoingui.{h|cpp}_.
 
 == QML GUI
 
-Since writing this documentation focus has been directed towards re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML] framework.
+Since writing this documentation focus has been directed towards re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML^] framework.
 This will allow developers to create visually-superior, and easier to write and reason-about GUI code, whilst also lowering the barriers to entry for potential new developers who want to be able to focus on GUI code.
 
 The recommendation therefore is to familiarise yourself with Qt QML and review the current codebase for the latest developments.
-You can follow along with the latest QML work in the specific https://github.com/bitcoin-core/gui-qml/blob/main/src/qml/README.md[bitcoin-core/qml-gui] repo.
+You can follow along with the latest QML work in the specific https://github.com/bitcoin-core/gui-qml/blob/main/src/qml/README.md[bitcoin-core/qml-gui^] repo.
 
 == Bitcoin design
 
-The https://bitcoin.design/guide/[Bitcoin design guide] provides some guidance on common pitfalls that Bitcoin GUI designers should look out for when designing apps (like `bitcoin-qt`).
+The https://bitcoin.design/guide/[Bitcoin design guide^] provides some guidance on common pitfalls that Bitcoin GUI designers should look out for when designing apps (like `bitcoin-qt`).
 
 == Testing QT
 

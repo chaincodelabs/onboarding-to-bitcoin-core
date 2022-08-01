@@ -2,7 +2,7 @@
 
 == Design philosophy
 
-Bitcoin Core's P2P design philosophy is outlined in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/P2P-Design-Philosophy[P2P Design Philosophy].
+Bitcoin Core's P2P design philosophy is outlined in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/P2P-Design-Philosophy[P2P Design Philosophy^].
 A synopsis of the ideas can be found in the first paragraph which states:
 
 [quote]
@@ -24,7 +24,7 @@ The document, which is worth reading in its entirely, continues by assuming the 
 
 In order to make "at least one connection to that network of peers that share its consensus rules", as the philosophy above targets, a Bitcoin Core node needs to have some node (network) addresses to connect to which are _not_ controlled by a potential attacker.
 
-When the node has never connected to the bitcoin P2P network before it has no choice but to fetch addresses from one (or more) hardcoded DNS seed(s), the list of which can be found in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/chainparams.cpp#L121-L129[_src/chainparams.cpp_].
+When the node has never connected to the bitcoin P2P network before it has no choice but to fetch addresses from one (or more) hardcoded DNS seed(s), the list of which can be found in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/chainparams.cpp#L121-L129[_src/chainparams.cpp_^].
 If the node is fed only attacker-controlled addresses by the seed(s) then it has little/no opportunity to join the rest of the honest network.
 However, if one or more of the addresses returned by the DNS query are honest then we want the node to be able to (eventually) find and connect to the honest network.
 
@@ -44,31 +44,31 @@ outgoing connection at some point in the past.
 === Address relay
 
 The Bitcoin network uses `addr` messages to communicate (node) network addresses.
-See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation] for more details.
+See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation^] for more details.
 Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
 
 Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
 When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards those addresses with a timestamp within 10 minutes of the current time to 1 or 2 peers, selected at random.
 If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network. The timestamp condition is there to ensure that the relay of a given address stops after some time.
 
-Since https://github.com/bitcoin/bitcoin/pull/22387[PR#22387], there is a rate limit for address relay, so that addresses from peers that send too many of them are ignored.
+Since https://github.com/bitcoin/bitcoin/pull/22387[PR#22387^], there is a rate limit for address relay, so that addresses from peers that send too many of them are ignored.
 
 === Eclipse attacks
 
-https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse attacks] occur when an adversary is able to isolate a victim's node from the rest of the network.
-If you're unfamiliar with the concept of eclipse attacks, https://bitcoinops.org/en/topics/eclipse-attacks/[the Optech topics page] contains links to many resources on the subject.
+https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse attacks^] occur when an adversary is able to isolate a victim's node from the rest of the network.
+If you're unfamiliar with the concept of eclipse attacks, https://bitcoinops.org/en/topics/eclipse-attacks/[the Optech topics page^] contains links to many resources on the subject.
 
 A _restart-based eclipse attack_ occurs when the adversary is able to add its own addresses to the victim's address manager and then force the victim to restart.
 If the attack succeeds, the victim will make all of its connections to the adversary's addresses when it restarts.
 
-https://github.com/bitcoin/bitcoin/issues/17326[Issue 17326] proposed persisting the node's outbound connection list to disk, and on restart reconnecting to the same peers.
+https://github.com/bitcoin/bitcoin/issues/17326[Issue 17326^] proposed persisting the node's outbound connection list to disk, and on restart reconnecting to the same peers.
 It's worth reading the full discussion in that issue, since there are a lot of subtle points around which peers should be persisted.
 
 Block-relay-only connections are a type of connection where nodes do not participate in transaction or address relay and only relay blocks. An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks.
-Block-relay-only connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759]. After these changes, nodes by default open two outbound block-relay-only connections on startup.
-https://github.com/bitcoin/bitcoin/pull/17428[PR#17428] added functionality to preserve outbound block-relay-only connections during restart.
+Block-relay-only connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]. After these changes, nodes by default open two outbound block-relay-only connections on startup.
+https://github.com/bitcoin/bitcoin/pull/17428[PR#17428^] added functionality to preserve outbound block-relay-only connections during restart.
 
-https://github.com/bitcoin/bitcoin/pull/19858[PR#19858] proposes a more advanced use of block-relay-only connections to further mitigate eclipse attacks.
+https://github.com/bitcoin/bitcoin/pull/19858[PR#19858^] proposes a more advanced use of block-relay-only connections to further mitigate eclipse attacks.
 After this PR, the node will periodically initiate an additional block-relay-only connection, and then sync headers to try to learn about new blocks.
 If this reveals new blocks, the eviction logic will rotate out an existing block-relay-only connection.
 If no new blocks are discovered, the connection is closed.
@@ -76,7 +76,7 @@ It's important for this eviction logic to be carefully reviewed.
 
 ==== Addrman and eclipse attacks design guide
 
-The concepts involved in how address-based (eclipse) attacks work, how Bitcoin Core manages and tries connections to new (node) addresses, countermeasures deployed to try and prevent naive eclipse attacks, some partially-deployed countermeasures and currently-open research questions can be found in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks].
+The concepts involved in how address-based (eclipse) attacks work, how Bitcoin Core manages and tries connections to new (node) addresses, countermeasures deployed to try and prevent naive eclipse attacks, some partially-deployed countermeasures and currently-open research questions can be found in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks^].
 
 === `Addr` privacy
 
@@ -87,7 +87,7 @@ This scraped data could then be used to infer private information about the vict
 For example, a spy could monitor the victim's `AddrMan` content in real time and figure out which peers a node is connected to.
 A spy could also compare the `AddrMan` content from two different connections (e.g. one identified by Tor address and one identified by IPv4) and figure out that it's actually the same physical node (`fingerprinting`).
 
-https://github.com/bitcoin/bitcoin/pull/18991[PR#18991] was a first step towards fixing these privacy issues.
+https://github.com/bitcoin/bitcoin/pull/18991[PR#18991^] was a first step towards fixing these privacy issues.
 By limiting (caching) the leaked portion of `AddrMan`, these inference activities became much harder.
 Caching in this context means that the `ADDR` response (which is only a small subset of a node's `AddrMan` content) remains the same for every `GETADDR` call during (roughly) a day.
 
@@ -102,14 +102,14 @@ If a large portion of the connections on the network are `addr` black holes, the
 Self-announcements won't reach a majority of nodes on the network.
 It'd be better if we could somehow avoid picking black holes as the 1 or 2 peers that we select for relaying `addr` messages to.
 
-https://github.com/bitcoin/bitcoin/pull/21528[PR#21528] defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`).
+https://github.com/bitcoin/bitcoin/pull/21528[PR#21528^] defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`).
 The node uses the presence of `m_addr_known` to decide whether the peer is a candidate for relaying `addr` messages received from the network.
 
 === addrv2
 
-https://github.com/bitcoin/bitcoin/pull/19031[PR#19031] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155] `addrv2` message, a new p2p message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
+https://github.com/bitcoin/bitcoin/pull/19031[PR#19031^] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155^] `addrv2` message, a new p2p message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
 
-The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses], the https://geti2p.net[Invisible Internet Project (I2P)], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
+The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses^], the https://geti2p.net[Invisible Internet Project (I2P)^], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
 
 == `Tx` privacy
 
@@ -117,7 +117,7 @@ If a spy is able to identify which node initially broadcast a transaction, there
 To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
 We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
 
-https://github.com/bitcoin/bitcoin/pull/18861[PR#18861] improved transaction-origin privacy.
+https://github.com/bitcoin/bitcoin/pull/18861[PR#18861^] improved transaction-origin privacy.
 The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
 The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
 
@@ -126,7 +126,7 @@ The implementation for that PR checks the list of transactions we are about to a
 While this helps in many cases, why is it still an imperfect heuristic?
 ====
 
-https://github.com/bitcoin/bitcoin/pull/19109[PR#19109] further reduces the possible attack surface.
+https://github.com/bitcoin/bitcoin/pull/19109[PR#19109^] further reduces the possible attack surface.
 It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
 When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
 
@@ -142,7 +142,7 @@ If a node rebroadcasts its own wallet transactions differently from transactions
 
 The rebroadcast project's goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
 
-https://github.com/bitcoin/bitcoin/pull/21061[PR#21061] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
+https://github.com/bitcoin/bitcoin/pull/21061[PR#21061^] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
 After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
 
 Rebroadcasts happen once per new block.
@@ -155,20 +155,20 @@ The set of transactions to be rebroadcast is calculated as follows:
 
 == Connections overview
 
-Outbound connections from Bitcoin Core are initiated as part of startup from within https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1841-L1932[_src/init.cpp_] after the connection manager, `CConnman`, is started via `node.connman->Start()`.
+Outbound connections from Bitcoin Core are initiated as part of startup from within https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1841-L1932[_src/init.cpp_^] after the connection manager, `CConnman`, is started via `node.connman->Start()`.
 
 == CConnman
 
-https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L803[`CConnman`] is the class in net that opens, maintains and closes connections to peers, manages sockets, and reads/writes messages on the network.
+https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L803[`CConnman`^] is the class in net that opens, maintains and closes connections to peers, manages sockets, and reads/writes messages on the network.
 
-Within `CConnman`, we maintain https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1137[vNodes], a vector of connections to other nodes.
+Within `CConnman`, we maintain https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1137[vNodes^], a vector of connections to other nodes.
 That vector is updated and accessed by various threads, including:
 
-. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1578[socket handler thread], which is responsible for reading data from the sockets into receive buffers, and also for accepting new incoming connections.
-. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1780[open connections thread], which is responsible for opening new connections to peers on the network.
-. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L2181[message handler thread], which is responsible for reading messages from the receive buffer and passing them up to net_processing.
+. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1578[socket handler thread^], which is responsible for reading data from the sockets into receive buffers, and also for accepting new incoming connections.
+. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1780[open connections thread^], which is responsible for opening new connections to peers on the network.
+. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L2181[message handler thread^], which is responsible for reading messages from the receive buffer and passing them up to net_processing.
 
-Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1139[cs_vNodes].
+Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1139[cs_vNodes^].
 
 // For operations that are done on each connection in turn (e.g. reading from each socket in the socket handler thread, or passing messages to net_processing in the message handler thread), the common pattern is to:
 //
@@ -340,10 +340,10 @@ P2P messages are currently all unencrypted which can potentially open up vulnera
 * Possibilities for attackers who control the routing infrastructure of the P2P network to censor P2P
 messages since P2P messages can be detected trivially - they always start with a fixed sequence of magic bytes.
 
-https://gist.github.com/dhruv/5b1275751bc98f3b64bcafce7876b489[BIP 324] proposes a new Bitcoin P2P protocol which features transport encryption and slightly lower bandwidth usage.
+https://gist.github.com/dhruv/5b1275751bc98f3b64bcafce7876b489[BIP 324^] proposes a new Bitcoin P2P protocol which features transport encryption and slightly lower bandwidth usage.
 
-https://bip324.com[bip324.com] contains a list of all the open PRs and great resources to understand the proposal.
-A visual explanation of how BIP 324 works can be found in this blog - https://github.com/stratospher/blogosphere/blob/main/bip324.md[How to encrypt the P2P protocol?]
+https://bip324.com[bip324.com^] contains a list of all the open PRs and great resources to understand the proposal.
+A visual explanation of how BIP 324 works can be found in this blog - https://github.com/stratospher/blogosphere/blob/main/bip324.md[How to encrypt the P2P protocol?^]
 
 === Networking contribution to node RNG entropy
 
@@ -368,7 +368,7 @@ net.cpp
 
 == Bloom filters and SPV
 
-A https://en.wikipedia.org/wiki/Bloom_filter[bloom filter] is a probabilistic data structure.
+A https://en.wikipedia.org/wiki/Bloom_filter[bloom filter^] is a probabilistic data structure.
 It supports two operations:
 
 . _adding_ an element to the filter
@@ -378,23 +378,23 @@ If an element has been previously added, then querying for the element will retu
 If an element has not been added, then querying for the element may return _true_ or _false_.
 In other words, querying may return a _false positive_, but will never return a _false negative_.
 
-See the https://en.wikipedia.org/wiki/Bloom_filter[wikipedia page] for how a bloom filter is implemented with hash functions onto a bitfield.
+See the https://en.wikipedia.org/wiki/Bloom_filter[wikipedia page^] for how a bloom filter is implemented with hash functions onto a bitfield.
 Note that the false positive rate depends on the size of the filter and the number of hash functions.
 
-https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37] introduced a new method for https://developer.bitcoin.org/devguide/operating_modes.html#simplified-payment-verification-spv[Simple Payment Verification (SPV)] clients to use bloom filters to track transactions that affect their addresses.
-BIP 37 was implemented in Bitcoin Core in https://github.com/bitcoin/bitcoin/pull/1795[PR#1795].
+https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^] introduced a new method for https://developer.bitcoin.org/devguide/operating_modes.html#simplified-payment-verification-spv[Simple Payment Verification (SPV)^] clients to use bloom filters to track transactions that affect their addresses.
+BIP 37 was implemented in Bitcoin Core in https://github.com/bitcoin/bitcoin/pull/1795[PR#1795^].
 
 Using the P2P messages defined in BIP 37, an SPV client can request that a full node send it transactions which match a bloom filter.
-The full node will then relay unconfirmed transactions that match the filter, and the client can request https://github.com/bitcoin/bitcoin/blob/608359b071dac82a9cf33a6c9e01f87abfcb90eb/src/merkleblock.h#L127-L132[merkle blocks], which only contain the transactions that match the filter.
+The full node will then relay unconfirmed transactions that match the filter, and the client can request https://github.com/bitcoin/bitcoin/blob/608359b071dac82a9cf33a6c9e01f87abfcb90eb/src/merkleblock.h#L127-L132[merkle blocks^], which only contain the transactions that match the filter.
 
 The SPV client chooses the bloom filter parameters (filter size, number of hashes and a 'tweak' for the hashes) and sends them to the node in a `filterload` message.
 
-The original implementation contained a logic bug. If the client sent a `filterload` message with a zero-sized filter, then the serving node could later attempt a divide-by-zero and crash when querying an element from the filter. See https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-5700[CVE-2013-5700] for further details.
+The original implementation contained a logic bug. If the client sent a `filterload` message with a zero-sized filter, then the serving node could later attempt a divide-by-zero and crash when querying an element from the filter. See https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-5700[CVE-2013-5700^] for further details.
 
-This bug was quietly fixed in https://github.com/bitcoin/bitcoin/pull/2914[PR#2914] without advertising the reason.
+This bug was quietly fixed in https://github.com/bitcoin/bitcoin/pull/2914[PR#2914^] without advertising the reason.
 That fix added the `isFull` and `isEmpty` booleans, which have proven to be confusing for developers.
 
-https://github.com/bitcoin/bitcoin/pull/18806[PR#18806] removed those `isFull` and `isEmpty` booleans and adds a more straightforward fix for the issue.
+https://github.com/bitcoin/bitcoin/pull/18806[PR#18806^] removed those `isFull` and `isEmpty` booleans and adds a more straightforward fix for the issue.
 
 == Blocksonly relay
 
@@ -405,18 +405,18 @@ There are two methods available for relaying blocks:
 ** A node participating in legacy relaying will always send or request entire blocks.
 ** For nodes that maintain a mempool this is quite bandwidth inefficient, since they probably already have most of the transactions from a new block in their mempool.
 . *Compact Block Relay*
-** Specified in https://github.com/bitcoin/bips/blob/master/bip-0152.mediawiki[BIP 152].
+** Specified in https://github.com/bitcoin/bips/blob/master/bip-0152.mediawiki[BIP 152^].
 ** The goal is to address the bandwidth inefficiencies of legacy relaying by only relaying the transactions of a new block that the requesting peer has not yet seen.
-** Check out this https://bitcoincore.org/en/2016/06/07/compact-blocks-faq/[Compact Blocks FAQ] for benchmarks and more info.
+** Check out this https://bitcoincore.org/en/2016/06/07/compact-blocks-faq/[Compact Blocks FAQ^] for benchmarks and more info.
 
 Bitcoin Core 0.12 introduced a `-blocksonly` setting that can reduce a node's bandwidth usage by 88%.
 The reduction is achieved by not participating in transaction relay.
-For more info check out https://bitcointalk.org/index.php?topic=1377345.0[this post] on blocksonly mode by Gregory Maxwell.
+For more info check out https://bitcointalk.org/index.php?topic=1377345.0[this post^] on blocksonly mode by Gregory Maxwell.
 Blocksonly nodes currently use compact block relaying to download blocks even though they don't maintain a full mempool.
 
-https://github.com/bitcoin/bitcoin/pull/22340[PR#22340] makes blocksonly nodes use legacy relaying to download new blocks.
+https://github.com/bitcoin/bitcoin/pull/22340[PR#22340^] makes blocksonly nodes use legacy relaying to download new blocks.
 
-As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759]), disables both transaction and address relay.
+As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]), disables both transaction and address relay.
 Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see <<Eclipse attacks>> for more use cases of these connections).
 
 === Notifying peers of relay preferences
@@ -424,12 +424,12 @@ Bitcoin Core nodes per default settings make two *outbound* block-relay-only con
 Currently, block-relay-only connections are established indirectly:
 
 * When making an outbound block-relay-only connection, a node sets the boolean flag `fRelay` in the version message to `false`.
-* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
+* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
 * `fRelay=false` is also used in *-blocksonly* mode, a low-bandwidth option in which a node does not want to receive transactions from *any peer*, but does participate in address relay.
 
 Therefore, nodes currently don't have a notion which of their incoming peers see the connection as block-relay-only and don't have any logic attached to it.
 
-https://github.com/bitcoin/bitcoin/pull/20726[PR#20726], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP 338], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
+https://github.com/bitcoin/bitcoin/pull/20726[PR#20726^], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP 338^], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
 
 === Peer state in the codebase
 
@@ -449,7 +449,7 @@ Bitcoin Core has several options for how to treat peers that violate the rules o
 . Disconnect from the peer
 . Disconnect from the peer and prevent any later connections from that peer's address (discouragement)
 
-Since https://github.com/bitcoin/bitcoin/pull/20079[PR#20079] we now treat handshake misbehaviour like an unknown message
+Since https://github.com/bitcoin/bitcoin/pull/20079[PR#20079^] we now treat handshake misbehaviour like an unknown message
 
 == Testing P2P changes
 
@@ -463,7 +463,7 @@ Is there fuzzing for P2P messages yet?
 
 === Testing transaction and block relay under SegWit
 
-SegWit was a softfork defined in https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki[BIP 141], with P2P changes defined in https://github.com/bitcoin/bips/blob/65529b12bb01b9f29717e1735ce4d472ef9d9fe7/bip-0144.mediawiki[BIP 144].
+SegWit was a softfork defined in https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki[BIP 141^], with P2P changes defined in https://github.com/bitcoin/bips/blob/65529b12bb01b9f29717e1735ce4d472ef9d9fe7/bip-0144.mediawiki[BIP 144^].
 
 SegWit was activated at block 481,824 in August 2017.
 Prior to activation, some very careful testing was carried out to verify different scenarios, for example:
@@ -472,8 +472,8 @@ Prior to activation, some very careful testing was carried out to verify differe
 . How do upgraded nodes find other upgraded nodes to connect to?
 . If a node is un-upgraded at activation time and subsequently upgrades, how does it ensure that the blocks that it previously validated (without segwit rules) are valid according to segwit rules?
 
-To enable this kind of testing, https://github.com/bitcoin/bitcoin/pull/8418[PR#8418] made it possible to configure the segwit activation parameters using a `-bip9params` configuration option.
-That configuration option was later renamed to `-vbparams` in https://github.com/bitcoin/bitcoin/pull/10463[PR#10463], and replaced with `-segwitheight` in https://github.com/bitcoin/bitcoin/pull/16060[PR#16060].
+To enable this kind of testing, https://github.com/bitcoin/bitcoin/pull/8418[PR#8418^] made it possible to configure the segwit activation parameters using a `-bip9params` configuration option.
+That configuration option was later renamed to `-vbparams` in https://github.com/bitcoin/bitcoin/pull/10463[PR#10463^], and replaced with `-segwitheight` in https://github.com/bitcoin/bitcoin/pull/16060[PR#16060^].
 
 Those options allowed starting a node which would never activate segwit by passing `-vbparams=segwit:0:0` (or later, `-segwitheight=-1`).
 This was used in the functional tests to test the node's behaviour across activation.
@@ -481,7 +481,7 @@ This was used in the functional tests to test the node's behaviour across activa
 The segwit mainnet activation was a one-time event.
 Now that segwit has been activated, those tests are no longer required.
 
-https://github.com/bitcoin/bitcoin/pull/21090[PR#21090] removed the final tests that made use of `-segwitheight=0`.
+https://github.com/bitcoin/bitcoin/pull/21090[PR#21090^] removed the final tests that made use of `-segwitheight=0`.
 With those tests removed, the special casing for `-segwitheight=-1` behaviour can also be removed.
 That special casing impacted logic in _net_processing_, _validation_ and _mining_.
 
