@@ -1,5 +1,7 @@
 = Wallet
 
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
 Bitcoin Core includes an optional wallet component.
 The wallet allows users to make and receive transactions using their own node, so that they can validate incoming payment against their own node.
 
