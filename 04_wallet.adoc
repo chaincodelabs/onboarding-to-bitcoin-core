@@ -24,7 +24,7 @@ Wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/
 ====
 Bitcoin Core moved to descriptor wallets as they are unambiguous as to which public keys and scripts should be used.
 
-They also simplify backups and make {im|ex}porting wallet keys into other software less error-prone.
+They also simplify backups and make im/ex-porting wallet keys into other software less error-prone.
 ====
 
 == Wallet overview
@@ -42,7 +42,7 @@ TIP: The version of BDB we used for the wallet is unmaintained, so new wallets s
 The wallet is stored on disk as a Key Value store.
 
 .Wallet database
-[mermaid,target=wallet-database,format=svg]
+[mermaid,target=wallet-database,format=svg,align="center"]
 ....
 flowchart BT
    database["database\n(KV store)"]
@@ -68,7 +68,7 @@ const std::string WALLETDESCRIPTORKEY{"walletdescriptorkey"};
 
 For Legacy wallets (populating a `LegacyScriptPubKeyMan` (LSPKM)) we use the records with `*.KEY` & `SCRIPT`.
 
-Wallet metadata includes `tipLocator`, the most recent tip, and `version` which is used in database upgrades.
+Wallet metadata may include a `tipLocator` -- the most recent tip -- and a wallet `version` which is used in database upgrades.
 
 To load the wallet we read the database by iterating the records and loading them to `CWallet`, using `ReadKeyValue()` to deserialize.
 
@@ -110,7 +110,7 @@ TODO: Why do we reload every transaction anyway ^?
 === Key-type classes in the wallet
 
 There are a number of `Key` classes in the wallet code and keeping track of their functions can be confusing at times due to naming similarities.
-Below are listed some of the most common classes along with their general functions.
+Below are listed some of these classes along with some primary functions.
 
 [id=wallet-key-types]
 ****
@@ -1497,6 +1497,7 @@ TODO
 
 == HWI
 
+////
 == Relation to consensus soft forks
 
 Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not inside consensus code, but rather require improvements to the wallet.
@@ -1527,3 +1528,4 @@ Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not i
 * Multiwallet
 * Hardware wallet interface (HWI)
 * QT
+////
