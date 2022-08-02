@@ -1,6 +1,6 @@
 = GUI
 
-This document was created from Bitcoin Core at commit https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e[4b5659c6b115315c9fd2902b4edd4b960a5e066e^]
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
 
 The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui^].
 PRs which primarily target the GUI should be made here, and then they will get merged into the primary repo.
@@ -38,12 +38,12 @@ is agreement to proceed with the changes, a PR with the build system
 and interfaces changes can be submitted to the node repository.
 ____
 
-On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue^] was recently opened by Marco, to discuss the possibility of instituting the same monotree changes for wallet code.
+On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue^] was recently opened by Falke, to discuss the possibility of instituting the same monotree changes for wallet code.
 
 == Building the GUI
 
-`bitcoin-qt`, which is the GUI version of the node software, is built automatically when the build dependencies are met.
-Required packages can be found in the build instructions in _src/doc/build-*.md_ as appropriate for your platform.
+`bitcoin-qt`, which includes the QT GUI with the node, is built automatically when the build dependencies are met.
+Required packages to meet dependencies can be found in the build instructions in _src/doc/build-*.md_ as appropriate for your platform.
 If you have the required packages installed but do not wish to build the `bitcoin-qt` then you must run `./configure` with the option `--with-gui=no`.
 
 [NOTE]
@@ -57,11 +57,10 @@ If the build is configured with `--enable-multiprocess` then additional binaries
 
 == Qt
 
-We can see how the Qt directory is related to the rest of the codebase from its directory dependency graph:
+QT is currently very intertwined with the rest of the codebase.
+See the library <<library-dependency-graph,depencency graph>> for more context.
 
-image::dir_f0c29a9f5764d78706f34c972e8114d8_dep.svg[]
-
-Developers would ideally like to reduce these dependencies even further.
+Developers would ideally like to reduce these dependencies in the future.
 
 == Qt documentation
 
@@ -73,8 +72,8 @@ The loading point for the GUI is _src/qt/main.cpp_.
 `main()` calls `GuiMain()` from _src/qt/bitcoin.cpp_, passing along any program arguments with it.
 `GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
 
-Next an empty `NodeContext` is setup, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
-Recall that in <<Wallet component initialisation>> we also saw the wallet utilising a `NodeContext` as part of its `WalletInitInterface`.
+Next an empty `NodeContext` is set up, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
+Recall that in <<Wallet component initialisation>> we also saw the wallet utilizing a `NodeContext` as part of its `WalletInitInterface`.
 In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
 
 After some QT setup, command-line and application arguments are parsed.
@@ -82,7 +81,7 @@ What follows can be outlined from the code comments:
 
 [start=3]
 . Application identification
-. Initialization of translations, so that intro dialog is in user's language
+. Initialization of translations, so that intro dialogue is in user's language
 . Now that settings and translations are available, ask user for data directory
 . Determine availability of data directory and parse bitcoin.conf
 . Determine network (and switch to network specific options)
