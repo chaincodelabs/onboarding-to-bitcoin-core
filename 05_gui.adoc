@@ -40,6 +40,19 @@ ____
 
 On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue^] was recently opened by Falke, to discuss the possibility of instituting the same monotree changes for wallet code.
 
+== Motivation for a GUI
+
+Bitcoin Core has shipped with a GUI since the first version.
+Originally this was a wxWidgets GUI, but in 2011 a move to QT was https://github.com/bitcoin/bitcoin/pull/521[completed].
+Satoshi originally had plans to have a decentralized market place and even poker game inside Bitcoin, so including a GUI, which also had wallet and address book functionality, made sense from the get-go.
+
+The motivation to _continue_ to include a GUI with Bitcoin Core today is for accessibility.
+New users can access a best-in-class Bitcoin experience via a single software package.
+It's not safe or realistic to expect users to download multiple programs and connect them securely into a software suite, just to use bitcoin.
+
+It does not have to be the prettiest UI, but needs to provide the functionality to use bitcoin.
+It is possible to connect other frontends to Bitcoin Core, but they are connected via RPCs, and do not have the first-class interface (to the node component) that the bundled GUI has.
+
 == Building the GUI
 
 `bitcoin-qt`, which includes the QT GUI with the node, is built automatically when the build dependencies are met.
