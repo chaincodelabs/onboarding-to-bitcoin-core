@@ -489,6 +489,8 @@ flowchart LR
 
 NOTE: Dotted lines represent potential future upgrades
 
+TIP: For more information on `PeerManagerImpl` see <<pimpl-technique,PIMPL technique>> in the appendix.
+
 Transactions are internally represented as either a `CTransaction`, a `CTransactionRef` (a shared pointer to a `CTransaction`) or in the case of packages a `Package` which is a `std::vector<CTransactionRef>`.
 
 We can follow the journey of a transaction through the Bitcoin Core mempool by following glozow's https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[notes^] on transaction "Validation and Submission to the Mempool".

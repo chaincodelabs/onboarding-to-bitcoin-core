@@ -1,0 +1,46 @@
+= Appendix
+
+[id=pimpl-technique]
+== PIMPL technique
+
+:pimpl_addrman_review: https://bitcoincore.reviews/22950
+
+The Bitcoin Core codebase contains many classes of the form `class *Impl`.
+These classes are taking advantage of the Pointer to Implementation https://en.cppreference.com/w/cpp/language/pimpl[technique^] which helps to both provide more stable ABIs and also to reduce compile-time dependencies.
+
+.Some of the current Bitcoin Core PIMPL classes
+[source,cpp]
+----
+AddrManImpl
+ChainImpl
+NodeImpl
+PeerManagerImpl
+WalletImpl
+
+FieldImpl
+DBImpl
+ExternalSignerImpl
+NotificationsHandlerImpl
+RPCHandlerImpl
+IpcImpl
+ProcessImpl
+RPCMethodImpl
+SketchImpl
+DescriptorImpl
+----
+
+Amiti Uttarwar {pimpl_addrman_review}[hosted^] a PR review club "Pimpl AddrMan to abstract implementation details" which contains information on the design aims, advantages and disadvantages.
+Below are copies of the annotated pictures she created and included to assist learning.
+
+.PIMPL peerman
+[link=https://bitcoincore.reviews/22950]
+image::pimpl_peerman_amiti.png[]
+
+.PIMPL txrequest
+[link=https://bitcoincore.reviews/22950]
+image::pimpl_txrequest_amiti.png[]
+
+.Compilation firewall
+[link=https://bitcoincore.reviews/22950]
+image::compilation_firewall_amiti.jpg[]
+

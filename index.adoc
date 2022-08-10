@@ -18,4 +18,6 @@ include::07_mempool.adoc[]
 
 include::08_script.adoc[]
 
+include::09_appendix.adoc[]
+
 :leveloffset: -1

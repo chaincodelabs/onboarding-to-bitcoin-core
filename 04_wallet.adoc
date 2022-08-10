@@ -393,6 +393,8 @@ In order to facilitate code separation, distinct interfaces between the node and
 * The wallet holds a https://github.com/bitcoin/bitcoin/blob/v23.0/src/node/interfaces.cpp#L452[`ChainImpl`^] interface to call functions on the node.
 * The node notifies the wallet about new transactions and blocks through the https://github.com/bitcoin/bitcoin/blob/v23.0/src/node/interfaces.cpp#L364[`CValidationInterface`^].
 
+TIP: For more information on `*Impl` classes see <<pimpl-technique,PIMPL technique>> in the appendix.
+
 == Wallet component initialisation
 
 The wallet component is initialized via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/blob/v23.0/src/walletinitinterface.h#L14-L26[_src/walletinitinterface.h_^].
@@ -416,8 +418,8 @@ endif
 _src/walletinitinterface.h_ declares the global `g_wallet_init_interface`  which will handle the configured `WalletInitInterface`.
 
 The wallet interface is created when the `Construct()` method is called on the `g_wallet_init_interface` object by https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1179-L1184[`AppInitMain()`^] in _init.cpp_.
-`Construct` takes a reference to a `NodeContext` as argument, and then checks that the wallet has not been disabled by a runtime argument before calling `interfaces::MakeWalletClient()` on the node.
-This initialises a new `WalletClientImpl` object which is then added to the `node` object, both to the general list of `node.chain_clients` (wallet processes or other clients which want chain information from the node) in addition to being assigned as the unique `node.wallet_client` role, which specifies the particular `node.chain_client` that should be used to load or create wallets.
+`Construct` takes a reference to a `NodeContext` as argument, and then checks that the wallet has not been disabled by a runtime argument before calling `interfaces::MakeWalletLoader()` on the node.
+This initialises a new `WalletLoader` object which is then added to the `node` object, both to the general list of `node.chain_clients` (wallet processes or other clients which want chain information from the node) in addition to being assigned as the unique `node.wallet_client` role, which specifies the particular `node.chain_client` that should be used to load or create wallets.
 
 The `NodeContext` struct is defined as the following:
 

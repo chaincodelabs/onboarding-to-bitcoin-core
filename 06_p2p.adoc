@@ -1,9 +1,14 @@
 = P2P
 
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+With bitcoin we are seeking to create a permissionless network in which anyone can make a bitcoin transaction.
+Anybody should be free and able to run a node and join the network.
+
 == Design philosophy
 
-Bitcoin Core's P2P design philosophy is outlined in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/P2P-Design-Philosophy[P2P Design Philosophy^].
-A synopsis of the ideas can be found in the first paragraph which states:
+The P2P design philosophy is outlined in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/P2P-Design-Philosophy[P2P Design Philosophy^].
+A synopsis of the ideas can be found in the first few paragraphs:
 
 [quote]
 ____
@@ -18,45 +23,105 @@ It's impossible for us to know, for example, whether all our inbound peers are c
 Therefore, in order to try to be connected to the honest network, we focus on having good outbound peers, as we get to choose who those are.
 ____
 
-The document, which is worth reading in its entirely, continues by assuming the case that we don't have any inbound peers but also considering that any inbound peers we _do_ have can't interfere with the P2P logic proposed.
+The document, which is worth reading in its entirely, continues by assuming the case that we don't have any inbound peers but also considering that any inbound peers we _do_ have shouldn't be able to interfere with the P2P logic proposed.
 
-== Addrman and eclipse attacks
+== Design goals
 
-In order to make "at least one connection to that network of peers that share its consensus rules", as the philosophy above targets, a Bitcoin Core node needs to have some node (network) addresses to connect to which are _not_ controlled by a potential attacker.
+:amiti-attacking: https://btctranscripts.com/la-bitdevs/2020-04-16-amiti-uttarwar-attacking-bitcoin-core/
 
-When the node has never connected to the bitcoin P2P network before it has no choice but to fetch addresses from one (or more) hardcoded DNS seed(s), the list of which can be found in https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/chainparams.cpp#L121-L129[_src/chainparams.cpp_^].
-If the node is fed only attacker-controlled addresses by the seed(s) then it has little/no opportunity to join the rest of the honest network.
-However, if one or more of the addresses returned by the DNS query are honest then we want the node to be able to (eventually) find and connect to the honest network.
+Uttarwar created a framework of 5 goals she sees for the P2P network.
+These are that it should be:
 
-Note that for completeness, if the DNS seed queries are unsuccessful, then bitcoind will fall back to connecting to a hard-coded list of seed nodes.
-This fall back functionality is only run as a last resort if all DNS seeds are down (e.g. if there is an attack on the DNS seed infrastructure).
+. Reliable
+. Timely
+. Accessible
+. Private
+. Upgradable
 
-=== Addrman
+If a node sends a P2P message the network should be **reliable** and eventually deliver it to all other nodes on the network.
 
-Every time a node hears about another node in the network, it adds/updates a record in its `AddrMan` (Address Manager).
-This is where all the data about nodes in the network is stored, and this is where a `GETADDR` receiver looks to construct an `ADDR` response to the requester.
+P2P message delivery should be done in a **timely** fashion, where the definition of "timely" might differ depending on which type of message is being sent (block, tx, address, other).
 
-Addrman has several design goals: We want to have a diverse selection of addresses in order to find good peers to connect to, but also want to be resistant against DOS attacks and
-limit the influence of a single source (so that a single peer cannot monopolize our address database).
-It consists of two tables, the New tables (where new, unverified addresses are stored) and the Tried tables, where only addresses are stored to which the node has made a successful
-outgoing connection at some point in the past.
+The P2P network must be **accessible** by even low-powered devices.
+Currently it is still possible to run a full Bitcoin Core node on a Raspberry Pi which is a low barrier-to-entry.
 
-=== Address relay
+Because the network deals with financial transactions in a fully-public way, it should also be **private** enough that you don't need to tie your real-world identity to your node's identity.
 
-The Bitcoin network uses `addr` messages to communicate (node) network addresses.
-See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation^] for more details.
-Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
+The network should be **upgradable** so that users who want to use new features are free to do so by upgrading, whilst at the same time permitting those who do not want to upgrade to also continue to transact.
 
-Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
-When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards those addresses with a timestamp within 10 minutes of the current time to 1 or 2 peers, selected at random.
-If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network. The timestamp condition is there to ensure that the relay of a given address stops after some time.
+See the {amiti-attacking}[transcript^] for more detail on each of those points.
 
-Since https://github.com/bitcoin/bitcoin/pull/22387[PR#22387^], there is a rate limit for address relay, so that addresses from peers that send too many of them are ignored.
+== P2P attacks
+
+In a permissionless system two types of users are both _equally_ free to access and attempt to use the network:
+
+. Honest users
+. Attackers/spammers
+
+Types of activities an attacker might attempt to perform on a target node which involve the P2P layer include:
+
+* Exhaust CPU/memory
+** Create infinite loops
+** Cause OOM (exhaust memory)
+** Clog up network traffic
+** Fill mempool with garbage
+** Temporarily stall the network
+* Eclipse/sybil attacks
+** Reduce privacy
+** Cause network splits
+** https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse^] attack
+** https://en.wikipedia.org/wiki/Sybil_attack[Sybil^] attack
+
+The Bitcoin protocol does not have a concept of node identifiers or other reputation system through which we can permanently block a node we identify as malicious from future communications.
+If a node reconnects to us using a different IP address we will not be able to tell it was the same node we had seen before.
+Make no mistake that this is a large win for the censorship-resistance of the network, but it makes P2P implementation more precarious.
+
+Our program must contain logic to protect against the above attacks in a scenario where they may happen often and freely.
+Bitcoin Core employs a number of techniques in the P2P domain to try and protect against these types of attacks including:
+
+.Protective counter-measures
+[%autowidth.stretch]
+|===
+|Technique |Protection
+
+|Proof of Work*
+|Exhaust CPU/memory
+
+|Mempool policy for transactions
+|Exhaust CPU/memory
+
+|Peer address bucketing
+|Eclipse/Sybil attacks
+
+|`block-relay-only` connections
+|Eclipse attacks
+
+|Ephemeral block-relay-only connections for headers
+|Eclipse attacks
+
+|<<P2P violations,Disconnecting>> "misbehaving" peers
+|Exhaust CPU/memory
+
+|Peer rotation/eviction
+|Eclipse/sybil attacks
+
+|Protected peers (from eviction)
+|Eclipse attacks
+
+|Anchor peers
+|Eclipse attacks
+
+|===
+
+TIP: * If an "attacker" has sufficient hash power, then from a PoW perspective they are not really an attacker.
+
+////
+See glozow's https://vimeo.com/704956163[presentation^] on Censorship and DoS Attacks: An intro to Mempool Policy at Advancing Bitcoin 2022 for a synopsis of mempool policy.
+////
 
 === Eclipse attacks
 
 https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse attacks^] occur when an adversary is able to isolate a victim's node from the rest of the network.
-If you're unfamiliar with the concept of eclipse attacks, https://bitcoinops.org/en/topics/eclipse-attacks/[the Optech topics page^] contains links to many resources on the subject.
 
 A _restart-based eclipse attack_ occurs when the adversary is able to add its own addresses to the victim's address manager and then force the victim to restart.
 If the attack succeeds, the victim will make all of its connections to the adversary's addresses when it restarts.
@@ -64,111 +129,244 @@ If the attack succeeds, the victim will make all of its connections to the adver
 https://github.com/bitcoin/bitcoin/issues/17326[Issue 17326^] proposed persisting the node's outbound connection list to disk, and on restart reconnecting to the same peers.
 It's worth reading the full discussion in that issue, since there are a lot of subtle points around which peers should be persisted.
 
-Block-relay-only connections are a type of connection where nodes do not participate in transaction or address relay and only relay blocks. An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks.
-Block-relay-only connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]. After these changes, nodes by default open two outbound block-relay-only connections on startup.
-https://github.com/bitcoin/bitcoin/pull/17428[PR#17428^] added functionality to preserve outbound block-relay-only connections during restart.
+=== block-relay-only connections
+
+`block-relay-only` connections are a type of connection where nodes do not participate in transaction or address relay and only relay blocks.
+An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks.
+`block-relay-only` connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^].
+After these changes, nodes by default open two outbound block-relay-only connections on startup.
+https://github.com/bitcoin/bitcoin/pull/17428[PR#17428^] added functionality to preserve outbound `block-relay-only` connections during restart.
 
 https://github.com/bitcoin/bitcoin/pull/19858[PR#19858^] proposes a more advanced use of block-relay-only connections to further mitigate eclipse attacks.
-After this PR, the node will periodically initiate an additional block-relay-only connection, and then sync headers to try to learn about new blocks.
+The node will periodically initiate an _additional_ block-relay-only connection which it uses only to sync headers in order to try and learn about new blocks.
 If this reveals new blocks, the eviction logic will rotate out an existing block-relay-only connection.
 If no new blocks are discovered, the connection is closed.
-It's important for this eviction logic to be carefully reviewed.
 
-==== Addrman and eclipse attacks design guide
+== Node P2P components
 
-The concepts involved in how address-based (eclipse) attacks work, how Bitcoin Core manages and tries connections to new (node) addresses, countermeasures deployed to try and prevent naive eclipse attacks, some partially-deployed countermeasures and currently-open research questions can be found in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks^].
+.Node P2P components
+[mermaid,target=node-p2p-components,format=svg,align="center"]
+....
+flowchart LR
+    Addrman
+    Banman
+    CConnman
+    CTxMempool
+    ChainstateManager
+    Peerman
+    Asmap{{Asmap}}
+    peers.dat{{peers.dat}}
+    banlist.dat{{banlist.dat}}
+    anchors.dat{{anchors.dat}}
+    mempool.dat{{mempool.dat}}
 
-=== `Addr` privacy
+    subgraph node
+        node.addrman
+        node.banman
+        node.connman
+        node.mempool
+        node.chainman
+        node.peerman
+    end
 
-For some time, it was possible for a spy node to easily scrape the full contents of any reachable node's `AddrMan`.
-The spy just had to connect to a victim node multiple times and execute `GETADDR`.
-This scraped data could then be used to infer private information about the victim.
+    Asmap -.-> Addrman
+    peers.dat -.-> Addrman
+    Addrman --> node.addrman
 
-For example, a spy could monitor the victim's `AddrMan` content in real time and figure out which peers a node is connected to.
-A spy could also compare the `AddrMan` content from two different connections (e.g. one identified by Tor address and one identified by IPv4) and figure out that it's actually the same physical node (`fingerprinting`).
+    banlist.dat -.-> Banman
+    Banman --> node.banman
 
-https://github.com/bitcoin/bitcoin/pull/18991[PR#18991^] was a first step towards fixing these privacy issues.
-By limiting (caching) the leaked portion of `AddrMan`, these inference activities became much harder.
-Caching in this context means that the `ADDR` response (which is only a small subset of a node's `AddrMan` content) remains the same for every `GETADDR` call during (roughly) a day.
+    Addrman --> CConnman
+    anchors.dat -.-> CConnman
+    CConnman --> node.connman
 
-=== Addr black holes
+    mempool.dat -.-> CTxMempool
+    CTxMempool --> node.mempool
 
-We know that some nodes on the network do _not_ relay `addr` messages that they receive.
-Two known cases are block-relay-only connections from Bitcoin Core nodes, and connections from certain light clients.
-We refer to these connections as `addr` black holes.
-`addr` messages go in, but they never escape!
+    ChainstateManager --> node.chainman
 
-If a large portion of the connections on the network are `addr` black holes, then `addr` propagation is impacted.
-Self-announcements won't reach a majority of nodes on the network.
-It'd be better if we could somehow avoid picking black holes as the 1 or 2 peers that we select for relaying `addr` messages to.
+    Addrman --> Peerman
+    CConnman --> Peerman
+    Banman --> Peerman
+    CTxMempool --> Peerman
+    Peerman --> node.peerman
 
-https://github.com/bitcoin/bitcoin/pull/21528[PR#21528^] defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`).
-The node uses the presence of `m_addr_known` to decide whether the peer is a candidate for relaying `addr` messages received from the network.
+....
 
-=== addrv2
+=== Addrman
 
-https://github.com/bitcoin/bitcoin/pull/19031[PR#19031^] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155^] `addrv2` message, a new p2p message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
+Addrman is setup by loading any provided https://blog.bitmex.com/call-to-action-testing-and-improving-asmap/[asmap^] (https://bitcoincore.reviews/16702[2^]) file passed during startup.
+Next `LoadAddrman` from _src/addrman.cpp_ is called, passing in the `asmap`, our global program `args` and a pointer to `node.addrman`.
+`args` are used to determine whether consistency checks should run and to pass on the `datadir` value.
+Finally any addrman database (`peers.dat`) that is found in the `datadir` has deserialization attempted.
 
-The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses^], the https://geti2p.net[Invisible Internet Project (I2P)^], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
+Addresses are serialized back to disk both after the call to `CConnman::StopNodes()`, but also periodically (by default every 15 minutes) as scheduled by `CConnman::Start()`:
 
-== `Tx` privacy
+[source,cpp]
+----
+    // Dump network addresses
+    scheduler.scheduleEvery([this] { DumpAddresses(); }, DUMP_PEERS_INTERVAL);
+----
 
-If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
-To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
-We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
+==== Adding addresses to addrman
 
-https://github.com/bitcoin/bitcoin/pull/18861[PR#18861^] improved transaction-origin privacy.
-The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
-The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
+Addresses learned about over the wire will be https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.cpp#L2897-L2908[deserialized^] into a vector of ``CAddress``-es.
+After determining whether we should expend resources on processing these addresses -- check that address relay with this peer is permitted _and_ that peer is not marked as misbehaving -- we shuffle the addresses and begin testing them as candidates for addition to our addrman.
 
-[TIP]
-====
-While this helps in many cases, why is it still an imperfect heuristic?
-====
+Address candidate testing consists of checking:
 
-https://github.com/bitcoin/bitcoin/pull/19109[PR#19109^] further reduces the possible attack surface.
-It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
-When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
+* we are not rate-limiting the peer who sent us the address
+* it is a full node (via service flag bits)
+* if we already know of the address
+* if they're automatically discouraged or manually banned
+* `IsReachable()` and `IsRoutable()`
 
-=== Rebroadcasting transactions
+Once these checks have finished we will add all the addresses we were happy with by calling `AddrMan::Add()` and passing the vector of good addresses in along with metadata on who sent us this address in the form of a `CNetAddr` (the source address).
+The source address is notably used later in `Add()` (by `AddrmanImpl::AddSingle()`) to determine which new bucket this new address should be placed into as an anti-sybil measure.
 
-Hiding links between wallet addresses and IP addresses is a key part of Bitcoin privacy.
-Many techniques exist to help users obfuscate their IP address when submitting their own transactions, and various P2P changes have been proposed with the goal of hiding transaction origins.
+Addresses are added into the appropriate bucket and position in `vvNew`.
+If there **is not** an address in the corresponding bucket/position then the new address will be added there immediately.
+If there **is** currently an address in the corresponding bucket/position then https://github.com/bitcoin/bitcoin/blob/v23.0/src/addrman.cpp#L67-L85[`IsTerrible()`^] is called to determine whether the old address should be evicted to make room for the new one or not, in which case the new address is simply dropped.
 
-Beyond initial broadcast, _rebroadcast_ behaviour can also leak information.
-If a node rebroadcasts its own wallet transactions differently from transactions received from its peers, adversaries can use this information to infer transaction origins even if the initial broadcast revealed nothing.
+TIP: This eviction behaviour is distinct from test-before-evict described below in <<Good>>.
 
-==== Rebroadcast project
+==== Good
 
-The rebroadcast project's goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
+New connections are initiated by <<Connman>>, in `CConnman::ThreadOpenConnections()`.
+Addresses are considered "good" and will begin being processed by `Addrman::Good()` if:
 
-https://github.com/bitcoin/bitcoin/pull/21061[PR#21061^] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
-After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
+. we have received a version message from them
+. it was an https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.cpp#L2732-L2747[outbound^] connection
 
-Rebroadcasts happen once per new block.
-The set of transactions to be rebroadcast is calculated as follows:
+Next we use the following process to determine whether the address should be added to `vvTried`:
 
-* The node regularly estimates the minimum feerate for transactions to be included in the next block, `m_cached_fee_rate`.
-* When a new block arrives, the transactions included in the block are removed from the mempool. The node then uses `BlockAssembler` to calculate which transactions (with a total weight up to 3/4 of the block maximum) from the mempool are more than 30 minutes old and have a minimum feerate of `m_cached_fee_rate`. This results in a set of transactions that our node would have included in the last block.
-* The rebroadcast attempt tracker, `m_attempt_tracker`, tracks how many times and how recently we've attempted to rebroadcast a transaction so that we don't spam the network with re-announcements.
+. we will first check that the address i) does not already exist in `vvTried`, and that ii) it _does_ exist in `vvNew`.
+. if the address is not yet in `vvTried` we will determine its bucket and position and then check if there is already an address at that position.
+. if there is an address there, we will initiate a `FEELER` connection to the existing node.
+. if the feeler is successful then we drop the new address and keep what we have.
+. if the feeler is unsuccessful then we drop the old address and insert the new address at this location using `MakeTried()`.
 
+This process is called https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks#countermeasure-3-test-before-evict---9037[test-before-evict^].
 
-== Connections overview
+==== Select
 
-Outbound connections from Bitcoin Core are initiated as part of startup from within https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1841-L1932[_src/init.cpp_^] after the connection manager, `CConnman`, is started via `node.connman->Start()`.
+`CConnman::ThreadOpenConnections()` also handles selection of new peers to connect to, via `Addrman::Select()`.
 
-== CConnman
+This first occurs when we want to try a new https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2114-L2125[feeler^], but we will use the same approach for https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2128-L2129[non-feeler^] connections too.
 
-https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L803[`CConnman`^] is the class in net that opens, maintains and closes connections to peers, manages sockets, and reads/writes messages on the network.
+The `Select()` function contains a lot of https://github.com/bitcoin/bitcoin/blob/v23.0/src/addrman.cpp#L703-L770[interesting^] logic, specifically related to injecting randomness into the process of drawing a new address to connect to from our untried buckets.
 
-Within `CConnman`, we maintain https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1137[vNodes^], a vector of connections to other nodes.
+It starts by using a 50% chance between selecting an address from our `tried` and `new` buckets, before using additional (non-cryptographic) randomness to select a bucket and position, before iterating over the bucket until it finds an address.
+Once it has selected an address, it uses additional randomness via `GetChance()`, to determine whether it will actually _use_ this address to connect to.
+
+The purpose of the additional `chance` in address selection is that it helps to https://github.com/bitcoin/bitcoin/blob/v23.0/src/addrman.cpp#L87-L100[deprioritize^] recently-tried and failed addresses.
+
+The use of randomness like this in addrman is to combat types of attack where our addrman might become "poisoned" with a large number of sybil or otherwise-bad addresses.
+The use of bucketing and randomness means that these types of attacks are much harder to pull off by an attacker, requiring for example a large number of nodes on different Autonomous Systems.
+
+=== Banman
+
+Banman is generally used as a filter to determine whether we should accept a new incoming connection from a certain IP address, or less-frequently to check whether we should make an out-bound connection to a certain IP address:
+
+* We do not accept connections from banned peers
+* We only accept connections from discouraged peers if our inbound slots aren't (almost) full
+* We do not process (check `IsReachable()` and `IsRoutable()` and `RelayAddress()`) addresses received in an `ADDR` / `ADDRV2` which are banned, but do remember that we have received them
+
+Banman is setup with a simple call to its constructor, passing in a `banlist` and `bantime` argument.
+`banlist` will store previously-banned peers from last shutdown, while `bantime` determines how long the node discourages "https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.h#L72-L77[misbehaving^]" peers.
+
+Banman operates primarily with bare IP addresses (`CNetAddr`) but can also, when initiated by the user, ban an entire subnet (as a `CSubNet`).
+
+Note that banman handles https://github.com/bitcoin/bitcoin/blob/v23.0/src/banman.h#L28-L56[both^] manual bans initiated by the user (with `setban`) and also automatic discouragement of peers based on P2P behaviour.
+
+The banman header file https://github.com/bitcoin/bitcoin/blob/v23.0/src/banman.h#L28-L56[contains^] some good background on what banning can and can't protect against, as well as why we do not automatically ban peers in Bitcoin Core.
+
+=== Connman
+
+Connman is used to manage connections and maintain statistics on each node connected, as well as network totals.
+There are many connection-related program options for it such as number of connections and whitebound ports/interfaces.
+It takes an Addrman to its constructor, along with two random seeds used to seed the SipHash randomizer.
+
+TIP: The nonces generated by the randomizer are used to detect us making new connections to ourself, as the incoming nonce in the version message would match our `nLocalHostNonce`
+
+Connman is started via `node.connman->Start()` in _init.cpp_.
+This begins by calling `init()` which binds to any ports selected, before starting up an I2P session if the I2P proxy is found.
+Next it schedules sending `GETADDR` to any seednodes provided (via `-seednodes`) using the `ThreadOpenConnections()` loop, and then continues by loading anchor connections from _anchors.dat_.
+Following this the various <<Net threads,net threads>> are started up.
+
+As connman has a pointer to the node's addrman it can directly fetch new addresses to serve via `CConnman:GetAddresses()`.
+If new addresses are requested from a remote P2P node (via `GETADDR`), then it will use a https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L1129-L1154[cached^] addr response to respond with.
+This helps to defeat surveillance which is seeking to determine which other peers your node is connected to.
+
+Within `CConnman` we maintain https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L1123[`m_nodes`^], a vector of connections to other nodes.
 That vector is updated and accessed by various threads, including:
 
-. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1578[socket handler thread^], which is responsible for reading data from the sockets into receive buffers, and also for accepting new incoming connections.
-. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L1780[open connections thread^], which is responsible for opening new connections to peers on the network.
-. The https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.cpp#L2181[message handler thread^], which is responsible for reading messages from the receive buffer and passing them up to net_processing.
+. The https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1709-L1718[socket handler thread^], which is responsible for reading data from the sockets into receive buffers, and also for accepting new incoming connections.
+. The https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1912[open connections thread^], which is responsible for opening new connections to peers on the network.
+. The https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2313[message handler thread^], which is responsible for reading messages from the receive buffer and passing them up to net_processing.
 
-Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net.h#L1139[cs_vNodes^].
+Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L1123-L1125[`m_nodes_mutex`^].
+
+==== CConnman::ThreadOpenConnections()
+
+This thread begins by making any manually-specified connections before entering a double-nested `while` loop.
+The outer loop handles making a connection on each loop according certain priorities and the number of connections we currently have:
+
+._net.cpp#L2028_
+[source,cpp]
+----
+// Determine what type of connection to open. Opening
+// BLOCK_RELAY connections to addresses from anchors.dat gets the highest
+// priority. Then we open OUTBOUND_FULL_RELAY priority until we
+// meet our full-relay capacity. Then we open BLOCK_RELAY connection
+// until we hit our block-relay-only peer limit.
+// GetTryNewOutboundPeer() gets set when a stale tip is detected, so we
+// try opening an additional OUTBOUND_FULL_RELAY connection. If none of
+// these conditions are met, check to see if it's time to try an extra
+// block-relay-only peer (to confirm our tip is current, see below) or the next_feeler
+// timer to decide if we should open a FEELER.
+----
+
+In addition to filling out connections up to full-relay and block-relay-only capacity it also periodically makes a feeler connection to a random node from addrman to sync headers and test that we haven't been eclipsed.
+
+After selecting which type of connection we are going to attempt on this iteration we enter the inner loop which attempts to make the connection itself.
+We select the connection by assigning it to `addrconnect`.
+
+. If it is trying to make an anchor connection the simply set `addrconnect` to the selected `addr` and break from the loop early
+. If it is trying to make a feeler connection then we request a collision address or if one is not available then select another `vvTried` table address using `addrman.Select()`.
+. If it is neither an anchor or a feeler just call `addrman.Select()`.
+
+TIP: A "collision address" means that another address had tried to evict this address from `vvTried` table, these addresses are marked in `Addrman.m_tried_collisions`.
+
+If the various checks pass, then finish by calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2177[`OpenConnection()`^].
+`OpenConnection()` makes the connection by calling `ConnectNode()`, which if successful creates a new `CNode` object for the connected node and returns it.
+Next we initialize the `CNode` with cconnman's pointer to `peerman`, via `m_msgproc->InitializeNode(pnode)`.
+Finally we add the connected and initialized node to `CConnman.m_nodes`.
+
+== Bootstrapping
+
+Bootstrapping is probably the most dangerous moment in a node's life.
+If the new node cannot make at least one connection to an honest node, from whom it can eventually learn more honest addresses, then it may not ever be able to join the most-work bitcoin chain without manual user intervention.
+
+NOTE: Manual intervention here would require the user to find the IP address of a known-honest node and connect to it either using `addnode` or `connect`.
+
+When the node first starts up, and if no node addresses are manually specified, we have no choice but to fetch addresses from one (or more) hardcoded DNS seed(s) the list of which can be found in https://github.com/bitcoin/bitcoin/blob/v23.0/src/chainparams.cpp#L121-L129[_src/chainparams.cpp_^].
+
+If the node is fed only attacker-controlled addresses by one or more dishonest DNS seed(s) then it has little opportunity to join the rest of the honest network.
+However, if one or more of the addresses returned by the DNS query are honest then we want the node to be able to (eventually) find and connect to the honest network.
+
+Note that if the DNS seed queries are unsuccessful, or the node is being run in a Tor-only mode (and currently the DNS seeds cannot support long Tor V3 addresses) then bitcoind will fall back to connecting to a hard-coded https://github.com/bitcoin/bitcoin/blob/v23.0/src/chainparamsseeds.h[list^] of seed nodes.
+This fall back functionality could help to protect against e.g. an attack on the DNS seed infrastructure.
+
+== Managing connections
+
+An enumeration of the different types of connections, along with detailed descriptions on their functions, can be found in https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L117-L184[src/_net.h_].
+
+////
+
+=== CConnman
+
+https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L761[`CConnman`^] is the class in net that opens, maintains and closes connections to peers, manages sockets, and reads/writes messages on the network.
 
 // For operations that are done on each connection in turn (e.g. reading from each socket in the socket handler thread, or passing messages to net_processing in the message handler thread), the common pattern is to:
 //
@@ -185,61 +383,10 @@ Since the vector can be updated by multiple threads, it is guarded by a mutex ca
 
 === Making connections
 
-`CConnman::Start()` will first attempt to bind to any specified bind (and whitebind) addresses (and onion services), along with optional i2p interface setup:
+`CConnman::Start()` will first attempt to bind to any specified bind (and whitebind) addresses (and onion services), along with optional I2P interface setup:
 
-.src/net.cpp#CConnman::Start
-[source,cpp,options=nowrap]
-----
-    if (fListen && !InitBinds(connOptions.vBinds, connOptions.vWhiteBinds, connOptions.onion_binds)) {
-        if (clientInterface) {
-            clientInterface->ThreadSafeMessageBox(
-                _("Failed to listen on any port. Use -listen=0 if you want this."),
-                "", CClientUIInterface::MSG_ERROR);
-        }
-        return false;
-    }
-
-    proxyType i2p_sam;
-    if (GetProxy(NET_I2P, i2p_sam)) {
-        m_i2p_sam_session = std::make_unique<i2p::sam::Session>(GetDataDir() / "i2p_private_key",
-                                                                i2p_sam.proxy, &interruptNet);
-    }
-----
-
-Next we add any addresses supplied via the `-seednode` argument, and then load addresses (if any) from `peers.dat` and finally `anchors.dat`.
+Next we add any addresses supplied via the `-seednode` argument (loaded into `vSeedNodes`), and then load addresses (if any) from `peers.dat` and finally `anchors.dat`.
 `anchors.dat` will be empty on first run but if we are later happy with our connection to the bitcoin network (and have a clean shutdown) our two outbound block-relay-only peers will be saved in this file to aid in connectivity on subsequent program runs.
-
-.src/net.cpp#CConnman::Start
-[source,cpp,options=nowrap]
-----
-    for (const auto& strDest : connOptions.vSeedNodes) {
-        AddAddrFetch(strDest);
-    }
-
-    // ...
-
-    // Load addresses from peers.dat
-    int64_t nStart = GetTimeMillis();
-    {
-        CAddrDB adb;
-        if (adb.Read(addrman))
-            LogPrintf("Loaded %i addresses from peers.dat  %dms\n", addrman.size(), GetTimeMillis() - nStart);
-        else {
-            addrman.Clear(); // Addrman can be in an inconsistent state after failure, reset it
-            LogPrintf("Recreating peers.dat\n");
-            DumpAddresses();
-        }
-    }
-
-    if (m_use_addrman_outgoing) {
-        // Load addresses from anchors.dat
-        m_anchors = ReadAnchors(GetDataDir() / ANCHORS_DATABASE_FILENAME);
-        if (m_anchors.size() > MAX_BLOCK_RELAY_ONLY_ANCHORS) {
-            m_anchors.resize(MAX_BLOCK_RELAY_ONLY_ANCHORS);
-        }
-        LogPrintf("%i block-relay-only anchors will be tried for connections.\n", m_anchors.size());
-    }
-----
 
 Because the networking segment of the code is multi-threaded, two `CSemaphores` are setup next which control the number of connections being made by the node.
 
@@ -256,44 +403,14 @@ Because the networking segment of the code is multi-threaded, two `CSemaphores` 
     }
 ----
 
-After this we get to the primary thread initialisation.
+After this we get to the primary thread initialisation with the following logic:
 
-.src/net.cpp#CConnman::Start
-[source,cpp,options=nowrap]
-----
-    //
-    // Start threads
-    //
+. A thread (`ThreadSocketHandler`) is spawned which manages the accepting (of new) and disconnecting old connections.
+. If DNS seeds are not disabled, then a thread (`ThreadDNSAddressSeed`) is spawned to request addresses from the DNS seeds.
+. A thread (`ThreadOpenAddedConnections`) is spawned to initiate manual connections (provided at startup).
+. A thread (`ThreadOpenConnections`) to make connections from addresses in `addrman`.
 
-    // Send and receive from sockets, accept connections
-    threadSocketHandler = std::thread(&TraceThread<std::function<void()> >, "net", std::function<void()>(std::bind(&CConnman::ThreadSocketHandler, this))); <1>
-
-    if (!gArgs.GetBoolArg("-dnsseed", DEFAULT_DNSSEED))
-        LogPrintf("DNS seeding disabled\n");
-    else
-        threadDNSAddressSeed = std::thread(&TraceThread<std::function<void()> >, "dnsseed", std::function<void()>(std::bind(&CConnman::ThreadDNSAddressSeed, this))); <2>
-
-    // Initiate manual connections
-    threadOpenAddedConnections = std::thread(&TraceThread<std::function<void()> >, "addcon", std::function<void()>(std::bind(&CConnman::ThreadOpenAddedConnections, this))); <3>
-
-    if (connOptions.m_use_addrman_outgoing && !connOptions.m_specified_outgoing.empty()) {
-        if (clientInterface) {
-            clientInterface->ThreadSafeMessageBox(
-                _("Cannot provide specific connections and have addrman find outgoing connections at the same."),
-                "", CClientUIInterface::MSG_ERROR);
-        }
-        return false;
-    }
-    if (connOptions.m_use_addrman_outgoing || !connOptions.m_specified_outgoing.empty())
-        threadOpenConnections = std::thread(&TraceThread<std::function<void()> >, "opencon", std::function<void()>(std::bind(&CConnman::ThreadOpenConnections, this, connOptions.m_specified_outgoing))); <4>
-----
-
-<1> A thread is spawned which manages the accepting (of new) and disconnecting old connections.
-<2> If DNS seeds are not disabled, then a thread is spawned to request addresses from the DNS seeds.
-<3> A thread is spawned to initiate manual connections (provided at startup).
-<4> A thread to make connections from addresses in `addrman`.
-
-It might appear that DNS seeds are being tried before both manual connections and any addresses found in `peers.dat`, however closer inspection of the 109L function `CConnmann::ThreadDNSAddressSeed` reveals that more than half of those lines are spent trying _not_ to query the DNS seeds, as the rationale in the code comments describes:
+It might appear that DNS seeds are being tried before both manual connections and any addresses found in `peers.dat`, however closer inspection of the 109L function `CConnman::ThreadDNSAddressSeed` reveals that more than half of those lines are spent trying _not_ to query the DNS seeds, as the rationale in the code comments describes:
 
 .src/net.cpp#CConnman::ThreadDNSAddressSeed
 [source,cpp,options=nowrap]
@@ -320,7 +437,7 @@ We see in that function if we have > 1000 peers in our `addrman` (`DNSSEEDS_DELA
 const std::chrono::seconds seeds_wait_time = (addrman.size() >= DNSSEEDS_DELAY_PEER_THRESHOLD ? DNSSEEDS_DELAY_MANY_PEERS : DNSSEEDS_DELAY_FEW_PEERS);
 ----
 
-As described in <<Eclipse attacks>> a risk exists where a malicious DNS seeder eclipses a node by returning an enormous number of IP addresses.
+A risk exists where a malicious DNS seeder eclipses a node by returning an enormous number of IP addresses.
 We mitigate this risk by limiting the number of IP addresses addrman learns to 256 per DNS seeder.
 Further down in `ThreadDNSAddressSeed()` we see such a magic number:
 
@@ -330,7 +447,189 @@ Further down in `ThreadDNSAddressSeed()` we see such a magic number:
 unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
 ----
 
-TODO: describe connecting to hardcoded seeds after 6 minutes if still `addrman == 0`.
+If after 60 seconds we have not made any connections, then `ThreadOpenConnections` will deserialize the hardcoded seeds and https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1960-L1987[add^] them to <<Addrman,addrman>> as candidates for connection.
+////
+
+== Message relay
+
+.Relay policy of different messages
+[cols="1,3,3"]
+|===
+|Message type |Function |Who
+
+|Addresses
+|`PeerManagerImpl::RelayAddress()`
+a|Outbound peers & inbound peers who send an addr-related message but not block-relay-only peers
+
+Reachable addresses to 2 peers. Unreachable addresses randomly to 1 or 2 peers.
+
+|Transactions
+|`PeerManagerImpl::RelayTransaction()`
+|All connected peers
+
+|Blocks
+a|`PeerManagerImpl::UpdatedBlockTip()`
+
+`PeerManagerImpl::MaybeSendAddr()`
+|All connected peers
+
+|===
+
+=== Address relay
+
+The Bitcoin network uses `addr` messages to communicate (node) network addresses.
+See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation^] for more details.
+Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
+
+Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
+When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards those addresses with a timestamp within 10 minutes of the current time to 1 or 2 peers, selected at random.
+If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network. The timestamp condition is there to ensure that the relay of a given address stops after some time.
+
+Since https://github.com/bitcoin/bitcoin/pull/22387[PR#22387^], there is a rate limit for address relay processing, so that addresses from peers that send too many of them are ignored which can help to prevent CPU/memory exhaustion attacks.
+
+==== `Addr` privacy
+
+For some time, it was possible for a spy node to easily scrape the full contents of any reachable node's `AddrMan`.
+The spy just had to connect to a victim node multiple times and execute `GETADDR`.
+This scraped data could then be used to infer private information about the victim.
+
+For example, a spy could monitor the victim's `AddrMan` content in real time and figure out which peers a node is connected to.
+A spy could also compare the `AddrMan` content from two different connections (e.g. one identified by Tor address and one identified by IPv4) and figure out that it's actually the same physical node (`fingerprinting`).
+
+https://github.com/bitcoin/bitcoin/pull/18991[PR#18991^] was a first step towards fixing these privacy issues.
+By limiting (caching) the leaked portion of `AddrMan`, these inference activities became much harder.
+Caching in this context means that the `ADDR` response (which is only a small subset of a node's `AddrMan` content) remains the same for every `GETADDR` call during (roughly) a day.
+
+==== Addr black holes
+
+We know that some nodes on the network do _not_ relay `addr` messages that they receive.
+Two known cases are block-relay-only connections from Bitcoin Core nodes, and connections from certain light clients.
+We refer to these connections as `addr` black holes.
+`addr` messages go in, but they never escape!
+
+If a large portion of the connections on the network are `addr` black holes, then `addr` propagation may be negatively impacted: self-announcements might not reach a majority of nodes on the network in a timely fashion.
+It'd be better if we could somehow avoid picking black holes as the 1 or 2 peers that we select for relaying `addr` messages to.
+
+https://github.com/bitcoin/bitcoin/pull/21528[PR#21528^] defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`).
+The node uses the presence of `m_addr_known` to decide whether the peer is a candidate for relaying `addr` messages received from the network.
+
+==== addrv2
+
+https://github.com/bitcoin/bitcoin/pull/19031[PR#19031^] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155^] `addrv2` message, a new P2P message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
+
+The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses^], the https://geti2p.net[Invisible Internet Project (I2P)^], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
+
+=== Transaction relay
+
+TODO
+
+==== `Tx` privacy
+
+If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
+To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
+We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
+
+https://github.com/bitcoin/bitcoin/pull/18861[PR#18861^] improved transaction-origin privacy.
+The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
+The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
+
+[TIP]
+====
+While this helps in many cases, why is it still an imperfect heuristic?
+====
+
+https://github.com/bitcoin/bitcoin/pull/19109[PR#19109^] further reduces the possible attack surface.
+It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
+When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
+
+==== Rebroadcasting transactions
+
+Hiding links between wallet addresses and IP addresses is a key part of Bitcoin privacy.
+Many techniques exist to help users obfuscate their IP address when submitting their own transactions, and various P2P changes have been proposed with the goal of hiding transaction origins.
+
+Beyond initial broadcast, _rebroadcast_ behaviour can also leak information.
+If a node rebroadcasts its own wallet transactions differently from transactions received from its peers, for example more frequently, then adversaries could use this information to infer transaction origins even if the initial broadcast revealed nothing.
+
+The goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
+
+https://github.com/bitcoin/bitcoin/pull/21061[PR#21061^] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
+After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
+
+Rebroadcasts happen once per new block.
+The set of transactions to be rebroadcast is calculated as follows:
+
+* The node regularly estimates the minimum feerate for transactions to be included in the next block, `m_cached_fee_rate`.
+* When a new block arrives, the transactions included in the block are removed from the mempool. The node then uses `BlockAssembler` to calculate which transactions (with a total weight up to 3/4 of the block maximum) from the mempool are more than 30 minutes old and have a minimum feerate of `m_cached_fee_rate`. This results in a set of transactions that our node would have included in the last block.
+* The rebroadcast attempt tracker, `m_attempt_tracker`, tracks how many times and how recently we've attempted to rebroadcast a transaction so that we don't spam the network with re-announcements.
+
+=== Block relay
+
+TODO: 
+
+==== Blocksonly relay
+
+After a block is mined it is broadcast to the p2p network where it will eventually be relayed to all nodes on the network.
+There are two methods available for relaying blocks:
+
+. *Legacy Relay*
+** A node participating in legacy relaying will always send or request entire blocks.
+** For nodes that maintain a mempool this is quite bandwidth inefficient, since they probably already have most of the transactions from a new block in their mempool.
+. *Compact Block Relay*
+** Specified in https://github.com/bitcoin/bips/blob/master/bip-0152.mediawiki[BIP 152^].
+** The goal is to address the bandwidth inefficiencies of legacy relaying by only relaying the transactions of a new block that the requesting peer has not yet seen.
+** Check out this https://bitcoincore.org/en/2016/06/07/compact-blocks-faq/[Compact Blocks FAQ^] for benchmarks and more info.
+
+Bitcoin Core 0.12 introduced a `-blocksonly` setting that can reduce a node's bandwidth usage by 88%.
+The reduction is achieved by not participating in transaction relay.
+For more info check out https://bitcointalk.org/index.php?topic=1377345.0[this post^] on blocksonly mode by Gregory Maxwell.
+Blocksonly nodes currently use compact block relaying to download blocks even though they don't maintain a full mempool.
+
+https://github.com/bitcoin/bitcoin/pull/22340[PR#22340^] makes blocksonly nodes use legacy relaying to download new blocks.
+
+As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]), disables both transaction and address relay.
+Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see <<Eclipse attacks>> for more use cases of these connections).
+
+==== Bloom filters and SPV
+
+A https://en.wikipedia.org/wiki/Bloom_filter[bloom filter^] is a probabilistic data structure.
+It supports two operations:
+
+. _adding_ an element to the filter
+. _querying_ an element from the filter
+
+If an element has been previously added, then querying for the element will return _true_.
+If an element has not been added, then querying for the element may return _true_ or _false_.
+In other words, querying may return a _false positive_, but will never return a _false negative_.
+
+See the https://en.wikipedia.org/wiki/Bloom_filter[wikipedia page^] for how a bloom filter is implemented with hash functions onto a bitfield.
+Note that the false positive rate depends on the size of the filter and the number of hash functions.
+
+https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^] introduced a new method for https://developer.bitcoin.org/devguide/operating_modes.html#simplified-payment-verification-spv[Simple Payment Verification (SPV)^] clients to use bloom filters to track transactions that affect their addresses.
+BIP 37 was implemented in Bitcoin Core in https://github.com/bitcoin/bitcoin/pull/1795[PR#1795^].
+
+Using the P2P messages defined in BIP 37, an SPV client can request that a full node send it transactions which match a bloom filter.
+The full node will then relay unconfirmed transactions that match the filter, and the client can request https://github.com/bitcoin/bitcoin/blob/608359b071dac82a9cf33a6c9e01f87abfcb90eb/src/merkleblock.h#L127-L132[merkle blocks^], which only contain the transactions that match the filter.
+
+The SPV client chooses the bloom filter parameters (filter size, number of hashes and a 'tweak' for the hashes) and sends them to the node in a `filterload` message.
+
+The original implementation contained a logic bug. If the client sent a `filterload` message with a zero-sized filter, then the serving node could later attempt a divide-by-zero and crash when querying an element from the filter. See https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-5700[CVE-2013-5700^] for further details.
+
+This bug was quietly fixed in https://github.com/bitcoin/bitcoin/pull/2914[PR#2914^] without advertising the reason.
+That fix added the `isFull` and `isEmpty` booleans, which have proven to be confusing for developers.
+
+https://github.com/bitcoin/bitcoin/pull/18806[PR#18806^] removed those `isFull` and `isEmpty` booleans and adds a more straightforward fix for the issue.
+
+=== Notifying peers of relay preferences
+
+Currently, block-relay-only connections are established indirectly:
+
+* When making an outbound block-relay-only connection, a node sets the boolean flag `fRelay` in the version message to `false`.
+* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
+* `fRelay=false` is also used in *-blocksonly* mode, a low-bandwidth option in which a node does not want to receive transactions from *any peer*, but does participate in address relay.
+
+Therefore, nodes currently don't have a notion which of their incoming peers see the connection as block-relay-only and don't have any logic attached to it.
+
+https://github.com/bitcoin/bitcoin/pull/20726[PR#20726^], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP 338^], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
 
 == P2P message encryption
 
@@ -366,72 +665,7 @@ net.cpp
 1162-    RandAddEvent((uint32_t)id);
 ----
 
-== Bloom filters and SPV
-
-A https://en.wikipedia.org/wiki/Bloom_filter[bloom filter^] is a probabilistic data structure.
-It supports two operations:
-
-. _adding_ an element to the filter
-. _querying_ an element from the filter
-
-If an element has been previously added, then querying for the element will return _true_.
-If an element has not been added, then querying for the element may return _true_ or _false_.
-In other words, querying may return a _false positive_, but will never return a _false negative_.
-
-See the https://en.wikipedia.org/wiki/Bloom_filter[wikipedia page^] for how a bloom filter is implemented with hash functions onto a bitfield.
-Note that the false positive rate depends on the size of the filter and the number of hash functions.
-
-https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^] introduced a new method for https://developer.bitcoin.org/devguide/operating_modes.html#simplified-payment-verification-spv[Simple Payment Verification (SPV)^] clients to use bloom filters to track transactions that affect their addresses.
-BIP 37 was implemented in Bitcoin Core in https://github.com/bitcoin/bitcoin/pull/1795[PR#1795^].
-
-Using the P2P messages defined in BIP 37, an SPV client can request that a full node send it transactions which match a bloom filter.
-The full node will then relay unconfirmed transactions that match the filter, and the client can request https://github.com/bitcoin/bitcoin/blob/608359b071dac82a9cf33a6c9e01f87abfcb90eb/src/merkleblock.h#L127-L132[merkle blocks^], which only contain the transactions that match the filter.
-
-The SPV client chooses the bloom filter parameters (filter size, number of hashes and a 'tweak' for the hashes) and sends them to the node in a `filterload` message.
-
-The original implementation contained a logic bug. If the client sent a `filterload` message with a zero-sized filter, then the serving node could later attempt a divide-by-zero and crash when querying an element from the filter. See https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-5700[CVE-2013-5700^] for further details.
-
-This bug was quietly fixed in https://github.com/bitcoin/bitcoin/pull/2914[PR#2914^] without advertising the reason.
-That fix added the `isFull` and `isEmpty` booleans, which have proven to be confusing for developers.
-
-https://github.com/bitcoin/bitcoin/pull/18806[PR#18806^] removed those `isFull` and `isEmpty` booleans and adds a more straightforward fix for the issue.
-
-== Blocksonly relay
-
-After a block is mined it is broadcast to the p2p network where it will eventually be relayed to all nodes on the network.
-There are two methods available for relaying blocks:
-
-. *Legacy Relay*
-** A node participating in legacy relaying will always send or request entire blocks.
-** For nodes that maintain a mempool this is quite bandwidth inefficient, since they probably already have most of the transactions from a new block in their mempool.
-. *Compact Block Relay*
-** Specified in https://github.com/bitcoin/bips/blob/master/bip-0152.mediawiki[BIP 152^].
-** The goal is to address the bandwidth inefficiencies of legacy relaying by only relaying the transactions of a new block that the requesting peer has not yet seen.
-** Check out this https://bitcoincore.org/en/2016/06/07/compact-blocks-faq/[Compact Blocks FAQ^] for benchmarks and more info.
-
-Bitcoin Core 0.12 introduced a `-blocksonly` setting that can reduce a node's bandwidth usage by 88%.
-The reduction is achieved by not participating in transaction relay.
-For more info check out https://bitcointalk.org/index.php?topic=1377345.0[this post^] on blocksonly mode by Gregory Maxwell.
-Blocksonly nodes currently use compact block relaying to download blocks even though they don't maintain a full mempool.
-
-https://github.com/bitcoin/bitcoin/pull/22340[PR#22340^] makes blocksonly nodes use legacy relaying to download new blocks.
-
-As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]), disables both transaction and address relay.
-Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see <<Eclipse attacks>> for more use cases of these connections).
-
-=== Notifying peers of relay preferences
-
-Currently, block-relay-only connections are established indirectly:
-
-* When making an outbound block-relay-only connection, a node sets the boolean flag `fRelay` in the version message to `false`.
-* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
-* `fRelay=false` is also used in *-blocksonly* mode, a low-bandwidth option in which a node does not want to receive transactions from *any peer*, but does participate in address relay.
-
-Therefore, nodes currently don't have a notion which of their incoming peers see the connection as block-relay-only and don't have any logic attached to it.
-
-https://github.com/bitcoin/bitcoin/pull/20726[PR#20726^], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP 338^], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
-
-=== Peer state in the codebase
+== Peer state
 
 There are two main data structures that handle peer state: `CNode` (defined in `net.h` and covered by `cs_vNodes`) and `CNodeState` (defined in _netprocessing.cpp_ and covered by `cs_main`).
 Roughly speaking, `CNode` is concerned with the _connection_ to the peer, and `CNodeState` is concerned with _application state_ of the peer.
@@ -485,6 +719,7 @@ https://github.com/bitcoin/bitcoin/pull/21090[PR#21090^] removed the final tests
 With those tests removed, the special casing for `-segwitheight=-1` behaviour can also be removed.
 That special casing impacted logic in _net_processing_, _validation_ and _mining_.
 
-== Misc P2P
+== Pinning attacks
 
-* empty
+Perhaps this belongs in mempool?
+

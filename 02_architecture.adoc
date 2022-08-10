@@ -437,3 +437,8 @@ Others are external projects without a tight relationship with our project.
 There is a tool in `test/lint/git-subtree-check.sh` to check a subtree directory for consistency with its upstream repository.
 
 See the full https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#subtrees[subtrees^] documentation for more information.
+
+== Implementation separation
+
+Many of the classes found throughout the codebase use the PIMPL technique to separate their implementation from the external representation.
+See <<pimpl-technique,PIMPL technique>> in the Appendix for more information.
