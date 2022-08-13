@@ -2,7 +2,7 @@
 
 == Purpose
 
-. The mempool is designed to hold a list of unconfirmed but valid-according to the current best-chain transactions that the node knows about.
+. The mempool is designed to hold a list of unconfirmed-but-valid (according to the current best-chain) transactions that the node knows about.
 . Transactions will not be added to the mempool if they do not meet fee requirements, are non-standard or double-spend an input of a transaction already in the mempool (excluding BIP 125 RBF transactions).
 . Transactions have to pass all policy and validation checks before being allowed to enter the mempool.
 . Miners will select transactions from the mempool, along with any other (private) sources they may have, for inclusion into a new block template for mining.
@@ -555,4 +555,8 @@ https://github.com/bitcoin/bitcoin/pull/22855[PR#22855^],
 https://github.com/bitcoin/bitcoin/pull/23381[PR#23381^].
 
 The document https://github.com/bitcoin/bitcoin/blob/master/doc/policy/packages.md[doc/policy/packages.md^] contains current information on the stated package acceptance rules.
+
+== Pinning attacks
+
+glozow describes pinning attacks in her document https://github.com/glozow/bitcoin-notes/blob/master/pinning.md["Pinning zoo"^].
 
