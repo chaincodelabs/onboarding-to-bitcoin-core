@@ -485,9 +485,23 @@ flowchart LR
     srt -- Packages --> process_package
     process_package --> accept_package
     accept_package --> accept_multiple
+
+    classDef P2P fill:red,color:white,stroke:red;
+    classDef Wallet fill:green,color:white,stroke:green;
+    classDef RPC fill:blue,color:white,stroke:blue;
+    class process_msg,process_orphan P2P
+    class submit_relay Wallet
+    class tmpa,srt RPC
 ....
 
 NOTE: Dotted lines represent potential future upgrades
+
+[NOTE]
+====
+P2P network = [red]#Red# +
+Wallet = [green]#Green# +
+RPCs = [blue]#Blue#
+====
 
 TIP: For more information on `PeerManagerImpl` see <<pimpl-technique,PIMPL technique>> in the appendix.
 
@@ -531,8 +545,8 @@ TIP: As you read through the following sub-sections, consider whether making cha
 
 `AcceptToMemoryPool()` (ATMP) is where the checks on single transactions occur before they enter the mempool.
 
-.Simplified `ATMP` call graph
-[mermaid,target=ATMP-call-graph,format=svg,id=ATMP-call-graph]
+.ATMP validation flow chart
+[mermaid,target=ATMP-validation-flow,format=svg,id=ATMP-validation-flow]
 ....
 flowchart TB
     success[MempoolAcceptResult::Success]
@@ -575,7 +589,7 @@ flowchart TB
     class failure, red
 ....
 
-You can see the calls to the various `*Checks()` functions in the <<ATMP-call-graph,call graph>>, and the order in which they are run.
+You can see the calls to the various `*Checks()` functions in the <<ATMP-validation-flow,call graph>>, and the order in which they are run.
 
 Let's take a look inside ``AcceptToMemoryPool()``'s inner function `AcceptSingleTransaction()` which handles running the checks:
 

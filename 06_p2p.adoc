@@ -719,7 +719,3 @@ https://github.com/bitcoin/bitcoin/pull/21090[PR#21090^] removed the final tests
 With those tests removed, the special casing for `-segwitheight=-1` behaviour can also be removed.
 That special casing impacted logic in _net_processing_, _validation_ and _mining_.
 
-== Pinning attacks
-
-Perhaps this belongs in mempool?
-
