@@ -335,6 +335,8 @@ TIP: Transactions are also removed from the set on reorgs, new blocks arriving o
 `PeerManager` schedules `ReattemptInitialBroadcast()` to be run every 10 minutes.
 This function loops over the unbroadcast set and either attempts rebroadcast or removes the transaction from the unbroadcast set if it is no longer in our mempool.
 
+TIP: amiti wrote a https://gist.github.com/amitiuttarwar/b592ee410e1f02ac0d44fcbed4621dba[gist^] on her proposal to improve rebroadcast logic in Bitcoin Core.
+
 == Transaction format in the mempool
 
 A `CTXMemPoolEntry` describes a mempool entry (i.e. transaction) in the mempool.
