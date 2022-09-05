@@ -1,7 +1,7 @@
 = Build system
 
 [source,cpp]
-```
+----
 return Error("Build system section not implemented yet!");
-```
+----
 
