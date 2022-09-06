@@ -22,6 +22,9 @@ The mempool therefore also acts as DoS protection for the node.
 
 There is a bitcoin-devwiki page https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Mempool-and-mining[Mempool and mining^] which includes some additional mempool philosophy.
 
+James O'Beirne has https://github.com/jamesob/mempool.work/blob/master/README.md[written] a comprehensive overview of the current challenges and work in mempool design.
+It "documents the existing design, failures, and vulnerabilities of the mempool as well as some proposals that exist to remedy the shortcomings."
+
 == Mempool policy goals
 
 The documentation subfolder https://github.com/bitcoin/bitcoin/tree/master/doc/policy[doc/policy^] contains up-to-date information on **some**, but not all, of the current mempool policy rules.
