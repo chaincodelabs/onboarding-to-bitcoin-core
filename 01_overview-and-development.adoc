@@ -342,8 +342,8 @@ mkdir build && cd build
 # Run normal build sequence with amended path
 ../autogen.sh
 ../configure --your-normal-options-here
-../make -j `nproc`
-../make check
+make -j `nproc`
+make check
 ----
 
 === Codebase documentation
