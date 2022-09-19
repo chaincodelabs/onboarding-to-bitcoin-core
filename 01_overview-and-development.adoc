@@ -415,7 +415,7 @@ $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
   _(...)_
 }
 $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir createwallet testwallet
-$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir generate 3
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir -generate 3
 {
   "address": "bcrt1qpw3pjhtf9myl0qk9cxt54qt8qxu2mj955c7esx",
   "blocks": [
