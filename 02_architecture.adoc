@@ -2,6 +2,26 @@
 
 TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
 
+Bitcoin Core v0.1 contained 26 source code and header files (*.h/cpp) with _main.cpp_ containing the majority of the business logic.
+As of v23.0 there are more than 800 source files (excluding _bench/_, _test/_ and all subtrees), more than 200 benchmarking and cpp unit tests, and more than 200 python tests and lints.
+
+== General design principles
+
+Over the last decade, as the scope, complexity and test coverage of the codebase has increased, there has been a general effort to not only break Bitcoin Core down from its monolithic structure but also to move towards it being a collection of self-contained subsystems.
+The rationale for such a goal is that this makes components easier to reason about, easier to test, and less-prone to layer violations, as subsystems can contain a full view of all the information they need to operate.
+
+Subsystems can be notified of events relevant to them and take appropriate actions on their own.
+On the GUI/QT side this is handled with signals and slots, but in the core daemon this is largely still a producer/consumer pattern.
+
+The various subsystems are often suffixed with `Manager` or `man`, e.g. `CConnman` or `ChainstateManager`.
+
+TIP: The extra "C" in `CConnman` is a hangover from the https://en.wikipedia.org/wiki/Hungarian_notation[Hungarian notation^] used originally by Satoshi.
+This is being phased out as-and-when affected code is touched during other changes.
+
+You can see some (but not all) of these subsystems being initialized in https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1113[_init.cpp#AppInitMain()_^].
+
+There is a recent preference to favour python over bash/sh for scripting, e.g. for linters, but many shell scripts remain in place for CI and contrib/ scripts.
+
 == bitcoind overview
 
 The following diagram gives a brief overview of how some of the major components in bitcoind are related.
