@@ -692,6 +692,63 @@ These features are optional to usage of Bitcoin, and therefore implementation of
 Simply being _assigned_ a BIP does *not* mean that an idea is endorsed as being a "good" idea, only that it is fully-specified in a way that others could use to re-implement.
 Many ideas are assigned a BIP and then never implemented or used on the wider network.
 
+== Project stats
+
+.Bitcoin Core @ v23.0
+[source,text]
+----
+===============================================================================
+ Language            Files        Lines         Code     Comments       Blanks
+===============================================================================
+ GNU Style Assembly      1          913          742           96           75
+ Autoconf               23         3530         1096         1727          707
+ Automake                5         1803         1505           85          213
+ BASH                   10         1772         1100          438          234
+ Batch                   1            1            1            0            0
+ C                      22        37994        35681         1183         1130
+ C Header              481        72039        43966        17680        10393
+ CMake                   3          901          706           86          109
+ C++                   687       197048       153362        20080        23606
+ Dockerfile              2           43           32            5            6
+ HEX                    29          576          576            0            0
+ Java                    1           23           18            0            5
+ JSON                   94         7964         7626            0          338
+ Makefile               51         2355         1823          198          334
+ MSBuild                 2           88           87            0            1
+ Objective-C++           3          186          134           20           32
+ Prolog                  2           22           16            0            6
+ Python                297        66196        48672         7558         9966
+ Scheme                  1          638          577           29           32
+ Shell                  50         2610         1742          535          333
+ SVG                    20          720          697           15            8
+ Plain Text              6         1125            0         1113           12
+ TypeScript             93       206503       206463            0           40
+ Visual Studio Pro|     16          956          940            0           16
+ Visual Studio Sol|      1          162          162            0            0
+ XML                     2           53           47            0            6
+-------------------------------------------------------------------------------
+ HTML                    2          401          382            0           19
+ |- CSS                  2           98           82            1           15
+ (Total)                            499          464            1           34
+-------------------------------------------------------------------------------
+ Markdown              192        33167            0        26466         6701
+ |- BASH                16          206          173           12           21
+ |- C                    2           53           47            3            3
+ |- C++                  3          345          267           54           24
+ |- INI                  1            7            6            0            1
+ |- Lisp                 1           13           13            0            0
+ |- PowerShell           1            1            1            0            0
+ |- Python               2          346          280           61            5
+ |- Shell                3           21           17            1            3
+ |- XML                  1            4            4            0            0
+ (Total)                          34163          808        26597         6758
+===============================================================================
+ Total                2097       639789       508153        77314        54322
+===============================================================================
+----
+
+Source: https://github.com/XAMPPRocky/tokei[tokei^]
+
 ////
 == Group work
 
