@@ -450,7 +450,7 @@ flowchart LR
     process_msg["PeerManagerImpl::ProcessMessage()"]
     process_block["ProcessBlock()"]
     check_block["CheckBlock()"]
-    check_transaction["CheckTransaction()"]
+    connect_block["ConnectBlock()"]
     process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
     broadcast_tx["BroadcastTransaction()"]
     srt["sendrawtransaction()"]
@@ -474,7 +474,7 @@ flowchart LR
         submit_relay
     end
     process_msg -. Packages ..-> process_package
-    process_msg ---> process_block --> check_block --> check_transaction
+    process_msg ---> process_block --> check_block --> connect_block
     process_msg -- NetMessage::TX --> process_tx
     process_orphan ---> process_tx
     tmpa --> process_tx
@@ -754,97 +754,6 @@ TODO: Fix after adding section on `AcceptPackage`
 
 After this first loop we perform `PackageMempoolChecks()` which first asserts that transactions are not already in the mempool, before checking the "PackageLimits".
 
-=== Transactions from blocks
-
-Transactions learned about from blocks:
-
-* might not be present in our mempool
-* are not being considered for entry into our mempool
-** are therefore not subject to policy-level checks
-
-This means that we can validate these transactions based only on our copy of the UTXO set and the data contained within the block itself.
-
-.Transaction validation from blocks
-[mermaid,target=block-tx-validation,format=svg,id=block-tx-validation]
-....
-flowchart LR
-    process_block["ProcessBlock()"]
-    process_new_block["ProcessNewBlock()"]
-    check_block_header["CheckBlockHeader()"]
-    block_merkle["BlockMerkleRoot()"]
-    check_transaction["CheckTransaction()"]
-    subgraph sub_check_block ["Checkblock()"]
-        direction TB
-        check_block_header --> block_merkle
-        block_merkle --> check_transaction
-    end
-
-    accept_block_header["AcceptBlockHeader()"]
-    check_block_index["CheckBlockIndex()"]
-    check_block["CheckBlock()"]
-    contextual_check_block["ContextualCheckBlock()"]
-    save_block_disk["SaveBlockToDisk()"]
-    recv_block_tx["ReceivedBlockTransactions()"]
-    subgraph sub_accept_block ["AcceptBlock()"]
-        direction TB
-        accept_block_header --> check_block_index
-        check_block_index --> check_block
-        check_block --> contextual_check_block
-        contextual_check_block --> save_block_disk
-        save_block_disk --> recv_block_tx
-    end
-
-    activate_chain["ActivateBestChain()"]
-    process_block --> process_new_block
-    process_new_block --> sub_check_block
-    sub_check_block --> sub_accept_block
-    sub_accept_block --> activate_chain
-....
-
-We call `ProcessBlock()` when processing new blocks received from the P2P network (in _net_processing.cpp_) from net message types: `NetMsgType::CMPCTBLOCK`, `NetMsgType::BLOCKTXN` and `NetMsgType::BLOCK`.
-
-As part of `ProcessBlock()` we end up calling `CheckBlock()` twice: once on the inner `ProcessNewBlock()` and, if this first is successful, once again inside of `AcceptBlock()`.
-We find the following code comment inside `ProcessBlock()`:
-
-._validation.cpp#ChainstateManager::ProcessNewBlock()_
-[source,cpp,options=nowrap]
-----
-    // Skipping AcceptBlock() for CheckBlock() failures means that we will never mark a block as invalid if
-    // CheckBlock() fails.  This is protective against consensus failure if there are any unknown forms of block
-    // malleability that cause CheckBlock() to fail; see e.g. CVE-2012-2459 and
-    // https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-February/016697.html.  Because CheckBlock() is
-    // not very expensive, the anti-DoS benefits of caching failure (of a definitely-invalid block) are not substantial.
-    bool ret = CheckBlock(*block, state, chainparams.GetConsensus());
-    if (ret) {
-        // Store to disk
-        ret = ActiveChainstate().AcceptBlock(block, state, &pindex, force_processing, nullptr, new_block);
-    }
-----
-
-The threat vector being addressed is that a malicious node could create a block (with malleated merkle tree interior) but still have it compute the same merkle root.
-This would lead to nodes marking this block as invalid as expected.
-However, a valid un-malleated block **with the same merkle root**, which we might receive later from an honest peer, would be rejected by our node because we cache "bad" blocks using the `m_blockman.m_dirty_blockindex` set:
-
-._validation.cpp#CChainState::AcceptBlock()_
-[source,cpp,highlight=5,options=nowrap]
-----
-    if (!CheckBlock(block, state, m_params.GetConsensus()) ||
-        !ContextualCheckBlock(block, state, m_params.GetConsensus(), pindex->pprev)) {
-        if (state.IsInvalid() && state.GetResult() != BlockValidationResult::BLOCK_MUTATED) {
-            pindex->nStatus |= BLOCK_FAILED_VALID;
-            m_blockman.m_dirty_blockindex.insert(pindex);
-        }
-        return error("%s: %s", __func__, state.ToString());
-    }
-----
-
-The rationale for caching bad blocks is so that we don't expend resources re-validating and propagating them, opening ourselves and the wider network up to a DoS vector, where an attacker can flood nodes with invalid blocks and hope they expend resources gossiping and re-validating them.
-
-Therefore we call `CheckBlock()` first, and only try `AcceptBlock()` if this passes.
-
-Note here how the developers have had to balance consideration for sensitive validation code, staying in consensus with the rest of the network and avoiding potential P2P DoS attacks.
-This type of thinking is common across the codebase.
-
 === PreChecks
 
 The code comments for `PreChecks` give a clear description of what the PreChecks are for:
@@ -1030,6 +939,137 @@ This check is unique to packages because we can now add descendants whose ancest
 Provided that consensus script checks pass and this was not a test ATMP call, we will call `Finalize()` on the transaction.
 This will remove any conflicting (lower fee) transactions from the mempool before adding this one, finishing by trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
 In the event that *this* transaction got trimmed, we ensure that we return a `TxValidationResult::TX_MEMPOOL_POLICY, "mempool full"` result.
+
+=== Transactions from blocks
+
+Transactions learned about from blocks:
+
+* Might not be present in our mempool
+* Are not being considered for entry into our mempool and therefore do not have to pass policy checks
+* Are only subject to consensus checks
+
+This means that we can validate these transactions based only on our copy of the UTXO set and the data contained within the block itself.
+We call `ProcessBlock()` when processing new blocks received from the P2P network (in _net_processing.cpp_) from net message types: `NetMsgType::CMPCTBLOCK`, `NetMsgType::BLOCKTXN` and `NetMsgType::BLOCK`.
+
+
+.Abbreviated block transaction validation
+[mermaid,target=block-tx-validation,format=svg,id=block-tx-validation]
+....
+flowchart LR
+    process_block["ProcessBlock()"]
+    process_new_block["ProcessNewBlock()"]
+    check_block_header["CheckBlockHeader()"]
+    block_merkle["BlockMerkleRoot()"]
+    check_transaction["CheckTransaction()"]
+    subgraph sub_check_block ["Checkblock()"]
+        direction TB
+        check_block_header --> block_merkle
+        block_merkle --> check_transaction
+    end
+
+    accept_block_header["AcceptBlockHeader()"]
+    check_block_index["CheckBlockIndex()"]
+    check_block["CheckBlock()"]
+    contextual_check_block["ContextualCheckBlock()"]
+    save_block_disk["SaveBlockToDisk()"]
+    recv_block_tx["ReceivedBlockTransactions()"]
+    subgraph sub_accept_block["AcceptBlock()"]
+        direction TB
+        accept_block_header --> check_block_index
+        check_block_index --> check_block
+        check_block --> contextual_check_block
+        contextual_check_block --> save_block_disk
+        save_block_disk --> recv_block_tx
+    end
+
+    activate_best_chain_step["ActivateBestChainStep()"]
+    connect_tip["ConnectTip()"]
+    connect_block["ConnectBlock()"]
+
+    subgraph activate_chain["ActivateBestChain()"]
+        direction TB
+        activate_best_chain_step --> connect_tip
+        connect_tip --> connect_block
+    end
+
+    process_block --> process_new_block
+    process_new_block --> sub_check_block
+    sub_check_block --> sub_accept_block
+    sub_accept_block --> activate_chain
+....
+
+The general flow of `ProcessBlock()` is that will call `CheckBlock()`, `AcceptBlock()` and then `ActivateBestChain()`.
+A block which has passed successfully through `CheckBlock()` and `AcceptBlock()` has *not* passed full consensus validation.
+
+`CheckBlock()` does some cheap, context-independent structural validity https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3242-L3314[checks^], along with (re-)checking the proof of work in the header, however these checks just determine that the block is "valid-enough" to proceed to `AcceptBlock()`.
+
+Once the checks have been completed, the `block.fChecked` value is set to `true`.
+This will enable any subsequent calls to this function _with this block_ to be skipped.
+
+`AcceptBlock()` is used to persist the block to disk so that we can (validate it and) add it to our chain immediately, use it later, or discard it later.
+`AcceptBlock()` makes a second call to `CheckBlock()` but because `block.fChecked` was set to `true` on the first pass this second check will be skipped.
+
+TIP: `AcceptBlock()` contains an inner call to `CheckBlock()` because it can also be called directly by `CChainState::LoadExternalBlockFile()` where `CheckBlock()` will not have been previously called.
+
+It also now runs some https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3662-L3663[contextual checks^] such as checking the block time, transaction lock times (transaction are "finalized") and witness commitments are either non-existent of valid (https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3412-L3492[link^]).
+After this the block will be serialized to disk.
+
+[NOTE]
+====
+At this stage we might still be writing blocks to disk that will fail full consensus checks.
+However, if they have reached here they have passed proof of work and structural checks, so consensus failures may be due to us missing intermediate blocks, or that there are competing chain tips.
+In these cases this block may still be useful to us in the future.
+====
+
+Once the block has been written to disk by `AcceptBlock()` full validation of the block and its transactions begins via `CChainState::ActivateBestChain()` and its inner call to `ActivateBestChainStep()`.
+
+////
+As part of `ProcessBlock()` we end up calling `CheckBlock()` twice: once on the inner `ProcessNewBlock()` and, if this first is successful, once again inside of `AcceptBlock()`.
+We find the following code comment inside `ProcessBlock()`:
+
+._validation.cpp#ChainstateManager::ProcessNewBlock()_
+[source,cpp,options=nowrap]
+----
+    // Skipping AcceptBlock() for CheckBlock() failures means that we will never mark a block as invalid if
+    // CheckBlock() fails.  This is protective against consensus failure if there are any unknown forms of block
+    // malleability that cause CheckBlock() to fail; see e.g. CVE-2012-2459 and
+    // https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-February/016697.html.  Because CheckBlock() is
+    // not very expensive, the anti-DoS benefits of caching failure (of a definitely-invalid block) are not substantial.
+    bool ret = CheckBlock(*block, state, chainparams.GetConsensus());
+    if (ret) {
+        // Store to disk
+        ret = ActiveChainstate().AcceptBlock(block, state, &pindex, force_processing, nullptr, new_block);
+    }
+----
+
+The threat vector being addressed is that a malicious node could create a block (with malleated merkle tree interior) but still have it compute the same merkle root.
+This would lead to nodes marking this block as invalid as expected.
+However, a valid un-malleated block **with the same merkle root**, which we might receive later from an honest peer, would be rejected by our node because we cache "bad" blocks using the `m_blockman.m_dirty_blockindex` set:
+
+._validation.cpp#CChainState::AcceptBlock()_
+[source,cpp,highlight=5,options=nowrap]
+----
+    if (!CheckBlock(block, state, m_params.GetConsensus()) ||
+        !ContextualCheckBlock(block, state, m_params.GetConsensus(), pindex->pprev)) {
+        if (state.IsInvalid() && state.GetResult() != BlockValidationResult::BLOCK_MUTATED) {
+            pindex->nStatus |= BLOCK_FAILED_VALID;
+            m_blockman.m_dirty_blockindex.insert(pindex);
+        }
+        return error("%s: %s", __func__, state.ToString());
+    }
+----
+
+The rationale for caching bad blocks is so that we don't expend resources re-validating and propagating them, opening ourselves and the wider network up to a DoS vector, where an attacker can flood nodes with invalid blocks and hope they expend resources gossiping and re-validating them.
+
+Therefore we call `CheckBlock()` first, and only try `AcceptBlock()` if this passes.
+
+Note here how the developers have had to balance consideration for sensitive validation code, staying in consensus with the rest of the network and avoiding potential P2P DoS attacks.
+This type of thinking is common across the codebase.
+////
+
+////
+TODO: Note that the primary validation occurs inside `ConnectBlock()`, not `CheckBlock()` and `AcceptBlock()`
+////
 
 == Multiple chains
 
