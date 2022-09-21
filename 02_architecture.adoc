@@ -82,10 +82,10 @@ flowchart LR
 |`PeerManager`
 |Manage peer state and interaction e.g. processing messages, fetching blocks & removing for misbehaviour
 
-|`BlockManger`
+|`BlockManager`
 |Maintains a tree of blocks on disk (via LevelDB) to determine most-work tip
 
-|`ScriptPubKeyman`
+|`ScriptPubKeyMan`
 |Manages `scriptPubKeys` in a wallet. Can give out new `scriptPubKeys` as well as call into a `SigningProvider` to sign transactions
 
 |===
@@ -135,7 +135,7 @@ flowchart LR
 |`WalletDatabase`
 |Represents a single wallet. Handles reads and writes to disk
 
-|`ScriptPubKeyman`
+|`ScriptPubKeyMan`
 |Base class for the below SPKM classes to override before being used by `CWallet`
 
 |`DescriptorScriptPubKeyMan`
@@ -230,11 +230,11 @@ flowchart LR
 
     TR2["test_runner (fuzz)"]
     fuzz_targets --> fuzz
-    fuzz --> src/tests
+    fuzz --> src/test
     libFuzzer -.-> fuzz
     TR2 --> fuzz
     qa-assets -.-> fuzz
-    unit --> src/tests
+    unit --> src/test
     Boost --> unit
     test_bitcoin --> unit
 
@@ -309,7 +309,7 @@ The Bitcoin Core Developer https://github.com/bitcoin/bitcoin/blob/master/doc/de
 
 |`b-net`
 |`ThreadSocketHandler`
-|Sends/Receives data from peers on port 833
+|Sends/Receives data from peers on port 8333
 
 |`b-addcon`
 |`ThreadOpenAddedConnections`

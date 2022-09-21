@@ -552,7 +552,7 @@ This can feel hard when veteran contributors appear to drop by and with a single
 
 Although there are again no hard "rules" or "measurement" systems regarding (N)ACKs, maintainers -- who's job it is to measure whether a change has consensus before merging -- will often use their discretion to attribute more weight behind the (N)ACKs of contributors that they feel have a good understanding of the codebase in this area.
 
-This make sense for many reasons, but lets imagine the extreme scenario where members of a Reddit/Twitter thread (or other group) all "https://www.dictionary.com/e/slang/brigading/[brigade]" a certain pull request on GitHub, filling it with tens or even hundreds of NACKs...
+This makes sense for many reasons, but lets imagine the extreme scenario where members of a Reddit/Twitter thread (or other group) all "https://www.dictionary.com/e/slang/brigading/[brigade]" a certain pull request on GitHub, filling it with tens or even hundreds of NACKs...
 In this scenario it makes sense for a maintainer to somewhat reduce the weighting of these NACKs vs the (N)ACKs of regular contributors:
 
 We are not sure which members of this brigade:
@@ -562,7 +562,7 @@ We are not sure which members of this brigade:
 * Understand the impact and repercussions of the change
 
 Whereas we can be more sure that regular contributors **and** those respondents who are providing additional rationale in addition to their (N)ACK, have some understanding of this nature.
-Therefore it make sense that we should weight regular contributors' responses, and those with additional compelling rationale, more heavily than GitHub accounts created yesterday which reply with a single word (N)ACK.
+Therefore it makes sense that we should weight regular contributors' responses, and those with additional compelling rationale, more heavily than GitHub accounts created yesterday which reply with a single word (N)ACK.
 
 From this extreme example we can then use a sliding scale to the other extreme where, if a proven expert in this area is providing a lone (N)ACK to a change, that we should perhaps step back and consider this more carefully.
 
@@ -610,7 +610,7 @@ TODO: Add questions on current architecture of Core
 
 == Organisation & roles
 
-The objective of the Bitcoin Core Organisation is to represent an entity that is decentralized as much as practically possible on a centralised platform
+The objective of the Bitcoin Core Organisation is to represent an entity that is decentralized as much as practically possible on a centralised platform.
 One where no single Contributor, Member, or Maintainer has unilateral control over what is/isn't merged into the project.
 Having multiple Maintainers, Members, Contributors, and Reviewers gives this objective the best chance of being realised.
 
