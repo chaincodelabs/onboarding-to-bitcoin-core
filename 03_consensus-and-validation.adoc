@@ -119,12 +119,14 @@ int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1_ecdsa_
 
 There were a few cases to consider:
 
-. first party malleation: signature length descriptor is extended to 5 bytes
+. signature length descriptor malleation (extension to 5 bytes)
 . third party malleation: signature may be slightly "tweaked" or padded
 . third party malleation: negating the `S` value of the signature
 
 In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
-The first party (the sender) can create a normal-length valid signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
+The sender can create a normal-length valid signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
+
+TIP: Note that the sender can also "malleate" the signature whenever they like, by simply creating a new one, but this will be handled differently than a length-descriptor-extended signature.
 
 In the second case, signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
 However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning) in the event that they are relying on txids to track transactions.
