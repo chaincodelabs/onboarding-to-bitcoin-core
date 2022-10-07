@@ -62,10 +62,10 @@ An abbreviated list of some of the more notable consensus functions and variable
 |`CheckTransaction()`
 
 |_src/consensus/tx_verify.{h\|cpp}_
-|`CheckTxInputs(),` `Get{Legacy}SigOpCount()`, `IsFinal(),` `SequenceLock(s)()`
+|`CheckTxInputs(),` `Get{Legacy}SigOpCount()`, `IsFinalTx(),` `SequenceLock(s)()`
 
 |_src/consensus/validation.h_
-|`TxValidationResult` (validation result reason), `BlockValidationresult` (validation result reason), `ValidationState`, `Get{Transaction\|Block\|TransactionInput}Weight()`
+|`TxValidationResult` (validation result reason), `BlockValidationResult` (validation result reason), `ValidationState`, `Get{Transaction\|Block\|TransactionInput}Weight()`
 
 |===
 
@@ -788,7 +788,7 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
 
 [TIP]
 ====
-We purposefully run checks in this order so that the least computationally-expensive checks are fun first.
+We purposefully run checks in this order so that the least computationally-expensive checks are run first.
 This means that we can hopefully fail early and minimise CPU cycles used on invalid transactions.
 ====
 
