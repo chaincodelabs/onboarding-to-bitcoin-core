@@ -1245,7 +1245,7 @@ There are a number of different states which the client must be able to handle:
 
 `BlockManager` is tasked with maintaining a tree of all blocks learned about, along with their total work so that the most-work chain can be quickly determined.
 
-`CChainState` is responsible for updating our local view of the best tip, including reading and writing blocks to disk, and updating the UTXO set.
+`CChainstate` (https://github.com/bitcoin/bitcoin/pull/24513[renamed^] to `Chainstate` in v24.0) is responsible for updating our local view of the best tip, including reading and writing blocks to disk, and updating the UTXO set.
 A single `BlockManager` is shared between all instances of `CChainState`.
 
 `ChainstateManager` is tasked with managing multiple ``CChainState``s.
