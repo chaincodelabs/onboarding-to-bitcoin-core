@@ -349,7 +349,7 @@ If this is still unsuccessful it increases the number of ancestors and descendan
 This function is orchestrating the <<GroupOutputs,Output group>> creation, and then the <<selectCoins,coin selection>>.
 Currently, this is always based on the <<coin-selection,waste metric>>.
 
-It is using 3 metrics and then selecting the "best" of the three (based on waste):
+It is using 3 algorithms and then selecting the "best" of the three (based on the waste metric):
 
 . Branch n bound (bnb)
 . Knapsack
@@ -362,10 +362,10 @@ Due to this plan for removal, it would not make sense to focus development effor
 
 Once the coins have been selected they are returned back to `CreateTransactionInternal()`, which will create the final transaction.
 
-Right now when we determine the change output, we don't use what `selectrionResult` says the change output should be.
-What we actually do is make the tx with in? ouputs and set the change amount to be the sum inputs-ouputs, so the change amount includes the transaction fee.
-To get the correct change amount we now calculate the size of this after signing, we use dummysigner to add a summy signature (74 0's and the correct script), and now we can calculate the correct fee.
-We reduce that fee from the change output amount, and if this now goes below *some threshold?* (the "cost of change" thing from BnB) or if it is dust we drop the change ouput and add it's value to the fee.
+Right now when we determine the change output, we don't use what `selectionResult` says the change output should be.
+What we actually do is make the tx with in? outputs and set the change amount to be the sum inputs-outputs, so the change amount includes the transaction fee.
+To get the correct change amount we now calculate the size of this after signing, we use dummysigner to add a dummy signature (74 0's and the correct script), and now we can calculate the correct fee.
+We reduce that fee from the change output amount, and if this now goes below *some threshold?* (the "cost of change" thing from BnB) or if it is dust we drop the change output and add it's value to the fee.
 
 So now we have an unsigned tx which we need to sign.
 
@@ -400,7 +400,7 @@ TIP: For more information on `*Impl` classes see <<pimpl-technique,PIMPL techniq
 The wallet component is initialized via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/blob/v23.0/src/walletinitinterface.h#L14-L26[_src/walletinitinterface.h_^].
 The member functions are marked as virtual in the `WalletInitInterface` definition, indicating that they are going to be overridden later by a derived class.
 
-Both _walletinit.cpp_ and _dummywallet.cpp_ include derived classes which override the member functions of `WalletInitInterface`, depending on whether the wallet is being compiled in or not.
+Both _wallet/init.cpp_ and _dummywallet.cpp_ include derived classes which override the member functions of `WalletInitInterface`, depending on whether the wallet is being compiled in or not.
 
 The primary https://github.com/bitcoin/bitcoin/blob/v23.0/src/Makefile.am#L389-L394[_src/Makefile.am_^] describes which of these modules is chosen to override: if `./configure` has been run with the wallet feature enabled (default), then _wallet/init.cpp_ is added to the sources, otherwise (`./configure --disable-wallet`) _dummywallet.cpp_ is added:
 
@@ -491,7 +491,7 @@ _init.cpp_ is run on a single thread.
 This means that calls to wallet code block further initialisation of the node.
 
 The `interfaces::Chain` object taken as argument by `LoadWallets()` is used to pass back any error messages, exactly as it was in <<VerifyWallets,`VerifyWallets()`>>.
-More information on `AddWallet()` can be https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L110-L120[found in _src/wallet.cpp_.
+More information on `AddWallet()` can be https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L110-L120[found in _src/wallet.cpp_].
 
 === StartWallets
 
@@ -552,7 +552,7 @@ In addition to these higher level functions, most of ``CWallet``'s private membe
 
 === Other wallet locks
 
-. _src/wallet/bdb.cpp_, which is responsible for managing BDB wallet databases on disk, has it's own mutex `cs_db`.
+. _src/wallet/bdb.cpp_, which is responsible for managing BDB wallet databases on disk, has its own mutex `cs_db`.
 . If external signers have been enabled (via `./configure --enable-external-signer`) then they too have their own mutex `cs_desc_man` which is acquired when descriptors are being setup.
 . `BlockUntilSyncedToCurrentChain()` has a unique lock exclude placed on it to prevent the caller from holding `cs_main` during its execution, and therefore prevent a possible deadlock:
 +
