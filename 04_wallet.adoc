@@ -190,6 +190,7 @@ This prompts the wallet to https://github.com/bitcoin/bitcoin/blob/v23.0/src/wal
 As part of the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1100[check^], we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1394-L1396[loop^] over the wallet's ``scriptPubkeyMan``s to check if any of the scripts belong to us.
 
 If a script does belong to us, it will be inserted into `mapWallet` along with some metadata related to the time.
+`mapWallet` contains all the transactions the wallet is interested in, including received and sent transactions.
 
 When we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L237[load^] a wallet into memory, we iterate all `TxSpends`.
 `TxSpends` stores wallet transactions which were already spend and confirmed.
