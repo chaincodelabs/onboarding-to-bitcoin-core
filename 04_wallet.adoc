@@ -362,7 +362,7 @@ Due to this plan for removal, it would not make sense to focus development effor
 
 Once the coins have been selected they are returned back to `CreateTransactionInternal()`, which will create the final transaction.
 
-Right now when we determine the change output, we don't use what `selectrionResult` says the change output should be.
+Right now when we determine the change output, we don't use what `selectionResult` says the change output should be.
 What we actually do is make the tx with in? ouputs and set the change amount to be the sum inputs-ouputs, so the change amount includes the transaction fee.
 To get the correct change amount we now calculate the size of this after signing, we use dummysigner to add a summy signature (74 0's and the correct script), and now we can calculate the correct fee.
 We reduce that fee from the change output amount, and if this now goes below *some threshold?* (the "cost of change" thing from BnB) or if it is dust we drop the change ouput and add it's value to the fee.
