@@ -283,10 +283,13 @@ We use the `IsMine` filters in many places, primarily to distinguish between spe
 `IsMine::All`:: spendable and watch-only (use for legacy wallet)
 `IsMine::Used`:: not used by `IsMine`, but instead used as a filter for tracking when addresses have been reused.
 
-There is a PR https://github.com/bitcoin/bitcoin/pull/19602[open^] which aims to permit migration of legacy wallets -> descriptor form.
-But for now (2022) it's still relevant to have stuff related to legacy wallet in documentation.
+[sidebar]
+****
+PR https://github.com/bitcoin/bitcoin/pull/19602[19602^] enables migration of legacy wallets -> descriptor wallets from Bitcoin Core version 24.0.
+Although legacy wallets are now effectively end of life it's still relevant to have documentation for legacy wallets.
+****
 
-See the section on <<ismine-enum,IsMine>> below for more in-depth information on `IsMine`.
+See the section on how wallets determine whether transactions belong to them using the <<ismine-enum,IsMine>> enum for more in-depth information.
 
 === Conflict tracking
 
