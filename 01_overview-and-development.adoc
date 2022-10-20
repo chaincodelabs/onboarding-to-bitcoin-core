@@ -446,6 +446,22 @@ $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir stop
 You may stop and restart the node and it will use the existing state.
 (Simply remove the data directory to start again from scratch.)
 
+==== Testnet
+
+Testnet is a public bitcoin network where mining is performed in the usual way (hashing) by decentralized miners.
+
+However, due to much lower hashrate (than mainnet), testnet is susceptible extreme levels of inter-block volatility due to the way the difficulty adjustment (DA) works: if a mainnet-scale miner wants to "test" their mining setup on testnet then they may cause the difficulty to increase greatly.
+Once the miner has concluded their tests they may remove all hashpower from the network at once.
+This can leave the network with a high difficulty which the DA will take a long time to compensate for.
+
+Therefore a https://en.bitcoin.it/wiki/Testnet#Differences["20 minute" rule^] was introduced such that the difficulty would reduce to the minimum for one block before returning to its previous value.
+This ensures that there are no intra-block times greater than 20 minutes.
+
+However there is a bug in the implementation which means that if this adjustment occurs on a difficulty adjustment block the difficulty is lowered to the minimum for one block but then not reset, making it permanent rather than a one-off adjustment.
+This will result in a large number of blocks being found until the DA catches up to the level of hashpower on the network.
+
+It's usually preferable to test private changes on a local regtest, or public changes on a Signet for this reason.
+
 ==== Manual testing while running a functional test
 
 Running regtest as described allows you to start from scratch with an empty chain, empty wallet, and no existing state.
