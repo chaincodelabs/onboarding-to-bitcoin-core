@@ -137,13 +137,23 @@ If the attack succeeds, the victim will make all of its connections to the adver
 https://github.com/bitcoin/bitcoin/issues/17326[Issue 17326^] proposed persisting the node's outbound connection list to disk, and on restart reconnecting to the same peers.
 It's worth reading the full discussion in that issue, since there are a lot of subtle points around which peers should be persisted.
 
-=== block-relay-only connections
+https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks(bitcoin-devwiki)^] attempts to describe the mechanisms implemented in Bitcoin Core to mitigate eclipse attacks followed by open questions and areas of further research.
 
-`block-relay-only` connections are a type of connection where nodes do not participate in transaction or address relay and only relay blocks.
-An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks.
-`block-relay-only` connections were introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^].
+=== Identification of the network topology
+
+If a malicious entity was able to identify the topography of the network then they could see that by taking specific nodes down, maybe via a DOS service or any attack that they can use, they can cause a partition in the entire network.
+
+There are <<_message_relay, three main messages that are gossiped around the network>> and **each message offers a unique set of information that allows an adversary to identify who your neighbors are**. 
+
+<<_block_relay,Block relay>> leaks the least information and we can leverage that for a feature called `block-relay-only` connections, a type of connection where nodes do not participate in transaction or address relay and only relay blocks.
+An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so **these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks**.
+
+https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^] introduced `block-relay-only` connections.
 After these changes, nodes by default open two outbound block-relay-only connections on startup.
-https://github.com/bitcoin/bitcoin/pull/17428[PR#17428^] added functionality to preserve outbound `block-relay-only` connections during restart.
+
+https://github.com/bitcoin/bitcoin/pull/17428[PR#17428^] introduced the idea of anchors, persist peers to reconnect after restart.
+If you persist the connection to some peers is great for reliability but it would not be very good for privacy if we were to reconnect to the full relay connections.
+So instead, we use the `block-relay-only` connections and reconnect to those.
 
 https://github.com/bitcoin/bitcoin/pull/19858[PR#19858^] proposes a more advanced use of block-relay-only connections to further mitigate eclipse attacks.
 The node will periodically initiate an _additional_ block-relay-only connection which it uses only to sync headers in order to try and learn about new blocks.
