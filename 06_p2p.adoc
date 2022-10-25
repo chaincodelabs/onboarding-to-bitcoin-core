@@ -685,12 +685,22 @@ net.cpp
 
 == Peer state
 
-There are two main data structures that handle peer state: `CNode` (defined in `net.h` and covered by `cs_vNodes`) and `CNodeState` (defined in _netprocessing.cpp_ and covered by `cs_main`).
-Roughly speaking, `CNode` is concerned with the _connection_ to the peer, and `CNodeState` is concerned with _application state_ of the peer.
+Peer state is divided into two types:
+
+* **Network/Connection state**; any low level stuff, sending/receiving bytes, keeping statistics, eviction logic, etc.
+* **Application state**; any data that is transmitted within P2P message payloads, and the processing of that data. 
+Examples are tx inventory, addr gossiping, ping/pong processing.
+
+There are three main data structures that handle peer state:
+
+* `CNode` (defined in `net.h`, used by `m_nodes`(`CConnman`) and covered by `m_nodes_mutex`) is concerned with the **connection state** of the peer.
+* `CNodeState` (defined in `netprocessing.cpp`, used by `m_node_states`(`PeerManager`) and covered by `cs_main`) is concerned with the **application state** of the peer. 
+** It maintains validation-specific state about nodes, therefore guarded by `cs_main`.
+* `Peer` (defined in `netprocessing.cpp`, used by `m_peer_map`(`PeerManager`) and covered by `m_peer_mutex`) is concerned with the **application state** of the peer. 
+** It doesn't contain validation-critical data, therefore it is not guarded by `cs_main`
+
 However, there is still some _application state_ contained in `CNode` for historic reasons.
-//TODO: has this now been moved?
-This should be moved out of `CNode` eventually.
-An example of the _application state_ data that is contained in `CNode` is the inventory data protected by `cs_inventory` (see https://github.com/bitcoin/bitcoin/blob/adff8fe32101b2c007a85415c3ec565a7f137252/src/net.h#L716).
+https://github.com/bitcoin/bitcoin/issues/19398[Issue 19398^] outlines the process to eventually move this out of `CNode` as well as the reasoning behind the introduction of the `Peer` struct.
 
 == P2P violations
 
