@@ -38,25 +38,24 @@ The document, which is worth reading in its entirely, continues by assuming the 
 
 :amiti-attacking: https://btctranscripts.com/la-bitdevs/2020-04-16-amiti-uttarwar-attacking-bitcoin-core/
 
-Uttarwar created a framework of 5 goals she sees for the P2P network.
-These are that it should be:
+Amiti Uttarwar created a framework of 5 goals she sees for the P2P network.
 
-. Reliable
-. Timely
-. Accessible
-. Private
-. Upgradable
+TLDR; We want valid messages to make it out to the network (**reliable**) in a reasonable amount of time (**timely**) and for nodes to be able to get onto the network and stay on the network of their own accord (**accesible**).
+These three values seem quite important for any peer-to-peer network to be successful but in Bitcoin we have two additional.
+**Privacy** because it is money and **upgradeability** because of the ethos of Bitcoin.
 
-If a node sends a P2P message the network should be **reliable** and eventually deliver it to all other nodes on the network.
+. **Reliable**; if a node submits a valid message to the network it will eventually be delivered to all other nodes on the network.
+. **Timely**; each of the messages have to make it out in a reasonable amount of time.
+    * Reasonable amount of time for a transaction is different than for a block and reasonable amount of time for a block to be propagated for a normal user versus a miner is very different as well.
+. **Accessible**; the requirement to be able to participate must be low. Also an adversary shouldn’t be able to keep a node off the network.
+    * Currently it is still possible to run a full Bitcoin Core node on a Raspberry Pi which is a low barrier-to-entry.
+. **Private**; because it is money and fundamentally it comes down to the idea of not wanting to connect your real world identity with your onchain interactions.
+. **Upgradeable**; stems from the ethos that if a user decides to buy into the rule set at a specific point in time they should always be able to transact with the rule set they initially bought into.
 
-P2P message delivery should be done in a **timely** fashion, where the definition of "timely" might differ depending on which type of message is being sent (block, tx, address, other).
-
-The P2P network must be **accessible** by even low-powered devices.
-Currently it is still possible to run a full Bitcoin Core node on a Raspberry Pi which is a low barrier-to-entry.
-
-Because the network deals with financial transactions in a fully-public way, it should also be **private** enough that you don't need to tie your real-world identity to your node's identity.
-
-The network should be **upgradable** so that users who want to use new features are free to do so by upgrading, whilst at the same time permitting those who do not want to upgrade to also continue to transact.
+**Reliability** vs **Privacy** can seem at odds with one another as is really hard to design and achieve both of them at the same time. 
+For example, **value long-lasting connections**, can help for reliable delivery but **comes against privacy**. 
+**Dynamic connections** help maintain transaction privacy, but **comes against reliability**.
+Reliability is you want to tell everyone your message, but privacy is you don’t want them to know that it is your message. 
 
 See the {amiti-attacking}[transcript^] for more detail on each of those points.
 
