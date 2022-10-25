@@ -637,6 +637,40 @@ That fix added the `isFull` and `isEmpty` booleans, which have proven to be conf
 
 https://github.com/bitcoin/bitcoin/pull/18806[PR#18806^] removed those `isFull` and `isEmpty` booleans and adds a more straightforward fix for the issue.
 
+==== Compact Block Filters for Light Clients
+
+Compact Block Filters were introduced with BIP 157/158 as an improvement upon Bloom filters, as used in BIP 37. 
+**Instead of the client sending a filter** to a full node peer, **full nodes generate deterministic filters on block data that are served to the client**.
+The light client gets these filters from the server and checks for itself if any of its objects match what is seen in the filter.
+If it does match, then the light client asks for the full block.
+
+https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki[BIP 158^] describes a structure for compact filters on block data.
+It specifies one filter type called **Basic block filters**, which encodes the scriptPubKeys of all the UTXOs spent in the block, and the scriptPubKeys of all the new UTXOs created in the block. 
+**This is the only block filter currently supported**.
+https://github.com/bitcoin/bitcoin/pull/12254[PR#12254^] implemented compact block filters in Bitcoin Core, and https://github.com/bitcoin/bitcoin/pull/14121[PR#14121^] added a new index (`-blockfilterindex=1`), which stores the compact block filters for blocks that have been validated. 
+
+https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki[BIP 157^] is the proposed specification for requesting and sending compact filters between nodes on the p2p network. 
+It was implemented with a series of PRs, demonstrated in https://github.com/bitcoin/bitcoin/pull/18876[PR#18876^].
+
+Benefits:
+
+* Less asymmetry in the client. 
+If light clients request a filter for a block, the server wont have to do any more work than the client had to do when making the request.
+* More privacy and less trust. 
+The light client no longer sends a fingerprint of the data it is interested in to the server, and so it becomes way more difficult to analyse the light client’s activity.
+* Conceptually, BIP158's Golomb-Coded Set (GCS) filter is similar to a Bloom filter (no false negatives, a controllable rate of false positives), but more compact.
+
+Downsides:
+
+* They require more disk space because of the overhead that comes with the new index.
+* GCS filters are write-once (you can't update them once created), and querying is much slower.
+** Bloom filters are effectively `O(n)` for finding `n` elements in them.
+GCS are `O(m+n)` for finding `n` elements in a filter of size `m`.
+So, Bloom filters are way faster if you're only going to do one or a few queries. 
+But as you're querying for larger and larger number of elements, the relative downside of a GCS's performance goes down.
+
+NOTE: **glimpse of the future**; https://github.com/bitcoin/bitcoin/pull/25957[PR#25957^] uses BIP 157 block filters for faster wallet rescans.
+
 === Notifying peers of relay preferences
 
 Currently, block-relay-only connections are established indirectly:
