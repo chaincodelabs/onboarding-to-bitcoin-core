@@ -22,4 +22,6 @@ include::09_build-system.adoc[]
 
 include::appendix.adoc[]
 
+include::glossary.adoc[]
+
 :leveloffset: -1
