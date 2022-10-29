@@ -205,6 +205,8 @@ flowchart LR
 
 |===
 
+Bitcoin Core is also introducing (functional) "stress tests" which challenge the program via interruptions and missing files to ensure that we fail gracefully, e.g. the tests introduced in https://github.com/bitcoin/bitcoin/pull/23289[PR#23289^].
+
 === Test directory structure
 
 The following diagram gives a brief overview of how the tests are structured within the source directory.
