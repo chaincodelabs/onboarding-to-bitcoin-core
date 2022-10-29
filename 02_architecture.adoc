@@ -242,6 +242,10 @@ flowchart LR
     class functional,lint,util,fuzz,unit types
 ....
 
+=== Test coverage
+
+Bitcoin Core's test coverage reports can be found https://marcofalke.github.io/btc_cov/[here^].
+
 == Threads
 
 The `main()` function starts the main bitcoind process thread, usefully named `bitcoind`.
