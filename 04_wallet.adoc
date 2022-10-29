@@ -734,7 +734,7 @@ The change to a `CWallet` made up of (multiple) ``{Descriptor|Legacy}ScriptPubKe
 Legacy wallets used the "keypool" model which stored a bunch of keys.
 See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/scriptpubkeyman.h#L52-L100[_src/wallet/scriptbpubkeyman.h_#L52-L100^] for historical context on the "keypool" model.
 
-The wallet would then simply iterate over each public key and generate a create scriptPubKey (a.k.a. pubkey script) and address for each type of script the wallet supported.
+The wallet would then simply iterate over each public key and generate a scriptPubKey (a.k.a. PubKey script) and address for each type of script the wallet supported.
 However this approach has a number of shortcomings (from least to most important):
 
 . One key could have multiple addresses
@@ -764,7 +764,7 @@ The first thing to notice is that `CWallet` implements the `interfaces::Chain::N
 class CWallet final : public WalletStorage, public interfaces::Chain::Notifications
 ----
 
-This interface givers the wallet the ability to receive notifications such as `transactionAddedToMempool`, `transactionRemovedFromMempool`, `blockConnected` and so on.
+This interface gives the wallet the ability to receive notifications such as `transactionAddedToMempool`, `transactionRemovedFromMempool`, `blockConnected` and so on.
 The names of these methods are self-explanatory.
 
 To register itself as notification client, the wallet has the `std::unique_ptr<interfaces::Handler> m_chain_notifications_handler` attribute and it is initialized in `CWallet::AttachChain(...)` method.
