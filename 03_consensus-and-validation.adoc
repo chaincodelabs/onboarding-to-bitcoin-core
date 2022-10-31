@@ -937,7 +937,7 @@ These checks are designed to check that BIP125 RBF rules are being adhered to.
 
 === PolicyScriptChecks
 
-Following `ReplacementChecks`` we initialise a `PrecomputedTransactionData` struct in the `Workspace` which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
+Following `ReplacementChecks` we initialise a `PrecomputedTransactionData` struct in the `Workspace` which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
 
 .Click to show the `PrecomputedTransactionData` struct
 [%collapsible]
@@ -1121,7 +1121,7 @@ flowchart LR
     check_block_header["CheckBlockHeader()"]
     block_merkle["BlockMerkleRoot()"]
     check_transaction["CheckTransaction()"]
-    subgraph sub_check_block ["Checkblock()"]
+    subgraph sub_check_block ["CheckBlock()"]
         direction TB
         check_block_header --> block_merkle
         block_merkle --> check_transaction
@@ -1171,7 +1171,7 @@ This will enable any subsequent calls to this function _with this block_ to be s
 
 TIP: `AcceptBlock()` contains an inner call to `CheckBlock()` because it can also be called directly by `CChainState::LoadExternalBlockFile()` where `CheckBlock()` will not have been previously called.
 
-It also now runs some https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3662-L3663[contextual checks^] such as checking the block time, transaction lock times (transaction are "finalized") and witness commitments are either non-existent of valid (https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3412-L3492[link^]).
+It also now runs some https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3662-L3663[contextual checks^] such as checking the block time, transaction lock times (transaction are "finalized") and witness commitments are either non-existent or valid (https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L3412-L3492[link^]).
 After this the block will be serialized to disk.
 
 [NOTE]
