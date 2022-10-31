@@ -174,8 +174,8 @@ flowchart LR
     Peerman
     Asmap{{Asmap}}
     peers.dat{{peers.dat}}
-    banlist.dat{{banlist.dat}}
     anchors.dat{{anchors.dat}}
+    banlist.dat{{banlist.dat}}
     mempool.dat{{mempool.dat}}
 
     subgraph node
@@ -192,6 +192,7 @@ flowchart LR
     Addrman --> node.addrman
 
     banlist.dat -.-> Banman
+    Banman --> Peerman
     Banman --> node.banman
 
     Addrman --> CConnman
@@ -199,14 +200,13 @@ flowchart LR
     CConnman --> node.connman
 
     mempool.dat -.-> CTxMempool
+    CTxMempool --> Peerman
     CTxMempool --> node.mempool
 
     ChainstateManager --> node.chainman
 
     Addrman --> Peerman
     CConnman --> Peerman
-    Banman --> Peerman
-    CTxMempool --> Peerman
     Peerman --> node.peerman
 
 ....
@@ -214,7 +214,7 @@ flowchart LR
 === Addrman
 
 Addrman is setup by loading any provided https://blog.bitmex.com/call-to-action-testing-and-improving-asmap/[asmap^] (https://bitcoincore.reviews/16702[2^]) file passed during startup.
-Next `LoadAddrman` from _src/addrman.cpp_ is called, passing in the `asmap`, our global program `args` and a pointer to `node.addrman`.
+Next `LoadAddrman` from _src/addrdb.cpp_ is called, passing in the `asmap`, our global program `args` and a pointer to `node.addrman`.
 `args` are used to determine whether consistency checks should run and to pass on the `datadir` value.
 Finally any addrman database (`peers.dat`) that is found in the `datadir` has deserialization attempted.
 
@@ -256,7 +256,7 @@ Addresses are considered "good" and will begin being processed by `Addrman::Good
 . we have received a version message from them
 . it was an https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.cpp#L2732-L2747[outbound^] connection
 
-Next we use the following process to determine whether the address should be added to `vvTried`:
+Next we use the following process to determine whether the address should be added to one of the buckets in the `vvTried` set:
 
 . we will first check that the address i) does not already exist in `vvTried`, and that ii) it _does_ exist in `vvNew`.
 . if the address is not yet in `vvTried` we will determine its bucket and position and then check if there is already an address at that position.
@@ -350,14 +350,14 @@ In addition to filling out connections up to full-relay and block-relay-only cap
 After selecting which type of connection we are going to attempt on this iteration we enter the inner loop which attempts to make the connection itself.
 We select the connection by assigning it to `addrconnect`.
 
-. If it is trying to make an anchor connection the simply set `addrconnect` to the selected `addr` and break from the loop early
+. If it is trying to make an anchor connection then simply set `addrconnect` to the selected `addr` and break from the loop early
 . If it is trying to make a feeler connection then we request a collision address or if one is not available then select another `vvTried` table address using `addrman.Select()`.
 . If it is neither an anchor or a feeler just call `addrman.Select()`.
 
 TIP: A "collision address" means that another address had tried to evict this address from `vvTried` table, these addresses are marked in `Addrman.m_tried_collisions`.
 
-If the various checks pass, then finish by calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2177[`OpenConnection()`^].
-`OpenConnection()` makes the connection by calling `ConnectNode()`, which if successful creates a new `CNode` object for the connected node and returns it.
+If the various checks pass, then finish by calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2177[`OpenNetworkConnection()`^].
+`OpenNetworkConnection()` makes the connection by calling `ConnectNode()`, which if successful creates a new `CNode` object for the connected node and returns it.
 Next we initialize the `CNode` with cconnman's pointer to `peerman`, via `m_msgproc->InitializeNode(pnode)`.
 Finally we add the connected and initialized node to `CConnman.m_nodes`.
 

@@ -91,7 +91,7 @@ a|`DBKeys::WALLETDESCRIPTOR` +
 `DBKeys::WALLETDESCRIPTORKEY` +
 `DBKeys::WALLETDESCRIPTORCKEY`
 
-|Descriptor wallet information generally goes into `descriptorspk_man`.
+|Descriptor wallet information generally goes into `DescriptorScriptPubKeyMan`.
 
 a|`DBKeys::NAME` +
 `DBKeys::PURPOSE`
@@ -122,7 +122,7 @@ Below are listed some of these classes along with some primary functions.
 `CPrivKey`:: A serialized (OpenSSL format) private key with associated parameters. Used to read/write private keys to/from the database.
 `CPubKey`:: A public key. Used in many places.
 `CExtKey`:: An extended public key (includes private key and chaincode). Used for deriving BIP32 child keys.
-`CMasterKey`:: Contains an encryption salt `vchSalt` and a randomly generated encryption key `vchCryptedkey`. The `CMasterKey` object itself is what is encrypted by the user's passphrase and the inner `vchCryptedKey` is what is used to en/de-crypt the wallet keys.
+`CMasterKey`:: Contains an encryption salt `vchSalt` and a randomly generated encryption key `vchCryptedKey`. The `CMasterKey` object itself is what is encrypted by the user's passphrase and the inner `vchCryptedKey` is what is used to en/de-crypt the wallet keys.
 `CKeyingMaterial`:: Plain text which is to be encrypted or has been decrypted using the `CMasterKey`.
 `CKeyPool`:: A single key which has been taken from a ``CWallet``'s keypool for use. `CKeyPool` keys are stored in the wallet database.
 `CryptedKeyMap`:: A map of `CKeyID` to a pair of (`CPubKey` + an encrypted private key). Used to lookup keys (by `CKeyID`) when the wallet is encrypted.
@@ -145,7 +145,7 @@ As detailed in <<wallet-key-types, Key Types>>, the `CMasterKey.vchCryptedKey` i
 The `CMasterKey` is encrypted by the user's passphrase.
 
 When the user changes their passphrase, they are only changing the encryption applied to the `CMasterKey`, the inner `vchCryptedKey` is not changed.
-This means that we do not have to read all items in the wallet database, decrypt them with the old key, encrypt them with the new key, and them write them, back to the database again.
+This means that we do not have to read all items in the wallet database, decrypt them with the old key, encrypt them with the new key, and then write them, back to the database again.
 Instead, we only have to change the encryption applied to the `CMasterKey`, which is much less error-prone, and more secure.
 
 Each `CWallet` has a map of ``CMasterKey``s and when unlock is called it will try each one to see if it can decrypt and then unlock the wallet.
@@ -193,9 +193,9 @@ If a script does belong to us, it will be inserted into `mapWallet` along with s
 `mapWallet` contains all the transactions the wallet is interested in, including received and sent transactions.
 
 When we https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L237[load^] a wallet into memory, we iterate all `TxSpends`.
-`TxSpends` stores wallet transactions which were already spend and confirmed.
+`TxSpends` stores wallet transactions which were already spent and confirmed.
 
-Therefore When the wallet needs to select coins to spend, it can select from the coins:
+Therefore, when the wallet needs to select coins to spend, it can select from the coins:
 
 `mapWallet - TxSpends - notMine`
 
@@ -225,8 +225,8 @@ We do some caching during iteration so that we avoid re-calculating the same val
 [sidebar]
 ****
 [horizontal]
-`debit`:: amount in
-`credit`:: amount out
+`debit`:: amount out
+`credit`:: amount in
 `availableCredit`:: amount available to send out (not dirty or immature)
 ****
 
@@ -234,7 +234,7 @@ Calculating the above requires using `TxSpends` and `IsMine`.
 
 When a new transaction involving the wallet takes place, really what happens is that it's marked as `DIRTY`, which deletes the cached entry for the parent transaction.
 This means that the next time `GetBalance()` is called, `debit` is recalculated correctly.
-https://bitcoincore.reviews/18113[This^] Bitcoincore PR review club goes into more detail on coins being marked as `DIRTY` and `fresh` in the cache.
+https://bitcoincore.reviews/18113[This^] Bitcoin Core PR review club goes into more detail on coins being marked as `DIRTY` and `FRESH` in the cache.
 
 `TxSpends` is calculated by looking at the outpoints in the transaction itself.
 
