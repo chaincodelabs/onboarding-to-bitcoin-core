@@ -89,6 +89,9 @@ Consensus Rules::
 CSV::
     `CHECKSEQUENCEVERIFY` or `CSV` is an opcode for the Bitcoin scripting system that in combination with https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki[BIP 68] allows execution pathways of a script to be restricted based on the age of the UTXO being spent.
     https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki[BIP 0112]
+    
+CLTV::
+    `CHECKLOCKTIMEVERIFY` or `CTLV` is an opcode for the Bitcoin scripting system that allows a transaction output to be made unspendable until some point in the future. i.e. a coin cannot be spent until a certain time or blockchain height has been past. https://github.com/bitcoin/bips/blob/1f0b563738199ca60d32b4ba779797fc97d040fe/bip-0065.mediawiki[BIP 65]
 
 == D
 
