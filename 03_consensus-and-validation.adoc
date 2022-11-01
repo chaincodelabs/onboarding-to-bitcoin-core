@@ -546,6 +546,11 @@ Another benefit of fully extracting the consensus engine in this way may be that
 In the future, if a full de-coupling is successfully completed, other Bitcoin applications might be able to use `libbitcoinkernel` as their own consensus engine permitting multiple full node implementations to operate on the network in a somewhat safer manner than many of them operate under today.
 The initial objective of this library however is to actually have it used by Bitcoin Core internally, something which is not possible with libbitcoinconsensus due to it's lack of caching and state (making it too slow to use).
 
+Some examples have surfaced recently where script validation in the BTCD code (used internally by LND) has diverged from the results from Bitcoin Core:
+
+. https://twitter.com/brqgoo/status/1579216353780957185[Witness size check^]: https://github.com/lightningnetwork/lnd/issues/7002[issue^] and https://github.com/btcsuite/btcd/pull/1896[fix^]
+. https://twitter.com/brqgoo/status/1587397646125260802[Max witness items check^]: https://github.com/btcsuite/btcd/issues/1906[issue^] and https://github.com/btcsuite/btcd/pull/1907[fix^].
+
 The implementation approaches of libbitcoinconsensus and libbitcoinkernel also differ; with lb-consensus parts of consensus were moved into the library piece by piece, with the eventual goal that it would be encapsulated.
 lb-kernel takes a different approach -- first cast a super wide net around everything needed to run a consensus engine, and then gradually strip pieces out where they can be.
 In theory this should get us something which Bitcoin Core can use much faster (in fact, you can build the optional `bitcoin-chainstate` binary which already has some functionality).
