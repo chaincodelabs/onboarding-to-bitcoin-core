@@ -17,7 +17,7 @@ The `CScript` class which supports serializing data into scripts, along with man
 
 == Validating scripts
 
-For some additional context on how scripts or validated in Bitcoin see <<Executing scripts>> in the Appendix.
+For some additional context on how scripts are validated in Bitcoin see <<Executing scripts>> in the Appendix.
 
 Transactions contain a vector of inputs (`CTxIn`) and vector of outputs (`CTxOut`), along with other required data.
 
@@ -183,7 +183,7 @@ What is this doing? interpreter.cpp:1974
 
 ``Verifyscript()``s function is to very a single scriptSig (SS) against a scriptPubKey (SPK) and return a boolean `true` or `false`, returning a more specific error description via the passed in `ScriptError`.
 Historically (in Bitcoin versions < 0.3.5) this was done by concatenating the SS and the SPK and evaluating as one, however this meant that malicious actors could leave arbitrary extra objects on the stack, ultimately resulting in being able to spend coins using any scripts with what should have been an invalid SS.
-Therefore now evaluation take place in two stages, first the SS, who's pre-populated `stack` is then passed in as an argument to SPK evaluation.
+Therefore now evaluation takes place in two stages, first the SS, who's pre-populated `stack` is then passed in as an argument to SPK evaluation.
 
 TIP: The mechanics of `EvalScript()` are shown in the section <<EvalScript>>.
 
@@ -203,7 +203,7 @@ Next we check script size is less that `MAX_SCRIPT_SIZE` (10KB).
 Although total serialized transaction size, and SigOpCount has been checked previously, this is the first time the size of the scripts themselves are checked.
 
 Then comes the main evaluation for loop.
-Whilst many conditions are checked, and specific invalidity errors returned, there is also the possibility of other un-tested errors occurring during evaluation, and so the loop is encolsed by a try-except block which will catch these errors, instead of causing a program crash.
+Whilst many conditions are checked, and specific invalidity errors returned, there is also the possibility of other un-tested errors occurring during evaluation, and so the loop is enclosed by a try-except block which will catch these errors, instead of causing a program crash.
 
 [IMPORTANT]
 ====
