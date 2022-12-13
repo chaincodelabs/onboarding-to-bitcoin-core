@@ -324,6 +324,8 @@ For windows this is "build-windows.md", for macOS this is "build-osx.md" and for
 
 There is also a guide by Jon Atack on how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core^].
 
+Finally, Blockchain Commons also offer a guide to https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/A2_0_Compiling_Bitcoin_from_Source.md[building from source^].
+
 ==== Cleaner builds
 
 It can be helpful to use a separate build directory e.g. `build/` when compiling from source.
@@ -445,6 +447,8 @@ $ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir stop
 
 You may stop and restart the node and it will use the existing state.
 (Simply remove the data directory to start again from scratch.)
+
+Blockchain Commons offer a guide to https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/A3_0_Using_Bitcoin_Regtest.md[Using Bitcoin Regtest^].
 
 ==== Testnet
 

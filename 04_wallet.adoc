@@ -14,7 +14,7 @@ The wallet component has the following general aims:
 . Be smart about coin selection with respect to:
 ** Transaction fees
 ** Privacy
-. Implement state of the art features:
+. Implement state-of-the-art features:
 ** Taproot
 ** Wallet descriptors
 ** Miniscript
@@ -32,8 +32,12 @@ They also simplify backups and make im/ex-porting wallet keys into other softwar
 == Wallet overview
 
 ////
-* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/^] describes the main functions of a wallet, along with some of the differences between legacy and descriptor wallets.
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/^] describes the main functions of a wallet, along with some differences between legacy and descriptor wallets.
 ////
+
+****
+Blockchain Commons provides some examples of https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/03_3_Setting_Up_Your_Wallet.md[Setting up a wallet] using the `bitcoin-cli tool.
+****
 
 === Wallet Database
 
@@ -597,6 +601,18 @@ Next it will call https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/walle
 
 Further operation of the wallet RPCs are detailed in their man pages, but one thing to take note of is that whilst `loadwallet()` (and `unloadwallet()`) both take a `wallet_name` argument, the other wallet RPCs do not.
 Therefore in order to control a specific wallet from an instance of `bitcoin{d|-qt}` that has multiple wallets loaded, bitcoin-cli must be called with the `-rpcwallet` argument, to specify the wallet which the action should be performed against, e.g. `bitcoin-cli --rpcwallet=your_wallet_name getbalance`
+
+=== Via `bitcoin-cli` tool
+
+****
+Blockchain Commons contains numerous guides and examples of controlling the wallet using `bitcoin-cli`, including:
+
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/04_0_Sending_Bitcoin_Transactions.md[Sending Bitcoin Transactions^] including using raw transactions
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/05_0_Controlling_Bitcoin_Transactions.md[Controlling Bitcoin Transactions^] using RBF and CPFP
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/06_0_Expanding_Bitcoin_Transactions_Multisigs.md[Using multisig^] to send and receive
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/07_0_Expanding_Bitcoin_Transactions_PSBTs.md[Creating and using PSBTs^] and integrating them with hardware wallets
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/08_0_Expanding_Bitcoin_Transactions_Other.md[Adding locktimes and OP_RETURN data^]
+****
 
 == CWallet
 

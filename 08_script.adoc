@@ -392,6 +392,16 @@ Finally, if all went well the signature is checked with <<VerifyScript,`VerifySc
 
 TODO: dig into `CreateSig()`
 
+== Working with bitcoin script from the command line
+
+****
+Blockchain Commons contains guides related to Bitcoin Script including:
+
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/09_1_Understanding_the_Foundation_of_Transactions.md[Accessing scripts from transactions^] with `bitcoin-cli`
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/09_2_Running_a_Bitcoin_Script.md[How scripts are evaluated^]
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/09_3_Testing_a_Bitcoin_Script.md[Testing bitcoin scripts^] using `btcdeb`
+****
+
 == Appendix
 
 === Executing scripts
