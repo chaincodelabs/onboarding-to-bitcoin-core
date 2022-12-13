@@ -714,7 +714,7 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
 
 == Project stats
 
-.Bitcoin Core @ v23.0
+.Bitcoin Core @ v24.0.1
 [source,text]
 ----
 ===============================================================================
@@ -726,23 +726,23 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
  BASH                   10         1772         1100          438          234
  Batch                   1            1            1            0            0
  C                      22        37994        35681         1183         1130
- C Header              481        72039        43966        17680        10393
+ C Header              481        72043        43968        17682        10393
  CMake                   3          901          706           86          109
- C++                   687       197048       153362        20080        23606
+ C++                   687       197249       153482        20132        23635
  Dockerfile              2           43           32            5            6
  HEX                    29          576          576            0            0
  Java                    1           23           18            0            5
- JSON                   94         7964         7626            0          338
+ JSON                   94         7968         7630            0          338
  Makefile               51         2355         1823          198          334
  MSBuild                 2           88           87            0            1
  Objective-C++           3          186          134           20           32
  Prolog                  2           22           16            0            6
- Python                297        66196        48672         7558         9966
+ Python                298        66473        48859         7598        10016
  Scheme                  1          638          577           29           32
- Shell                  50         2610         1742          535          333
+ Shell                  50         2612         1745          535          332
  SVG                    20          720          697           15            8
  Plain Text              6         1125            0         1113           12
- TypeScript             93       206503       206463            0           40
+ TypeScript             98       228893       228831            0           62
  Visual Studio Pro|     16          956          940            0           16
  Visual Studio Sol|      1          162          162            0            0
  XML                     2           53           47            0            6
@@ -751,7 +751,7 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
  |- CSS                  2           98           82            1           15
  (Total)                            499          464            1           34
 -------------------------------------------------------------------------------
- Markdown              192        33167            0        26466         6701
+ Markdown              192        33460            0        26721         6739
  |- BASH                16          206          173           12           21
  |- C                    2           53           47            3            3
  |- C++                  3          345          267           54           24
@@ -761,9 +761,9 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
  |- Python               2          346          280           61            5
  |- Shell                3           21           17            1            3
  |- XML                  1            4            4            0            0
- (Total)                          34163          808        26597         6758
+ (Total)                          34456          808        26852         6796
 ===============================================================================
- Total                2097       639789       508153        77314        54322
+ Total                2103       662960       530837        77663        54460
 ===============================================================================
 ----
 
