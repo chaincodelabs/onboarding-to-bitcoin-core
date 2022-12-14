@@ -818,14 +818,15 @@ Using Bitcoin Core's Test Framework means that nodes can be started, controlled 
 Additionally, they are run in a temporary directory which is automatically removed by the operating system, if not done
 manually.
 
-In addition to this, the `TestShell` class has an extremely similar interface to `bitcoin-cli`, where most `bitcoin-cli` commands are mapped to `TestShell` methods, and arguments can be supplied positionally or as named values.
-Specifically, all RPCs are available to `TestShell`.
+In addition to this, the `TestShell` class has an extremely similar interface to `bitcoin-cli`, where most `bitcoin-cli` commands have an equivalent `TestShell` method, and arguments can be supplied positionally or as named values.
+Specifically, all `bitcoind` RPCs are available to `TestShell`.
+
 However, certain `bitcoin-cli` commands, for example `-getinfo` require `bitcoin-cli` to call multiple RPCs and combine the results into something more user-friendly.
-These commands are not available to `TestShell`, but you can re-create them yourself using the source code!
+These commands are not natively available to `TestShell`, but you can re-create them yourself by running multiple `TestShell` RPCs and combining the outputs to mimic the `bitcoin-cli` commands!
 
 When `TestShell` is combined with a jupyter notebook the result is easy-to-setup ephemeral nodes where iteration on complex commands is more pleasant than in the shell, and complex sequences of commands can be reproduced without having to write bash scripts or use shell history.
 
-Once a complex command or sequence of commands is established, they can generally be translated to `bitcoin-cli` commands without much difficulty.
+Once a complex command or sequence of commands is established, they can generally be translated to `bitcoin-cli` commands or a shell script without much difficulty.
 
 [discrete]
 == How
