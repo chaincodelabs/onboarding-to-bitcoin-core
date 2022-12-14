@@ -769,6 +769,73 @@ Many ideas are assigned a BIP and then never implemented or used on the wider ne
 
 Source: https://github.com/XAMPPRocky/tokei[tokei^]
 
+== Exercises
+
+Subsequent sections will contain various exercises related to their subject areas which will require controlling Bitcoin Core nodes, compiling Bitcoin Core and making changes to the code.
+
+To prepare for this we will begin with the following exercises which will ensure that our environment is ready:
+
+. Build Bitcoin Core from source
+** Clone Bitcoin Core repository from GitHub
+** Check out the latest release tag (e.g. `v24.0.1`)
+** Install any dependencies required for your system
+** Follow the build instructions to compile the program
+** Run `make check` to run the unit tests
+** Follow the documentation to install dependencies required to run the functional tests
+*** Run the functional tests
+. Run a `bitcoind` node in regtest mode and control it using the `cli` tool
+** `./src/bitcoind -regtest` will start bitcoind in regtest mode. You can then control it using `./src/bitcoin-cli -regtest -getinfo`
+. Run and control a Bitcoin Core node using the `TestShell` python class from the test framework in a Jupyter notebook
+** See <<test_shell_nodes, Running nodes via Test Framework>> for more information on how to do this
+
+[#test_shell_nodes]
+.Running nodes via Test Framework
+****
+Using Bitcoin Core's Test Framework means that nodes can be started, controlled and stopped using a python control class.
+Additionally, they are run in a temporary directory which is automatically removed by the system later, if not done
+manually.
+
+In addition to this, the `TestShell` class has an extremely similar interface to `bitcoin-cli`, where `bitcoin-cli` commands are mapped to `TestShell` methods, and arguments can be supplied positionally or as named values.
+
+When combined with a jupyter notebook, the result is easy-to-setup ephemeral nodes where iteration on complex commands is more pleasant, and complex sequences of commands can be reproduced without having to write bash scripts or use shell history.
+
+To begin it is recommended to create a python virtual environment which can be done as follows when in the onboarding to bitcoin core top level directory:
+
+[source, bash]
+----
+python3 -m venv "obc-venv"
+source obc-venv/bin/activate
+----
+
+TIP: if using fish shell you can use: `source obc-venv/bin/activate.fish` instead
+
+Once your venv is set up and activated you can install the requirements for jupyter notebook using:
+
+[source, bash]
+----
+pip install -r requirements.txt
+----
+
+Next start the notebook with:
+
+[source, bash]
+----
+jupyter notebook
+----
+
+This will open a list of all the files in this directory.
+Opening the file named `exercises.ipynb` will start the empty notebook containing instructions on how to use `TestShell` from the test Framework.
+
+When you are finished you can deactivate the venv using
+
+[source, bash]
+----
+deactivate
+----
+
+TIP: Don't forget to re-activate your venv each time you want to start the Jupyter notebook after deactivating the venv!
+****
+
 ////
 == Group work
 
