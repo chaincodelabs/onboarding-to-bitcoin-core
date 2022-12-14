@@ -779,9 +779,9 @@ To prepare for this we will begin with the following exercises which will ensure
 - [ ] Clone Bitcoin Core repository from GitHub
 - [ ] Check out the latest release tag (e.g. `v24.0.1`)
 - [ ] Install any dependencies required for your system
-- [ ] Follow the build instructions to compile the program
-- [ ] Run `make check` to run the unit tests
-- [ ] Follow the documentation to install dependencies required to run the functional tests
+- [ ] Follow the build instructions to compile the programs
+- [ ] Run `make check` to run the https://github.com/bitcoin/bitcoin/tree/master/src/test#readme[unit tests^]
+- [ ] Follow the documentation to install dependencies required to run the https://github.com/bitcoin/bitcoin/tree/master/test[functional tests^]
 - [ ] Run the functional tests
 . Run a `bitcoind` node in regtest mode and control it using the `cli` tool +
 +
