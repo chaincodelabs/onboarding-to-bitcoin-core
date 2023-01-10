@@ -651,7 +651,7 @@ Following successful creation, various program arguments are checked and applied
 These include options such as `-addresstype`, `-changetype`, `-mintxfee` and `-maxtxfee` amongst others.
 It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
 
-After the wallet is fully initialized and setup, its keypool will be topped up before the wallet is locked and registered with the <<Validation interface>>, which will handle callback notifications generated during the (optional) upcoming chain rescan.
+After the wallet is fully initialized and setup, its keypool will be topped up before the wallet is locked and registered with the Validation interface, which will handle callback notifications generated during the (optional) upcoming chain rescan.
 The rescan is smart in detecting the wallet "birthday" using metadata stored in the <<scriptpubkeymanagers,SPKM>> and won't scan blocks produced before this date.
 
 Finally, the `walletinterface` is setup for the wallet before the `WalletInstance` is returned to the caller.
@@ -1511,6 +1511,58 @@ Coin selection is performed as a loop, as it may take multiple iterations to sel
 
 Work on the https://github.com/bitcoin/bitcoin/projects/2[multiwallet project^] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
 
+== Exercises
+
+include::exercise-intro.adoc[]
+
+. Modify a wallet RPC
+- [ ] Create a descriptor wallet
+- [ ] Generate coins to yourself
+- [ ] Remove the `"dummy"` parameter from the `getbalance` Wallet RPC
+- [ ] Ensure that the `rpc_help.py` functional test passes (but ignore other test failures), fixing any errors
++
+TIP: run `test/functional/rpc_help.py` to just run a single test
+- [ ] Check that the rpc call `getbalance 3 true true` passes with the `dummy` parameter removed
+////
+- [ ] Why do we need to keep this parameter for backwards compatibility?
+////
+
+. `IsMine`
+- [ ] Create a descriptor wallet
+- [ ] Generate coins to yourself
+- [ ] Send coins to yourself in a transaction and generate a block to confirm
+- [ ] Modify the wallet's `IsMine()` logic to always return `false`
+- [ ] Generate a new block and try to send coins to yourself in a transaction again
+- Observe the changes
+
+. Coin Selection
+- [ ] Create a descriptor wallet
+- [ ] Generate 200 blocks to yourself
+- [ ] Call `listunspent` and then `send` a large amount (e.g. 600 BTC) to yourself and observe how many inputs were used
+- [ ] Add a new [.underline]#preferred# coin selection algorithm to the wallet that uses *all* UTXOs in the wallet and optionally remove the other algorithms.
+- [ ] Redo the send and confirm that this time it will select all inputs in the wallet for the transaction
+
+. Adding a new RPC
+- [ ] Add a new RPC which when called will simply return to the user a random UTXO from the wallet in the form
++
+[source,json]
+----
+{
+  "txid": <txid>,
+  "vout": <vout>
+}
+----
+
+////
+
+. Wallet Database
+- [ ] Ensure Bitcoin Core is compiled with `sqlite` support (check you have `sqlite3` on your $PATH: `command -v sqlite3` and that your `config.status` contains an sqlite3 line: `grep sqlite3 config.status`)
+
+
+
+
+
+
 == Validation interface
 
 TODO
@@ -1521,7 +1573,6 @@ TODO
 
 == HWI
 
-////
 == Relation to consensus soft forks
 
 Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not inside consensus code, but rather require improvements to the wallet.
