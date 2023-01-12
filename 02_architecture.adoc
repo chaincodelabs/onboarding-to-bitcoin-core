@@ -90,6 +90,32 @@ flowchart LR
 
 |===
 
+== `bitcoin-cli` overview
+
+The following diagram gives a brief overview of the major components in bitcoin-cli.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+.`bitcoin-cli` overview
+[mermaid, target=bitcoin-cli-overview, format=svg, id=bitcoin-cli-overview-chart]
+....
+flowchart LR
+    BaseRequestHandler["BaseRequestHandler()"]
+    AddrInfoRequestHandler["AddrInfoRequestHandler()"]
+    ConnectAndCallRPC["ConnectAndCallRPC()"]
+    GetInfoRequestHandler["GetInfoRequestHandler()"]
+    NetInfoRequestHandler["NetInfoRequestHandler()"]
+    GenerateToAddressHandler["GenerateToAddressHandler()"]
+    DefaultRequestHandler["DefaultRequestHandler()"]
+    BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GenerateToAddressHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> DefaultRequestHandler --> ConnectAndCallRPC
+    ConnectAndCallRPC <---> bitcoin-cli
+    ArgsManager --> bitcoin-cli
+....
+
 == Wallet structure
 
 The following diagram gives a brief overview of how the wallet is structured.
@@ -154,32 +180,6 @@ flowchart LR
 |The primary wallet lock, held for atomic wallet operations
 
 |===
-
-== `bitcoin-cli` overview
-
-The following diagram gives a brief overview of how bitcoin-cli operates.
-
-WARNING: This diagram is **not** exhaustive and includes simplifications.
-
-.`bitcoin-cli` overview
-[mermaid, target=bitcoin-cli-overview, format=svg, id=bitcoin-cli-overview-chart]
-....
-flowchart LR
-    BaseRequestHandler["BaseRequestHandler()"]
-    AddrInfoRequestHandler["AddrInfoRequestHandler()"]
-    ConnectAndCallRPC["ConnectAndCallRPC()"]
-    GetInfoRequestHandler["GetInfoRequestHandler()"]
-    NetInfoRequestHandler["NetInfoRequestHandler()"]
-    GenerateToAddressHandler["GenerateToAddressHandler()"]
-    DefaultRequestHandler["DefaultRequestHandler()"]
-    BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> GenerateToAddressHandler --> ConnectAndCallRPC
-    BaseRequestHandler --> DefaultRequestHandler --> ConnectAndCallRPC
-    ConnectAndCallRPC <---> bitcoin-cli
-    ArgsManager --> bitcoin-cli
-....
 
 == Tests overview
 
@@ -411,9 +411,9 @@ flowchart TB
 
 It follows that API changes to the libraries which are internally-facing can be done slightly easier than for libraries with externally-facing APIs, for which more care for compatibility must be taken.
 
-=== Library source code organization
+== Source code organization
 
-Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732^] describes how the Bitcoin Core project is striving to organize library files, copied below for convenience:
+Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732^] describes how the Bitcoin Core project is striving to organize libraries and their associated source code, copied below for convenience:
 
 > Here is how I am thinking about the organization:
 > 
@@ -520,10 +520,6 @@ James O'Beirne has recorded 3 videos which go into detail on how the codebase is
 
 ryanofsky has written a handy https://github.com/ryanofsky/bitcoin/blob/pr/libs/doc/design/libraries.md[guide^] covering the different libraries contained within Bitcoin Core, along with some of their conventions and a dependency graph for them.
 Generally speaking, the desire is for the Bitcoin Core project to become more modular and less monolithic over time.
-
-== Source code directory structure
-
-TODO: A description of the source code directory structure
 
 == Subtrees
 
