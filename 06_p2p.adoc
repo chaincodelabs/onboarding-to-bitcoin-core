@@ -376,6 +376,10 @@ However, if one or more of the addresses returned by the DNS query are honest th
 Note that if the DNS seed queries are unsuccessful, or the node is being run in a Tor-only mode (and currently the DNS seeds cannot support long Tor V3 addresses) then bitcoind will fall back to connecting to a hard-coded https://github.com/bitcoin/bitcoin/blob/v23.0/src/chainparamsseeds.h[list^] of seed nodes.
 This fall back functionality could help to protect against e.g. an attack on the DNS seed infrastructure.
 
+== Service flags
+
+Nodes can advertise https://github.com/bitcoin/bitcoin/blob/v24.0.1/src/protocol.h#L266-L296[service flags] (a.k.a. "service bits") indicating which services that node supports.
+
 == Managing connections
 
 An enumeration of the different types of connections, along with detailed descriptions on their functions, can be found in https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L117-L184[src/_net.h_].
@@ -781,3 +785,36 @@ https://github.com/bitcoin/bitcoin/pull/21090[PR#21090^] removed the final tests
 With those tests removed, the special casing for `-segwitheight=-1` behaviour can also be removed.
 That special casing impacted logic in _net_processing_, _validation_ and _mining_.
 
+== Exercises
+
+include::exercise-intro.adoc[]
+
+. Make manual connections
+- [ ] Add the following configuration options to a new Bitcoin Core node running on signet to have it start it with no connections:
++
+[source,text]
+----
+signet=1
+dnsseed=0
+fixedseeds=0
+debug=addrman
+----
+- [ ] Find the (only!) Signet DNS seeder node (in the `SigNetParams` class starting with "seed") and using a terminal poll this seed node for an address to connect to.
++
+[TIP]
+====
+You can use `dig` or `nslookup` to retrieve seeds from the DNS seeder from the DNS seeders.
+====
++
+[CAUTION]
+====
+If you try this with the mainnet seeds you will need to consider which <<Service flags, service flags>> the seeder advertises support for.
+For example, if a seed node advertises `x1` support this means they return ip addresses of nodes advertizing the `NODE_NETWORK` service flag.
+
+You could query these from sipa's mainnet seeder by prepending `x1` to the subdomain e.g. `nslookup x1.seeder.bitcoin.sipa.be`
+====
+- [ ] Check how many addresses are known to your node: `bitcoin-cli -signet getnodeaddresses 0 | jq length`
+- [ ] Using one of the addresses returned from the previous exercise, connect to this node using the `addnode` RPC.
+- [ ] Observe new addresses being received and connected to in the bitcoind terminal or _$DATADIR/debug.log_ file.
+- [ ] What dangers can there be in retrieving node addresses in this way?
+- [ ] Is this more of less safe than using the hardcoded seeds? Can you think of a better way to distribute seeds to new users?
