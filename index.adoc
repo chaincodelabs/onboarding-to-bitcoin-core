@@ -20,6 +20,8 @@ include::08_script.adoc[]
 
 include::09_build-system.adoc[]
 
+include::10_rpc.adoc[]
+
 include::appendix.adoc[]
 
 include::glossary.adoc[]
