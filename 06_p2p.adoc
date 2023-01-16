@@ -586,11 +586,7 @@ The set of transactions to be rebroadcast is calculated as follows:
 
 === Block relay
 
-TODO: 
-
-==== Blocksonly relay
-
-After a block is mined it is broadcast to the p2p network where it will eventually be relayed to all nodes on the network.
+After a block is mined it is broadcast to the P2P network where it will eventually be relayed to all nodes on the network.
 There are two methods available for relaying blocks:
 
 . *Legacy Relay*
@@ -601,15 +597,51 @@ There are two methods available for relaying blocks:
 ** The goal is to address the bandwidth inefficiencies of legacy relaying by only relaying the transactions of a new block that the requesting peer has not yet seen.
 ** Check out this https://bitcoincore.org/en/2016/06/07/compact-blocks-faq/[Compact Blocks FAQ^] for benchmarks and more info.
 
+=== blocksonly vs block-relay-only
+
 Bitcoin Core 0.12 introduced a `-blocksonly` setting that can reduce a node's bandwidth usage by 88%.
 The reduction is achieved by not participating in transaction relay.
 For more info check out https://bitcointalk.org/index.php?topic=1377345.0[this post^] on blocksonly mode by Gregory Maxwell.
-Blocksonly nodes currently use compact block relaying to download blocks even though they don't maintain a full mempool.
 
+Blocksonly nodes currently use compact block relaying to download blocks even though they don't maintain a full mempool.
 https://github.com/bitcoin/bitcoin/pull/22340[PR#22340^] makes blocksonly nodes use legacy relaying to download new blocks.
+Because `-blocksonly` is a global startup option, it therefore applies to all connections
+
+block-relay-only connections are a specific type of connection which is used by Bitcoin Core full nodes to only participate in block relay.
 
 As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]), disables both transaction and address relay.
 Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see <<Eclipse attacks>> for more use cases of these connections).
+
+
+[id=blocksonly-vs-block-relay-only]
+.blocksonly mode vs block-relay-only connections
+[%autowidth.stretch]
+|===
+
+|{nbsp} |`-blocksonly` |block-relay-only
+
+|Applies to
+|All node connections (global)
+|Two randomly-chosen connections
+
+|Does `Addr` relay
+|✓
+|☓
+
+|Sends transactions
+|May do in special cases (e.g. submitted via RPC)
+|☓
+
+|Receives transactions
+|Signals not to with `fRelay`, will disconnect if breached
+|?
+
+|Other connections
+|still makes two block-relay-only connections +
+(for which block-relay-only rules apply)
+|N/A
+
+|===
 
 ==== Bloom filters and SPV
 
