@@ -1388,7 +1388,12 @@ Even invalid headers would need a valid proof of work which would be too costly 
 ====
 
 Which functions are responsible for writing consensus-valid blocks to disk?::
-TODO: answer
++
+.Click for answer
+[%collapsible]
+====
+`src/node/blockstorage.h#SaveBlockToDisk`
+====
 
 Are there any other components to Bitcoin Core which, similarly to the block storage database, are not themselves performing validation but can still be consensus-critical?::
 Not sure myself, sounds like an interesting question though!
