@@ -2,4 +2,4 @@
 
 This documentation is currently hosted at https://obc.256k1.dev[obc.256k1.dev] however this location may be subject to change in the future.
 
-See [asciidoc_workflow.adoc](https://github.com/chaincodelabs/onboarding-to-bitcoin-core/blob/master/asciidoc_workflow.adoc) for tips on contributing and instructions for running locally.
+See https://github.com/chaincodelabs/onboarding-to-bitcoin-core/blob/master/asciidoc_workflow.adoc[asciidoc_workflow.adoc] for tips on contributing and instructions for running locally.
