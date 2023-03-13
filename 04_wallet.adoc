@@ -187,6 +187,11 @@ Therefore we use some https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/w
 When encryption is enabled secret data must only ever exist in decrypted form in memory.
 ====
 
+[CAUTION]
+====
+See https://github.com/bitcoin/bitcoin/pull/27080[#27080] for details on how the master key was not always cleared fully from memory after the wallet was locked.
+====
+
 === Transaction tracking
 
 When we learn about a new block the `BlockConnected` signal is https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L2940[fired^] after successful validation.

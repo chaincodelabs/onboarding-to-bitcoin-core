@@ -2,6 +2,29 @@
 
 TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v24.0.1[v24.0.1^]
 
+== Adding new RPCs
+
+When trying to expose new information to users there are generally two possible approaches for developers to consider:
+
+. Add a new server-side RPC which directly delivers the new data
+. Create a new function on the client-side (e.g. the cli tool `bitcoin-cli`) which calls one or more existing RPCs and manipulates the results into the required format.
+
+If the data is not available from existing RPCs then option 1) must be taken.
+However if option 2) is available then this is the preferred first choice.
+This is for the following reasons:
+
+* Minimalistic approach: put client-side functionality into the client, not the server
+** Adding server-side increases maintenance burden
+* Client-side functionality does not have to worry about API stability (as the RPCs do)
+* Functions can more easily start client side and migrate to server-side if heavily used, than visa-versa
+
+There may be other considerations though too:
+
+* If this functionality might be wanted in multiple clients, e.g. `bitcoin-cli` and the GUI `bitcoin-qt`, then rather than making two implementations in two clients it may make sense to add a single server-side function
+* Doing expensive computations on the client side when an inexpensive pathway is available server-side
+
+Ultimately there is no "correct" answer for all cases, but considering some of the above before implementing one way or another
+
 == HTTP Server
 
 Bitcoin Core's https://github.com/bitcoin/bitcoin/blob/v24.0.1/src/httpserver.cpp#L138-L139[HTTP server] is responsible for handling both RPC and REST requests, but not ZMQ.
