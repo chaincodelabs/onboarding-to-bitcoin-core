@@ -1,0 +1,126 @@
+= GUI
+
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+The GUI has its own separate repo at https://github.com/bitcoin-core/gui[bitcoin-core/gui^].
+PRs which primarily target the GUI should be made here, and then they will get merged into the primary repo.
+Developer Marco Falke created https://github.com/MarcoFalke/bitcoin-core/issues/26[an issue^] in his fork which detailed some of the rationale for the split, but essentially it came down to:
+
+. Separate issue and patch management
+. More focused review and interests
+. Maintain high quality assurance
+
+He also stated that:
+
+[quote, Marco Falke]
+____
+Splitting up the GUI (and splitting out modules in general) has been brought up often in recent years. Now that the GUI is primarily connected through interfaces with a bitcoin node, it seems an appropriate time to revive this discussion.
+____
+
+https://github.com/bitcoin/bitcoin/pull/19071[PR#19071^] contained the documentation change now contained in the Bitcoin Core primary repository, along with details of the monotree approach that was ultimately taken.
+The documentation change provides guidance on what a "GUI change" is: 
+
+[quote, src/CONTRIBUTING.md]
+____
+As a rule of thumb, everything that only modifies `src/qt` is a GUI-only pull
+request. However:
+
+* For global refactoring or other transversal changes the node repository
+  should be used.
+* For GUI-related build system changes, the node repository should be used
+  because the change needs review by the build systems reviewers.
+* Changes in `src/interfaces` need to go to the node repository because they
+  might affect other components like the wallet.
+
+For large GUI changes that include build system and interface changes, it is
+recommended to first open a PR against the GUI repository. When there
+is agreement to proceed with the changes, a PR with the build system
+and interfaces changes can be submitted to the node repository.
+____
+
+On a related note, another https://github.com/bitcoin/bitcoin/issues/24045[issue^] was recently opened by Falke, to discuss the possibility of instituting the same monotree changes for wallet code.
+
+== Motivation for a GUI
+
+Bitcoin Core has shipped with a GUI since the first version.
+Originally this was a wxWidgets GUI, but in 2011 a move to QT was https://github.com/bitcoin/bitcoin/pull/521[completed].
+Satoshi originally had plans to have a decentralized market place and even poker game inside Bitcoin, so including a GUI, which also had wallet and address book functionality, made sense from the get-go.
+
+The motivation to _continue_ to include a GUI with Bitcoin Core today is for accessibility.
+New users can access a best-in-class Bitcoin experience via a single software package.
+It's not safe or realistic to expect users to download multiple programs and connect them securely into a software suite, just to use bitcoin.
+
+It does not have to be the prettiest UI, but needs to provide the functionality to use bitcoin.
+It is possible to connect other frontends to Bitcoin Core, but they are connected via RPCs, and do not have the first-class interface (to the node component) that the bundled GUI has.
+
+== Building the GUI
+
+`bitcoin-qt`, which includes the QT GUI with the node, is built automatically when the build dependencies are met.
+Required packages to meet dependencies can be found in the build instructions in _src/doc/build-*.md_ as appropriate for your platform.
+If you have the required packages installed but do not wish to build the `bitcoin-qt` then you must run `./configure` with the option `--with-gui=no`.
+
+[NOTE]
+====
+If the build is configured with `--enable-multiprocess` then additional binaries will be built:
+
+. `bitcoin-node`
+. `bitcoin-wallet`
+. `bitcoin-gui`
+====
+
+== Qt
+
+QT is currently very intertwined with the rest of the codebase.
+See the library <<library-dependency-graph,depencency graph>> for more context.
+
+Developers would ideally like to reduce these dependencies in the future.
+
+== Qt documentation
+
+There is useful documentation for developers looking to contribute to the Qt side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code^].
+
+== Main GUI program
+
+The loading point for the GUI is _src/qt/main.cpp_.
+`main()` calls `GuiMain()` from _src/qt/bitcoin.cpp_, passing along any program arguments with it.
+`GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
+
+Next an empty `NodeContext` is set up, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
+Recall that in <<Wallet component initialisation>> we also saw the wallet utilizing a `NodeContext` as part of its `WalletInitInterface`.
+In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
+
+After some QT setup, command-line and application arguments are parsed.
+What follows can be outlined from the code comments:
+
+[start=3]
+. Application identification
+. Initialization of translations, so that intro dialogue is in user's language
+. Now that settings and translations are available, ask user for data directory
+. Determine availability of data directory and parse bitcoin.conf
+. Determine network (and switch to network specific options)
+. URI IPC sending
+. Main GUI initialization
+
+== GUI initialisation
+
+After configuration the GUI is initialized.
+Here the `Node` object created earlier is passed to `app.SetNode()` before a window is created and the application executed.
+
+The bulk of the Qt GUI classes are defined in _src/qt/bitcoingui.{h|cpp}_.
+
+== QML GUI
+
+Since writing this documentation focus has been directed towards re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML^] framework.
+This will allow developers to create visually-superior, and easier to write and reason-about GUI code, whilst also lowering the barriers to entry for potential new developers who want to be able to focus on GUI code.
+
+The recommendation therefore is to familiarise yourself with Qt QML and review the current codebase for the latest developments.
+You can follow along with the latest QML work in the specific https://github.com/bitcoin-core/gui-qml/blob/main/src/qml/README.md[bitcoin-core/qml-gui^] repo.
+
+== Bitcoin design
+
+The https://bitcoin.design/guide/[Bitcoin design guide^] provides some guidance on common pitfalls that Bitcoin GUI designers should look out for when designing apps (like `bitcoin-qt`).
+
+== Testing QT
+
+Currently, although several QT tests exist in _src/qt/test_, there is no good way to test QT changes except by hand.
+A good way to try and have QT code included in the test framework is to target having the RPC layer be a thin as possible, so more code can be re-used between RPC and GUI.

@@ -1,0 +1,17 @@
+// Position toc on left and only display 4 deep
+:toc:
+:toclevels: 3
+:toc: left
+// Use pygments.rb for source highlighting, emacs style
+:source-language: cpp
+:source-highlighter: pygments
+:pygments-style: emacs
+// Use fancy icons for admonition boxes
+:icons: font
+// Add section links to HTML
+:sectlinks:
+// Set default imagesdir
+:imagesdir: images
+:docinfo: shared
+// mermaid.js config
+:mermaid-config: ./mermaid-config.json

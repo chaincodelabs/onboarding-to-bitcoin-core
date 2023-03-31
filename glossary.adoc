@@ -1,0 +1,412 @@
+= Glossary
+
+== A
+
+Address::
+    A string consisting of alphanumerics from the encoding scheme used, e.g. `bc1qcwfw5vekqeyx3j8negc4lltdafg3dpqs6cw24n`.
+    The exact format specifications of the string vary by address type.
+    Just as you ask others to send an email to your email address, you would ask others to send you bitcoin to one of your Bitcoin addresses.
+
+== B
+
+BIP::
+    Bitcoin Improvement Proposals.
+    A set of proposals that members of the bitcoin community have submitted to improve bitcoin.
+    For example, BIP-21 is a proposal to improve the bitcoin uniform resource identifier (URI) scheme.
+
+Bitcoin::
+    The name of the currency unit (the coin), the network, and the software.
+
+Block::
+    An ordered grouping of valid transactions, marked with a timestamp and a hash of the previous block.
+    The block header is hashed to produce a proof of work, thereby validating the transactions.
+    Valid blocks are added to the most-work chain by network consensus.
+
+Blockchain::
+    A chain of validated blocks, each linking to its predecessor all the way to the genesis block.
+
+Block Fees::
+    The difference between the total input and output amounts for all transactions included in the block are able to be claimed by the miner in the Coinbase Transaction.
+
+Block Reward::
+    The total of a Block Subsidy + Block fees.
+
+Block Subsidy::
+    An amount included in each new block as a reward by the network to the miner who found the Proof-of-Work solution.
+    Approximately every four years, or more accurately every 210,000 blocks, the block reward is halved.
+    It is currently 6.25 BTC per block.
+
+Byzantine Generals Problem::
+    A reliable computer system must be able to cope with the failure of one or more of its components.
+    A failed component may exhibit a type of behavior that is often overlooked--namely, sending conflicting information to different parts of the system.
+    The problem of coping with this type of failure is expressed abstractly as the Byzantine Generals Problem.
+
+
+== C
+
+Candidate Block::
+    A block that a miner is still trying to mine.
+    It is not yet a valid block, because it does not contain a valid Proof-of-Work.
+
+Child-Pays-For-Parent (CPFP)::
+    A Child Pays For Parent (CPFP) transaction is one where you pay a high fee to incentivize miners to also confirm the unconfirmed transaction from which you are drawing the inputs i.e.
+    the parent transaction.
+
+CKD::
+    Child key derivation (CKD) functions.
+    Given a parent extended key and an index `i`, it is possible to compute the corresponding child extended key.
+    The algorithm to do so depends on whether the child is a hardened key or not (or, equivalently, whether `i` ≥ 231), and whether we're talking about private or public keys.
+    https://en.bitcoin.it/wiki/BIP_0032#Child_key_derivation_.28CKD.29_functions[Read More]
+
+Coinbase (aka coinbase data)::
+    A special field used as the sole input for coinbase transactions.
+    The coinbase data field allows claiming the block reward and provides up to 100 bytes for arbitrary data.
+    Not to be confused with coinbase transaction or coinbase reward.
+
+Coinbase Transaction::
+    The first transaction in a block.
+    Always created by a miner, it includes a single coinbase.
+    Not to be confused with coinbase (coinbase data) or coinbase reward
+
+Cold Storage::
+    When bitcoin private keys are created and stored in a secure offline environment.
+    Cold storage is important for anyone with bitcoin holdings.
+    Online computers are vulnerable to hackers and should not be used to store a significant amount of bitcoin.
+
+Confirmation::
+    Once a transaction is included in a block, it has one confirmation.
+    As soon as _another_ block is mined on the same chain tip, the transaction has two confirmations, and so on.
+    Six or more confirmations is considered sufficient proof that a transaction cannot be reversed.
+
+Consensus::
+    When several nodes, usually most nodes on the network, all have the same blocks in their locally-validated best block chain.
+    Not to be confused with consensus rules.
+
+Consensus Rules::
+    The block validation rules that full nodes follow to stay in consensus with other nodes.
+    Not to be confused with consensus.
+
+CSV::
+    `CHECKSEQUENCEVERIFY` or `CSV` is an opcode for the Bitcoin scripting system that in combination with https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki[BIP 68] allows execution pathways of a script to be restricted based on the age of the UTXO being spent.
+    https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki[BIP 0112]
+    
+CLTV::
+    `CHECKLOCKTIMEVERIFY` or `CTLV` is an opcode for the Bitcoin scripting system that allows a transaction output to be made unspendable until some point in the future. i.e. a coin cannot be spent until a certain time or blockchain height has been past. https://github.com/bitcoin/bips/blob/1f0b563738199ca60d32b4ba779797fc97d040fe/bip-0065.mediawiki[BIP 65]
+
+== D
+
+Difficulty::
+    A network-wide consensus parameter that controls how much computation is required to produce a proof of work.
+
+Difficulty Re-targeting::
+    A network-wide recalculation of the difficulty that occurs once every 2,016 blocks and considers the hashing power of the previous 2,015 blocks (due to an off-by-one error).
+
+Difficulty Target::
+    A difficulty at which all the computation in the network will find blocks approximately every 10 minutes.
+
+Double-Spending::
+    Double spending is the result of successfully spending the same coin more than once.
+    Bitcoin protects against double-spending by verifying each transaction added to the block chain to ensure that the inputs for the transaction had not previously already been spent.
+
+== E
+
+ECDSA::
+    Elliptic Curve Digital Signature Algorithm or ECDSA is a cryptographic algorithm used by bitcoin to ensure that funds can only be spent by the owner of the associated private key.
+
+Extra Nonce::
+    As difficulty increased, miners often cycled through all 4 billion values of the nonce without finding a block.
+    Because the coinbase script can store between 2 and 100 bytes of data, miners started using that space as extra nonce space, allowing them to explore a much larger range of block header values to find valid blocks.
+
+== F
+
+Fees::
+    The sender of a transaction often includes a fee to the network for processing the requested transaction.
+    Most transactions require a minimum fee of 0.5 mBTC.
+
+Fork::
+    Fork, also known as accidental fork, occurs when two or more blocks have the same block height, forking the block chain.
+    Typically occurs when two or more miners find blocks at nearly the same time.
+    Can also happen as part of an attack.
+
+== G
+
+Genesis Block::
+    The first block in the blockchain, used as the root for all future blocks.
+    The bitcoin genesis block has an unspendable Coinbase Output.
+
+== H
+
+Halving::
+    A halving event occurs when the block reward is cut in half, which happens approximately every four years (or precisely every 210,000 blocks).
+    Bitcoin already had three halving events: in 2012 (from 50 to 25 BTC), in 2016 (from 25 to 12.5 BTC), and in 2020 (from 12.5 to 6.25 BTC).
+
+Hard Fork::
+    A loosening of consensus rules, such that transactions obeying the new ruleset _may_ appear invalid to old, un-upgraded nodes.
+    Not to be confused with fork, soft fork, software fork or Git fork.
+
+Hardware Wallet::
+    A hardware wallet is a special type of bitcoin wallet which stores the user's private keys in a secure hardware device.
+
+Hash::
+    A digital fingerprint of some binary input.
+
+Hashlocks::
+    A hashlock is a type of encumbrance that restricts the spending of an output until a specified piece of data is publicly revealed.
+    Hashlocks have the useful property that once any hashlock is opened publicly, any other hashlock secured using the same key can also be opened.
+    This makes it possible to create multiple outputs that are all encumbered by the same hashlock and which all become spendable at the same time.
+
+HD Protocol::
+    The Hierarchical Deterministic (HD) key creation and transfer protocol (BIP-32), which allows creating child keys from parent keys in a hierarchy.
+
+HD Wallet::
+    Wallets using the Hierarchical Deterministic (HD Protocol) key creation and transfer protocol (BIP-32).
+
+HD Wallet Seed::
+    HD wallet seed or root seed is a potentially-short value used as a seed to generate the master private key and master chain code for an HD wallet.
+
+HTLC::
+    A Hashed Time Lock Contract or HTLC is a class of payments that use hashlocks and timelocks to require that the receiver of a payment either acknowledge receiving the payment prior to a deadline by generating cryptographic proof of payment or forfeit the ability to claim the payment, allowing it to be claimed back by the sender.
+
+== K
+
+KYC::
+    Know your customer (KYC) is the process of a business, identifying and verifying the identity of its clients.
+    The term is also used to refer to the bank regulation which governs these activities.
+
+== L
+
+LevelDB::
+    LevelDB is an open source on-disk key-value store.
+    LevelDB is a light-weight, single-purpose library for persistence with bindings to many platforms.
+
+Lightning Network::
+    Lightning Network is an implementation of Hashed Timelock Contracts (HTLCs) with bi-directional payment channels which allows payments to be securely routed across multiple peer-to-peer payment channels.
+    This allows the formation of a network where any peer on the network can pay any other peer even if they don't directly have a channel open between each other.
+
+Locktime::
+    Locktime, or more technically `nLockTime`, is the part of a transaction which indicates the earliest time or earliest block when that transaction may be added to the block chain.
+
+== M
+
+Mempool::
+    The mempool (memory pool) is a collection of all the valid transactions which have been learned about from the P2P network, but have not yet been confirmed in a block.
+    Whilst nodes must stay in consensus about which transactions are in each block, they may have (slightly) different mempools to each other due to transaction propagation delays, amongst other things.
+
+Merkle Root::
+    The root node of a merkle tree, a descendant of all the hashed pairs in the tree.
+    Block headers must include a valid merkle root descended from all transactions in that block.
+
+Merkle Tree::
+    A tree constructed by hashing paired data (the leaves), then pairing and hashing the results until a single hash remains, the merkle root.
+    In bitcoin, the leaves are almost always transactions from a single block.
+
+Miner::
+    A network node that finds valid proof of work for new blocks, by repeated hashing of the Block Header until they find a Hash which is lower than the current Difficulty.
+
+Mining Reward::
+    Also known as Block Reward.
+    The reward miners receive in return for the security provided by mining.
+    Includes the new coins created with each new block, also known as a block reward or coinbase reward, and the transaction fees from all the transactions included in the block.
+
+Multisignature::
+    Multisignature (multisig) transactions require signatures from multiple keys to authorize a transaction using an `m-of-m` scheme.
+    Also see Threshold Multisignature.
+
+== N
+
+Network::
+    A peer-to-peer network that propagates transactions and blocks to every Bitcoin node on the network.
+
+Nonce::
+    The "nonce" in a bitcoin block is a 32-bit (4-byte) field whose value is permuted by miners until the hash of the block will contain a run of leading zeros.
+
+// TODO Extra Nonce
+
+== O
+
+Off-chain Transactions::
+    An off-chain transaction is a movement of on-chain coins which is not immediately reflected on the main block chain, e.g. a payment through a Lightning Channel.
+    While an on-chain transaction -- usually referred to as simply __a transaction__ -- modifies the blockchain and depends on the blockchain to determine its validity an off-chain transaction relies on other methods to record and validate the transaction, and may require "settlement" on-chain again at some point in the future.
+
+Opcode::
+    Operation codes from the Bitcoin Scripting language which push data or perform functions within a pubkey script or signature script.
+
+OP_RETURN::
+    An opcode used in one of the outputs in an `OP_RETURN` Transaction.
+    Not to be confused with `OP_RETURN` transaction.
+
+OP_RETURN Transaction::
+    A transaction type that adds arbitrary data to a provably unspendable pubkey script that full nodes don’t have to store in their UTXO database.
+    Not to be confused with OP_RETURN opcode.
+
+Orphan Block::
+    Blocks whose parent block has not been processed by the local node, so they can’t be fully validated yet.
+    Orphan blocks are usually cached rather than discarded, in case they make up the most-work chain in the future.
+    Relatively rare as of 2022.
+    Not to be confused with Stale Block.
+
+Orphan Transactions::
+    Transactions that can't go into the Mempool due to one or more missing inputs.
+
+Output::
+    Output, transaction output, or `TxOut` is an output of a transaction which contains two fields: a value field for transferring zero or more satoshis and a pubkey script for indicating what conditions must be fulfilled for those satoshis to be spent when this Output is used as an input to a future transaction.
+
+== P
+
+// TODO: fix up these script types
+
+P2PKH::
+    P2PKH (Pay-To-PubKey-Hash) is script pattern formed from hashing the pubkey being used to encumber the output.
+    An output locked by a P2PKH script can be unlocked (spent) by presenting a public key (which hashes to the same value) and a digital signature created by the corresponding private key.
+
+P2SH::
+    P2SH or (Pay-to-Script-Hash) is script pattern that greatly simplifies the use of complex transaction scripts, as well as reduces transaction fees for the sender.
+    The script that encumbers the output (redeem script) is not presented in the locking script.
+    Instead, only a hash of it is in the locking script requiring the recipient to provide the script in their redeem script on spending it in the future.
+
+P2SH Address::
+    P2SH addresses are Base58Check encodings of the 20-byte hash of a script.
+    They use the version prefix "5", which results in Base58Check-encoded addresses that start with a "3".
+    P2SH addresses hide all of the complexity, so that the person making a payment does not see the script.
+
+P2WPKH::
+    The signature of a P2WPKH (Pay-to-Witness-Public-Key-Hash) contains the same information as P2PKH, but is located in the witness field instead of the scriptSig field.
+    The `scriptPubKey` is also modified.
+
+P2WSH::
+    The difference between P2SH and P2WSH (Pay-to-Witness-Script-Hash) is about the cryptographic proof location change from the scriptSig field to the witness field and the scriptPubKey that is also modified.
+
+Paper Wallet::
+    In the most specific sense, a paper wallet is a document containing one or more Private Keys.
+    However, people often use the term to mean any way of storing bitcoin offline as a physical document.
+    This second definition also includes paper keys and redeemable codes.
+
+Passphrase::
+    A passphrase is an optional string created by the user that serves as an additional security factor protecting a wallet seed.
+    It can also be used as a form of plausible deniability, where a chosen passphrase leads to a wallet with a small amount of funds used to distract an attacker from the “real” wallet that contains the majority of funds, when two different passphrases are used on the same Seed.
+
+Payment Channel::
+    A micropayment channel or payment channel is a class of techniques designed to allow users to make multiple bitcoin transactions without committing all of the transactions to the Bitcoin blockchain.
+    In a typical payment channel, only two transactions are added to the block chain but an unlimited or nearly unlimited number of payments can be made between the participants.
+
+Pooled Mining::
+    Pooled mining is a mining approach where multiple generating clients contribute to the generation of a block, and then split the block reward according the contributed processing power.
+
+Proof-of-Work::
+    A hash adhering to a pattern that requires significant computation to find, therefore "proving" work was done to find it (on average).
+    Miners must construct a block template which, when hashed using SHA256 (the work), will have a value at or below a network-wide Difficulty Target.
+
+Partially Spent Bitcoin Transaction (PSBT)::
+    The Partially Signed Bitcoin Transaction (PSBT) format consists of key-value maps.
+    Each map consists of a sequence of key-value records, terminated by a 0x00 byte.
+    https://github.com/bitcoin/bips/blob/cf420089a4ed10c50e3ad2834fe13e72e1af7177/bip-0174.mediawiki#cite_note-1[BIP 174] and V2 https://github.com/bitcoin/bips/blob/cf420089a4ed10c50e3ad2834fe13e72e1af7177/bip-0370.mediawiki[BIP 370]
+
+// TODO: Public Key
+
+== R
+
+RBF::
+    The concept of replace-by-fee or RBF was developed by requiring replacements to pay for not only its own cost, but also the fee of the transactions being replaced, the DoS risk was strictly less than the risk of flooding with separate transactions.
+    https://en.bitcoin.it/wiki/Replace_by_fee[Read More]
+
+RIPEMD-160::
+    A 160-bit cryptographic hash function.
+    A strengthened version of RIPEMD with a 160-bit hash result, expected to be secure for the next ten years or more.
+    Used in bitcoin as a second hash, resulting in shorter outputs, when hashing a Public Key to an Address.
+
+
+== S
+
+Satoshi::
+    A Satoshi is the base denomination of coins on the Bitcoin network used in all transactions and validation.
+    "1 Bitcoin" is just an abstraction representing 1*10^8 satoshis which presented to users as a convenience to avoid them interacting with large number powers during network bootstrapping.
+    Displaying bitcoin payment values relative to "1 Bitcoin", e.g. "Send 0.0015 bitcoin to bc1qfw..." is merely continuation of this abstraction.
+    Named after Satoshi Nakamoto.
+
+Satoshi Nakamoto::
+    Satoshi Nakamoto is the name or pseudonym used by the person or group who designed bitcoin and created its original reference implementation.
+    As a part of the implementation, they also devised the first blockchain database.
+    In the process they were the first to solve the double-spending problem for digital currency.
+    Their real identity remains unknown.
+
+Script::
+    Bitcoin uses a scripting system for transactions.
+    Forth-like, Script is simple, stack-based, and processed from left to right.
+    It is purposefully not Turing-complete, with no loops.
+
+ScriptPubKey (aka pubkey script)::
+    ScriptPubKey or pubkey script, is a script included in outputs which sets the conditions that must be fulfilled for those satoshis to be spent.
+    Data for fulfilling the conditions can be provided in a signature script.
+
+ScriptSig (aka signature script)::
+    ScriptSig or signature script, is the data generated by a spender which is almost always used as variables to satisfy a pubkey script.
+
+Secret Key (aka private key)::
+    A point on the secp256k1 curve which can be used as a private key in an ECDSA signature operation to authorize spending of Bitcoins.
+    A secret key might take the form:
++
+[source,text]
+----
+5J76sF8L5jTtzE96r66Sf8cka9y44wdpJjMwCxR3tzLh3ibVPxh
+----
+
+Segregated Witness::
+    An upgrade to the Bitcoin protocol in which signature ("witness") data is separated from sender/receiver data to further optimize the structure of transactions.
+    It was implemented as a Soft Fork.
+
+SHA::
+    The Secure Hash Algorithm or SHA is a family of cryptographic hash functions published by the National Institute of Standards and Technology (NIST).
+
+Simplified Payment Verification (SPV)::
+    SPV or simplified payment verification is a method for verifying that particular transactions were included in a block, without downloading the entire block using Merkle Proofs.
+    This method of verification can be used by lightweight Bitcoin clients.
+
+Soft Fork::
+    A tightening of consensus rules, such that transactions obeying the new ruleset must appear valid to old, un-upgraded nodes.
+    Not to be confused with fork, hard fork, software fork or Git fork.
+
+Stale Block::
+    A valid block that was successfully mined but that isn’t included on the current most-work chain tip, because some other valid block that was mined at the same height extended the old tip first.
+    The miner of a stale block doesn't get the block reward or the transactions fees of this block.
+    Not to be confused with Orphan Block or Candidate Block.
+
+Stratum (STM)::
+    Stratum or STM is used by Pooled Miners to request new work from a centralized server.
+
+== T
+
+Threshold Multisignature::
+    Threshold Multisignature transactions require signatures from `n-of-m` keys to authorize a transaction.
+    Also see Multisignature.
+
+Timelocks::
+    A timelock is a type of encumbrance that restricts the spending of some bitcoin until a specified future time or block height.
+    Timelocks feature prominently in many bitcoin contracts, including payment channels and hashed timelock contracts.
+
+Transaction::
+    A signed data structure expressing a transfer of value from one or more UTXOs to one or more recipients.
+    Transactions are transmitted over the Bitcoin network, collected by miners, and included into blocks, being made permanent on the blockchain.
+
+Turing Completeness::
+    A programming language is "Turing complete" if it can run any program that a Turing machine can run, given enough time and memory.
+
+== U
+
+Unspent Transaction Output (UTXO)::
+    An unspent transaction output that can be spent as an input in a new transaction with a valid `ScriptSig`.
+
+== W
+
+Wallet::
+    Software used to send and receive bitcoin.
+    May store private keys, public keys, addresses or descriptors depending on wallet type and security setup and may be able to generate:
++
+. Addresses (derived from Descriptor or Public Keys)
+. PSBTs
+. Fully signed Transactions
+
+Wallet Import Format (WIF)::
+    WIF or Wallet Import Format is a data interchange format designed to allow exporting and importing a single private key with a flag indicating whether or not it uses a compressed public key.
+
+Some contributed definitions have been sourced under a CC-BY license from the https://en.bitcoin.it/wiki/Main_Page[bitcoin Wiki] or from other open source documentation sources.
+
