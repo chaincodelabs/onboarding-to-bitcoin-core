@@ -1,3 +1,6 @@
 {
-    "themeCSS": ".label foreignObject { font-size: 85%; overflow: visible; }"
+  "themeCSS": ".label foreignObject { font-size: 85%; overflow: visible; }",
+  "puppeteerConfig": {
+    "args": ["--no-sandbox"]
+  }
 }
