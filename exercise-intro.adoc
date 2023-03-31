@@ -1,7 +1,0 @@
-****
-Using either `bitcoin-cli` in your terminal, or a <<test_shell_nodes,Jupyter Notebook>> in conjunction with the `TestShell` class from the Bitcoin Core Test Framework, try to complete the following exercises.
-
-Changes to the codebase will require you to re-compile afterwards.
-
-Don't forget to use the compiled binaries found in your source directory, for example `/home/user/bitcoin/src/bitcoind`, otherwise your system might select a previously-installed (non-modified) version of bitcoind.
-****
