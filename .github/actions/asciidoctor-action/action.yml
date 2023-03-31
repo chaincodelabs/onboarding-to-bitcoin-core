@@ -1,0 +1,32 @@
+name: Asciidoctor Compile (with Mermaid)
+description: >
+  > This action compiles specified asciidoctor files that may contain embedded
+  > Mermaid diagrams.
+author: Antonio Salazar Cardozo
+branding:
+  icon: file-text
+  color: white
+inputs:
+  files:
+    description: Files to compile, can include * and ** globs.
+    required: true
+  format:
+    description: The format to compile to, `pdf` or blank.
+    required: false
+    default: ''
+  asciidoctor-args:
+    description: Additional arguments to pass the asciidoctor command.
+    required: false
+    default: ''
+outputs:
+  asciidoctor-artifacts:
+    description: The list of space-separated compilation outputs
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - -f
+    - ${{ inputs.format }}
+    - -a
+    - ${{ inputs.asciidoctor-args }}
+    - ${{ inputs.files }}
