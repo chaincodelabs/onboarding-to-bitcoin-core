@@ -8261,10 +8261,73 @@ The node uses the presence of <code>m_addr_known</code> to decide whether the pe
 <div class="sect3">
 <h4 id="_transaction_relay"><a class="link" href="#_transaction_relay">Transaction relay</a></h4>
 <div class="paragraph">
-<p>TODO</p>
+<p>Relaying transactions is a core tenet of a Bitcoin node, along with <a href="#_address_relay">Address relay</a> and <a href="#_block_relay">Block relay</a>.
+However, we don&#8217;t necessarily want to immediately relay transactions we accept into our mempool immediately for the following reasons:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Privacy: Adding a small delay in transaction relay helps obscure the route transactions take, making it harder to use transaction timing to infer the structure of the network or the original source of the transaction.</p>
+</li>
+<li>
+<p>Load balancing: Having a small delay in transaction relay helps avoid the possibility that all transactions will be requested from the peer with the lowest network latency simply because they announce the transaction first.</p>
+</li>
+<li>
+<p>Saving bandwidth: Having a longer delay in transaction relay may allow some transactions to not be relayed at all, eg in the case where a low fee rate transaction is accepted into the mempool and then evicted due to being at the bottom of the mempool, or RBFed prior to being relayed.</p>
+</li>
+</ol>
 </div>
 <div class="sect4">
-<h5 id="_tx_privacy"><a class="link" href="#_tx_privacy"><code>Tx</code> privacy</a></h5>
+<h5 id="_rejecting_incoming_transactions"><a class="link" href="#_rejecting_incoming_transactions">Rejecting incoming transactions</a></h5>
+<div class="paragraph">
+<p>In addition to being careful about transaction relay, we must also reject (some) incoming transactions before they enter our mempool, which acts as a DoS prevention measure for our node.
+If we were to accept and blindly relay all transactions INVed to us by our peers, then an attacker could cheaply use (waste) a node&#8217;s system resources and bandwidth, and have their attack amplified by the transaction flooding mechanism.</p>
+</div>
+<div class="paragraph">
+<p>How do we currently limit incoming transactions?</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>We reject transactions which don&#8217;t pass policy checks e.g.:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>We reject transactions that don&#8217;t pay the <a href="https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L833">mempool min fee</a> (set based on maximum mempool size)</p>
+</li>
+<li>
+<p>We reject RBF transactions that don&#8217;t <a href="https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L927-L928">increase the fee rate</a> by more than <code>-incrementalrelayfee</code></p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>We reject transactions which don&#8217;t pass replacement/package checks.</p>
+</li>
+<li>
+<p>We reject transactions which don&#8217;t pass consensus checks.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>What other mechanisms <em>could</em> we consider using before the <a href="#_single_transactions">ATMP</a> checks are performed?</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>We <em>could</em> reject transactions from individual peers that send transactions at too high a rate, however this would just encourage attackers to make multiple connections, using up additional inbound slots</p>
+</li>
+<li>
+<p>We <em>could</em> ignore transactions from any peer once some rate limit is hit, however this would drop high feerate transactions from innocent peers which would be doubly undesirable</p>
+</li>
+<li>
+<p>We <em>could</em> artificially increase our mempool min fee when a rate limit is exceeded, even if the mempool is not full?</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_initial_broadcast"><a class="link" href="#_initial_broadcast">Initial broadcast</a></h5>
 <div class="paragraph">
 <p>If a spy is able to identify which node initially broadcast a transaction, there&#8217;s a high probability that that node is the source wallet for the transaction.
 To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
@@ -11009,7 +11072,7 @@ May store private keys, public keys, addresses or descriptors depending on walle
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-03-31 22:27:37 UTC
+Last updated 2023-05-10 19:56:59 UTC
 </div>
 </div>
 <!--- <script src="/assets/js/tocbot.js"></script> --->
