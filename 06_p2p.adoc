@@ -560,9 +560,33 @@ The `addrv2` message is required to support https://trac.torproject.org/projects
 
 === Transaction relay
 
-TODO
+Relaying transactions is a core tenet of a Bitcoin node, along with <<Address relay>> and <<Block relay>>.
+However, we don't necessarily want to immediately relay transactions we accept into our mempool immediately for the following reasons:
 
-==== `Tx` privacy
+. Privacy: Adding a small delay in transaction relay helps obscure the route transactions take, making it harder to use transaction timing to infer the structure of the network or the original source of the transaction.
+. Load balancing: Having a small delay in transaction relay helps avoid the possibility that all transactions will be requested from the peer with the lowest network latency simply because they announce the transaction first.
+. Saving bandwidth: Having a longer delay in transaction relay may allow some transactions to not be relayed at all, eg in the case where a low fee rate transaction is accepted into the mempool and then evicted due to being at the bottom of the mempool, or RBFed prior to being relayed.
+
+==== Rejecting incoming transactions
+
+In addition to being careful about transaction relay, we must also reject (some) incoming transactions before they enter our mempool, which acts as a DoS prevention measure for our node.
+If we were to accept and blindly relay all transactions INVed to us by our peers, then an attacker could cheaply use (waste) a node's system resources and bandwidth, and have their attack amplified by the transaction flooding mechanism.
+
+How do we currently limit incoming transactions?
+
+. We reject transactions which don't pass policy checks e.g.:
+.. We reject transactions that don't pay the https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L833[mempool min fee] (set based on maximum mempool size)
+.. We reject RBF transactions that don't https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L927-L928[increase the fee rate] by more than `-incrementalrelayfee`
+. We reject transactions which don't pass replacement/package checks.
+. We reject transactions which don't pass consensus checks.
+
+What other mechanisms _could_ we consider using before the <<Single transactions,ATMP>> checks are performed?
+
+. We _could_ reject transactions from individual peers that send transactions at too high a rate, however this would just encourage attackers to make multiple connections, using up additional inbound slots
+. We _could_ ignore transactions from any peer once some rate limit is hit, however this would drop high feerate transactions from innocent peers which would be doubly undesirable
+. We _could_ artificially increase our mempool min fee when a rate limit is exceeded, even if the mempool is not full?
+
+==== Initial broadcast
 
 If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
 To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
