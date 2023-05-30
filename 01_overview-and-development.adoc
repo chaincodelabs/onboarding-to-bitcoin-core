@@ -111,6 +111,8 @@ Most developers enjoy writing their own code more than reviewing code from other
 
 IMPORTANT: Jon's estimates of "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon himself feels would be best for the project. Don't be put off submitting a potentially valuable PR just because "you haven't done enough reviews"!
 
+For some tips on how to maintain an open PR using git, such as how to redo commit history, as well as edit specific commits, check out this https://github.com/satsie/bitcoin-notez/blob/master/bitcoin-core-development/git-guide.md[guide^].
+
 ==== Commit messages
 
 When writing commit messages be sure to have read Chris Beams' "How to Write a Git Commit Message" https://chris.beams.io/posts/git-commit/[blog post^].
