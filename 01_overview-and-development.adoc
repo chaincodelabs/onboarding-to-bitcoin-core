@@ -4,7 +4,7 @@ TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/
 
 WARNING: Whilst this disclaimer is present this documentation is considered a work in progress and may be subject to minor or major changes at any time without notice.
 
-WARNING: This documentation can temporarily be found hosted at https://obc.256k1.dev[^], however the hosted location is likely to change in the near future.
+WARNING: This documentation can temporarily be found hosted at https://bitcoincore.wtf[bitcoincore.wtf^], however the hosted location is likely to change in the near future.
 
 == Contributor journeys
 
