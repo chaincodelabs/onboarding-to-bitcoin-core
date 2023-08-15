@@ -86,3 +86,6 @@ exclude:
   - Gemfile.lock
   - Makefile
   - mermaid-config.json
+  - qa/
+  - index.adoc
+  - book.html
