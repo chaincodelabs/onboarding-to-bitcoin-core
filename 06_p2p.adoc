@@ -638,7 +638,7 @@ There are two methods available for relaying blocks:
 ** The goal is to address the bandwidth inefficiencies of legacy relaying by only relaying the transactions of a new block that the requesting peer has not yet seen.
 ** Check out this https://bitcoincore.org/en/2016/06/07/compact-blocks-faq/[Compact Blocks FAQ^] for benchmarks and more info.
 
-=== blocksonly vs block-relay-only
+=== blocksonly versus block-relay-only
 
 Bitcoin Core 0.12 introduced a `-blocksonly` setting that can reduce a node's bandwidth usage by 88%.
 The reduction is achieved by not participating in transaction relay.

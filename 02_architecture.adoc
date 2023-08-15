@@ -22,7 +22,7 @@ You can see some (but not all) of these subsystems being initialized in https://
 
 There is a recent preference to favour python over bash/sh for scripting, e.g. for linters, but many shell scripts remain in place for CI and contrib/ scripts.
 
-== bitcoind overview
+== Overview of bitcoind
 
 The following diagram gives a brief overview of how some of the major components in bitcoind are related.
 
