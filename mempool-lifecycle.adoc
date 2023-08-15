@@ -1,0 +1,188 @@
+:page-title: Mempool lifecycle
+:page-nav_order: 20
+:page-parent: Mempool
+include::tmp/links.adoc[]
+== Mempool life cycle
+
+=== Initialisation
+
+The primary mempool object itself is initialized onto the `node` in _init.cpp_ as part of `AppInitMain()` which takes `NodeContext& node` as an argument.
+
+.init.cpp#AppInitMain()
+[source,cpp,options=nowrap]
+----
+assert(!node.mempool);
+int check_ratio = std::min<int>(std::max<int>(args.GetIntArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
+node.mempool = std::make_unique<CTxMemPool>(node.fee_estimator.get(), check_ratio);
+----
+
+[NOTE]
+====
+The `check_ratio`, used to determine sanity checks, defaults to `0` for all networks except regtest, unless the `checkmempool` program option has been specified.
+
+Sanity checking here refers to checking the consistency of the entire mempool every 1 in `n` times a new transaction is added, so is potentially computationally expensive to have enabled. +
+See `CTxMemPool::Check()` for more information on what the check does.
+====
+
+==== Loading a previous mempool
+
+If the node has been run before then it might have some blocks and a mempool to load.
+"Step 11: import blocks" of `AppInitMain()` in _init.cpp_ calls `ThreadImport()` to load the mempool from disk where it is saved to file `mempool.dat`:
+
+.init.cpp#AppInitMain()
+[source,cpp,options=nowrap]
+----
+    chainman.m_load_block = std::thread(&TraceThread<std::function<void()>>, "loadblk", [=, &chainman, &args] {
+        ThreadImport(chainman, vImportFiles, args);
+    });
+----
+
+TIP: This is run in its own thread so that (potentially) slow disk I/O has a minimal impact on startup times, and the remainder of startup execution can be continued.
+
+`ThreadImport` runs a few jobs sequentially:
+
+. Optionally perform a reindex
+. Load the block files from disk
+. Check that we are still on the best chain according to the blocks loaded from disk
+. Load the mempool via `chainman.ActiveChainstate().LoadMempool(args);`
+
+`validation.cpp#LoadMempool()` is an almost mirror of `DumpMempool()` described in more detail below in <<Mempool shutdown>>:
+
+. Read the version and count of serialized transactions to follow
+. Test each tx for expiry before submitting it to MemPoolAccept
+. Read any remaining `mapDeltas` and `unbroadcast_txids` from the file and apply them
+
+
+[id=default_mempool_expire]
+[TIP]
+====
+We test for expiry because it is current default policy not to keep transactions in the mempool longer than 336 hours, i.e. two weeks. +
+The default value comes from the constant `DEFAULT_MEMPOOL_EXPIRE` which can be overridden by the user with the `-mempoolexpiry` option. +
+Loading (and validating) a mempool of transactions this old is likely a waste of time and resources.
+====
+
+=== Runtime execution
+
+While the node is running the mempool is persisted in memory.
+By default the mempool is limited to 300MB as specified by `DEFAULT_MAX_MEMPOOL_SIZE`.
+This can be overridden by the program option `maxmempoolsize`.
+
+See <<{mempool-tx-format}mempool_tx_format>> for more information on what data counts towards this limit, or review the `CTxMemPool` data members which store current usage metrics e.g. `CTxMemPool::cachedInnerUsage` and the implementation of e.g. `CTxMemPool::DynamicMemoryUsage()`.
+
+=== Mempool shutdown
+
+When the node is shut down its mempool is (by default) persisted to disk, called from `init.cpp#Shutdown()`:
+
+.init.cpp#Shutdown()
+[source,cpp,options=nowrap]
+----
+    if (node.mempool && node.mempool->IsLoaded() && node.args->GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
+        DumpMempool(*node.mempool);
+    }
+----
+
+A pointer to the mempool object is passed to `DumpMempool()`, which begins by locking the mempool mutex, `pool.cs`, before a snapshot of the mempool is created using local variables `mapDeltas`, `vinfo` and `unbroadcast_txids`.
+
+TIP: `mapDeltas` is used by miners to apply (fee) prioritisation to certain transactions when creating new block templates.
+
+TIP: `vinfo` stores information on each transaction as a vector of `CTxMemPoolInfo` objects.
+
+.validation.cpp#DumpMempool()
+[source,cpp,options=nowrap]
+----
+bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool skip_file_commit)
+{
+    int64_t start = GetTimeMicros();
+
+    std::map<uint256, CAmount> mapDeltas;
+    std::vector<TxMempoolInfo> vinfo;
+    std::set<uint256> unbroadcast_txids;
+
+    static Mutex dump_mutex;
+    LOCK(dump_mutex);
+
+    {
+        LOCK(pool.cs);
+        for (const auto &i : pool.mapDeltas) {
+            mapDeltas[i.first] = i.second;
+        }
+        vinfo = pool.infoAll();
+        unbroadcast_txids = pool.GetUnbroadcastTxs();
+    }
+----
+
+Next a new (temporary) file is opened and some metadata related to mempool version and size is written to the front.
+Afterwards we loop through `vinfo` writing the transaction, the time it entered the mempool and the fee delta (prioritisation) to the file, before deleting its entry from our `mapDeltas` mirror.
+
+Finally, any remaining info in `mapDeltas` is appended to the file.
+This might include prioritisation information on transactions not in our mempool.
+
+.validation.cpp#DumpMempool()
+[source,cpp,options=nowrap]
+----
+    // ...
+    try {
+        FILE* filestr{mockable_fopen_function(GetDataDir() / "mempool.dat.new", "wb")};
+        if (!filestr) {
+            return false;
+        }
+
+        CAutoFile file(filestr, SER_DISK, CLIENT_VERSION);
+
+        uint64_t version = MEMPOOL_DUMP_VERSION;
+        file << version;
+
+        file << (uint64_t)vinfo.size();
+        for (const auto& i : vinfo) {
+            file << *(i.tx);
+            file << int64_t{count_seconds(i.m_time)};
+            file << int64_t{i.nFeeDelta};
+            mapDeltas.erase(i.tx->GetHash());
+        }
+
+        file << mapDeltas;
+
+        LogPrintf("Writing %d unbroadcast transactions to disk.\n", unbroadcast_txids.size());
+        file << unbroadcast_txids;
+    // ...
+}
+----
+
+****
+We are able to write (and later read) `mapDeltas` and `unbroadcast_txids` to the file only using the `<<` operator.
+This is due to the operator overload on the `CAutoFile` class found in _streams.h_:
+
+.streams.h
+[source,cpp,options=nowrap]
+----
+/**
+ * map
+ */
+template<typename Stream, typename K, typename T, typename Pred, typename A>
+void Serialize(Stream& os, const std::map<K, T, Pred, A>& m)
+{
+    WriteCompactSize(os, m.size());
+    for (const auto& entry : m)
+        Serialize(os, entry);
+}
+
+class: CAutoFile
+{
+public:
+    // ...
+    template<typename T>
+    CAutoFile& operator<<(const T& obj)
+    {
+        // Serialize to this stream
+        if (!file)
+            throw std::ios_base::failure("CAutoFile::operator<<: file handle is nullptr");
+        ::Serialize(*this, obj);
+        return (*this);
+    }
+    // ...
+};
+----
+
+****
+
+Finally, if writing the elements to the temporary file was successful, we close the file and rename it to `mempool.dat`.

@@ -1,0 +1,195 @@
+:page-title: Consensus bugs
+:page-nav_order: 30
+:page-parent: Consensus and Validation
+include::tmp/links.adoc[]
+== Consensus and validation bugs
+
+Consensus and validation bugs can arise both from inside the Bitcoin Core codebase itself, and from external dependencies.
+Bitcoin wiki https://en.bitcoin.it/wiki/Common_Vulnerabilities_and_Exposures[lists^] some CVE and other Exposures.
+
+=== OpenSSL consensus failure
+
+Pieter Wuille https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2015-July/009697.html[disclosed^] the possibility of a consensus failure via usage of OpenSSL.
+The issue was that the OpenSSL signature verification was accepting *multiple* signature serialization formats (for the same signature) as valid.
+This effectively meant that a transactions' ID (txid) could be changed, because the signature contributes to the txid hash.
+
+.Click to show the code comments related to pubkey signature parsing from _pubkey.cpp_
+[%collapsible]
+====
+
+.src/pubkey.cpp
+[source,cpp,options=nowrap]
+----
+/** This function is taken from the libsecp256k1 distribution and implements
+ *  DER parsing for ECDSA signatures, while supporting an arbitrary subset of
+ *  format violations.
+ *
+ *  Supported violations include negative integers, excessive padding, garbage
+ *  at the end, and overly long length descriptors. This is safe to use in
+ *  Bitcoin because since the activation of BIP66, signatures are verified to be
+ *  strict DER before being passed to this module, and we know it supports all
+ *  violations present in the blockchain before that point.
+ */
+int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1_ecdsa_signature* sig, const unsigned char *input, size_t inputlen) {
+    // ...
+}
+----
+====
+
+There were a few cases to consider:
+
+. signature length descriptor malleation (extension to 5 bytes)
+. third party malleation: signature may be slightly "tweaked" or padded
+. third party malleation: negating the `S` value of the signature
+
+In the length descriptor case there is a higher risk of causing a consensus-related chainsplit.
+The sender can create a normal-length valid signature, but which uses a 5 byte length descriptor meaning that it might not be accepted by OpenSSL on all platforms.
+
+TIP: Note that the sender can also "malleate" the signature whenever they like, by simply creating a new one, but this will be handled differently than a length-descriptor-extended signature.
+
+In the second case, signature tweaking or padding, there is a lesser risk of causing a consensus-related chainsplit.
+However the ability of third parties to tamper with valid transactions may open up off-chain attacks related to Bitcoin services or layers (e.g. Lightning) in the event that they are relying on txids to track transactions.
+
+It is interesting to consider the order of the steps taken to fix this potential vulnerability:
+
+. First the default policy in Bitcoin Core was altered (via `isStandard()`) to prevent the software from relaying or accepting into the mempool transactions with non-DER signature encodings. +
+This was carried out in https://github.com/bitcoin/bitcoin/pull/2520[PR#2520^].
+. Following the policy change, the strict encoding rules were later enforced by consensus in https://github.com/bitcoin/bitcoin/pull/5713[PR#5713^].
+
+We can see the resulting flag in the script verification enum:
+
+.src/script/interpreter.h
+[source,cpp,options=nowrap]
+----
+// Passing a non-strict-DER signature or one with undefined hashtype to a checksig operation causes script failure.
+// Evaluating a pubkey that is not (0x04 + 64 bytes) or (0x02 or 0x03 + 32 bytes) by checksig causes script failure.
+// (not used or intended as a consensus rule).
+SCRIPT_VERIFY_STRICTENC = (1U << 1),
+----
+
+.Expand to see where this flag is checked in _src/script/interpreter.cpp_
+[%collapsible]
+====
+
+[source,cpp,options=nowrap]
+----
+bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror) {
+    // Empty signature. Not strictly DER encoded, but allowed to provide a
+    // compact way to provide an invalid signature for use with CHECK(MULTI)SIG
+    if (vchSig.size() == 0) {
+        return true;
+    }
+    if ((flags & (SCRIPT_VERIFY_DERSIG | SCRIPT_VERIFY_LOW_S | SCRIPT_VERIFY_STRICTENC)) != 0 && !IsValidSignatureEncoding(vchSig)) {
+        return set_error(serror, SCRIPT_ERR_SIG_DER);
+    } else if ((flags & SCRIPT_VERIFY_LOW_S) != 0 && !IsLowDERSignature(vchSig, serror)) {
+        // serror is set
+        return false;
+    } else if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsDefinedHashtypeSignature(vchSig)) {
+        return set_error(serror, SCRIPT_ERR_SIG_HASHTYPE);
+    }
+    return true;
+}
+
+bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, const SigVersion &sigversion, ScriptError* serror) {
+    if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsCompressedOrUncompressedPubKey(vchPubKey)) {
+        return set_error(serror, SCRIPT_ERR_PUBKEYTYPE);
+    }
+    // Only compressed keys are accepted in segwit
+    if ((flags & SCRIPT_VERIFY_WITNESS_PUBKEYTYPE) != 0 && sigversion == SigVersion::WITNESS_V0 && !IsCompressedPubKey(vchPubKey)) {
+        return set_error(serror, SCRIPT_ERR_WITNESS_PUBKEYTYPE);
+    }
+    return true;
+}
+----
+====
+
+[TIP]
+====
+Do you think this approach -- first altering policy, followed later by consensus -- made sense for implementing the changes needed to fix this consensus vulnerability?
+Are there circumstances where it might not make sense?
+====
+
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954^] which switched to using the in-house libsecp256k1 library (as a <<{subtrees}subtrees,subtree>>) for signature verification.
+
+[[database_consensus]]
+=== Database consensus
+
+Historically Bitcoin Core used Berkeley DB (BDB) for transaction and block indices.
+In 2013 a migration to LevelDB for these indices was included with Bitcoin Core v0.8.
+What developers at the time could not foresee was that nodes that were still using BDB, all pre 0.8 nodes, were silently consensus-bound by a relatively obscure BDB-specific database lock counter.
+
+TIP: BDB required a configuration setting for the total number of locks available to the database.
+
+Bitcoin Core was interpreting a failure to grab the required number of locks as equivalent to block validation failing.
+This caused some BDB-using nodes to mark blocks created by LevelDB-using nodes as invalid and caused a consensus-level chain split.
+https://github.com/bitcoin/bips/tree/master/bip-0050.mediawiki[BIP 50^] provides further explanation on this incident.
+
+WARNING: Although database code is not in close proximity to the `/src/consensus` region of the codebase it was still able to induce a consensus bug.
+
+BDB has caused other potentially-dangerous behaviour in the past.
+Developer Greg Maxwell https://btctranscripts.com/greg-maxwell/2015-04-29-gmaxwell-bitcoin-selection-cryptography/#qa[describes^] in a Q&A how even the same versions of BDB running on the same system exhibited non-deterministic behaviour which might have been able to initiate chain re-orgs.
+
+=== An inflation bug
+
+This Bitcoin Core https://bitcoincore.org/en/2018/09/20/notice/[disclosure^] details a potential inflation bug.
+
+It originated from trying to speed up transaction validation in `main.cpp#CheckTransaction()` which is now `consensus/tx_check.cpp#CheckTransaction()`, something which would in theory help speed up IBD (and less noticeably singular/block transaction validation).
+The result in Bitcoin Core versions 0.15.x -> 0.16.2 was that a coin that was created in a previous block, could be spent twice in the same block by a miner, without the block being rejected by other Bitcoin Core nodes (of the aforementioned versions).
+
+Whilst this bug originates from validation, it can certainly be described as a breach of consensus parameters.
+In addition, nodes of version 0.14.x <= `node_version` >= 0.16.3 would reject inflation blocks, ultimately resulting in a chain split provided that miners existed using both inflation-resistant and inflation-permitting clients.
+
+== Hard & Soft Forks
+
+Before continuing with this section, ensure that you have a good understanding of what soft and hard forks are, and how they differ.
+Some good resources to read up on this further are found in the table below.
+
+.Hard and soft fork resources
+[%autowidth.stretch]
+|===
+|Title |Resource |Link
+
+|What is a soft fork, what is a hard fork, what are their differences?
+|StackExchange
+|https://bitcoin.stackexchange.com/questions/30817/what-is-a-soft-fork-what-is-a-hard-fork-what-are-their-differences[link^]
+
+|Soft forks
+|bitcoin.it/wiki
+|https://en.bitcoin.it/wiki/Softfork[link^]
+
+|Hard forks
+|bitcoin.it/wiki
+|https://en.bitcoin.it/wiki/Hardfork[link^]
+
+|Soft fork activation
+|Bitcoin Optech
+|https://bitcoinops.org/en/topics/soft-fork-activation/[link^]
+
+|List of consensus forks
+|BitMex research
+|https://blog.bitmex.com/bitcoins-consensus-forks/[link^]
+
+|A taxonomy of forks (BIP99)
+|BIP
+|https://github.com/bitcoin/bips/blob/master/bip-0099.mediawiki[link^]
+
+|Modern Soft Fork Activation
+|bitcoin-dev mailing list
+|https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2020-January/017547.html[link^]
+
+|Chain splits and Resolutions
+|BitcoinMagazine guest
+|https://bitcoinmagazine.com/technical/guest-post-chain-splits-and-resolutions[link^]
+
+|===
+
+When making changes to Bitcoin Core its important to consider whether they could have any impact on the **consensus rules**, or the interpretation of those rules.
+If they do, then the changes will end up being either a soft or hard fork, depending on the nature of the rule change.
+
+WARNING: As <<Database consensus,described>>, certain Bitcoin Core components, such as the block database can also unwittingly introduce forking behaviour, even though they do not directly modify consensus rules.
+
+Some of the components which are known to alter consensus behaviour, and should therefore be approached with caution, are listed in the section <<{locating-consensus-code}consensus-components,consensus components>>.
+
+Changes are not made to consensus values or computations without extreme levels of review and necessity.
+In contrast, changes such as refactoring can be (and are) made to areas of consensus code, when we can be sure that they will not alter consensus validation.
+

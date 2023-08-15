@@ -1,0 +1,11 @@
+:page-title: QML GUI
+:page-nav_order: 30
+:page-parent: GUI
+== QML GUI
+
+Since writing this documentation focus has been directed towards re-writing the Qt code leveraging the https://doc.qt.io/qt-5/qtqml-index.html[Qt QML^] framework.
+This will allow developers to create visually-superior, and easier to write and reason-about GUI code, whilst also lowering the barriers to entry for potential new developers who want to be able to focus on GUI code.
+
+The recommendation therefore is to familiarise yourself with Qt QML and review the current codebase for the latest developments.
+You can follow along with the latest QML work in the specific https://github.com/bitcoin-core/gui-qml/blob/main/src/qml/README.md[bitcoin-core/qml-gui^] repo.
+

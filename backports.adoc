@@ -1,0 +1,14 @@
+:page-title: Backports
+:page-nav_order: 140
+:page-parent: Overview and Development Process
+=== Backports
+
+Bitcoin Core often backports fixes for bugs and soft fork activations into previous software releases.
+
+Generally maintainers will handle backporting for you, unless for some reason the process will be too difficult.
+If this point is reached a decision will be made on whether the backport is abandoned, or a specific (new) fix is created for the older software version.
+
+== Software Life-cycle
+
+An overview of the software life-cycle for Bitcoin Core can be found at https://bitcoincore.org/en/lifecycle/
+

@@ -1,0 +1,59 @@
+:page-title: Coin selection
+:page-nav_order: 40
+:page-parent: Wallet
+include::tmp/links.adoc[]
+[id=coin-selection-overview]
+=== Coin selection
+
+See https://bitcoinops.org/en/topics/coin-selection/[Bitcoin Optech^] for more information on coin selection.
+There is a section digging deeper into the coin selection code found <<{constructing-transactions}coin-selection,below>>.
+To select inputs to a transaction our primary considerations are privacy and fees.
+
+The below sections form an overview of creating a transaction via `CreateTransactionInternal()`.
+
+==== `AvailableCoins()`
+
+The gist of how we generate a list of coins available to spend (via `AvailableCoins()`) is that we iterate `mapWallet` and check for coins that:
+
+* Are not immature coinbase outputs
+* Are not conflicted
+* Must be at least in our mempool
+* Not currently replacing or being replaced by another transaction
+* Are not locked
+* Are `IsMine`
+* Are `spendable`
+
+...and return them as a `std::vector<COutput>`.
+
+[id=GroupOutputs]
+==== `GroupOutputs()`
+
+Once we have this vector of coins `GroupOutputs()` will turn them into ``OutputGroup``s.
+An `OutputGroup` consists of outputs with the same script, i.e. "coins sent to the same address".
+
+////
+Effective Value is = Coins value - Fee
+////
+
+[id=selectCoins]
+==== `selectCoins()`
+
+If you manually choose inputs, it will add outputs to the transaction automatically.
+It tries first to make sure that all outputs selected have 6 confirmations, if unsuccessful it then tries again with 1 confirmation as the lower bound.
+
+For change outputs it starts with 1 confirmation and then again with 0.
+If this is still unsuccessful it increases the number of ancestors and descendants that unconfirmed change can have.
+
+==== `AttemptSelection()`
+
+This function is orchestrating the <<GroupOutputs,Output group>> creation, and then the <<selectCoins,coin selection>>.
+Currently, this is always based on the <<{constructing-transactions}coin-selection,waste metric>>.
+
+It is using 3 algorithms and then selecting the "best" of the three (based on the waste metric):
+
+. Branch n bound (bnb)
+. Knapsack
+. Single Random Draw (SRD)
+
+There is currently an idea that a limited SRD could replace Knapsack in the future.
+Due to this plan for removal, it would not make sense to focus development effort on improving the Knapsack algorithm at this time.

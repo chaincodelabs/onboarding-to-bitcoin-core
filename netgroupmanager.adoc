@@ -1,0 +1,13 @@
+:page-title: NetGroupManager
+:page-nav_order: 30
+:page-parent: P2P
+=== NetGroupManager
+
+NetGroupManager is used to encapsulate all https://blog.bitmex.com/call-to-action-testing-and-improving-asmap/[asmap^] data and logic.
+It is setup by loading any provided asmap file passed during startup.
+
+==== History
+
+- https://bitcoincore.reviews/16702[PR#16702] introduced asmap as part of Addrman.
+- https://github.com/bitcoin/bitcoin/pull/22910[PR#22910^] introduced NetGroupManager as a better way to access asmap data by both Addrman and CConnman.
+

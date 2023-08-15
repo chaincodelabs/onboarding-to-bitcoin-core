@@ -1,0 +1,37 @@
+:page-title: Consensus specification
+:page-nav_order: 60
+:page-parent: Consensus and Validation
+include::tmp/links.adoc[]
+== Bitcoin core consensus specification
+
+A common question is where the bitcoin protocol is documented, i.e. specified.
+However bitcoin does not have a formal specification, even though many ideas have some specification (in <<{bips}bips>>) to aid re-implementation.
+
+IMPORTANT: The requirements to be compliant with "the bitcoin spec" are to be bug-for-bug compatible with the Bitcoin Core implementation.
+
+The reasons for Bitcoin not having a codified specification are historical; Satoshi never released one.
+Instead, in true "Cypherpunks write code" style and after releasing a general whitepaper, they simply released the first client.
+This client existed on it's own for the best part of two years before others sought to re-implement the rule-set in other clients:
+
+* https://github.com/libbitcoin/libbitcoin-system/commit/9dea4682bf0e4247f3c4cb8a6c140ade61bf7df7[libbitcoin^]
+* https://github.com/bitcoinj/bitcoinj/commit/d1036b101f01b7ab79fc3e10e5199f80f478674d[BitcoinJ^]
+
+A forum https://bitcointalk.org/index.php?topic=195.msg1611#msg1611[post^] from Satoshi in June 2010 had however previously discouraged alternative implementations with the rationale:
+
+[quote,Satoshi Nakamoto]
+____
+...
+
+I don't believe a second, compatible implementation of Bitcoin will ever be a good idea.  So much of the design depends on all nodes getting exactly identical results in lockstep that a second implementation would be a menace to the network.  The MIT license is compatible with all other licenses and commercial uses, so there is no need to rewrite it from a licensing standpoint.
+____
+
+It is still a point of contention amongst some developers in the community, however the fact remains that if you wish to remain in consensus with the majority of (Bitcoin Core) nodes on the network, you must be _exactly_ bug-for-bug compatible with Bitcoin Core's consensus code.
+
+TIP: If Satoshi _had_ launched Bitcoin by providing a specification, could it have ever been specified well-enough to enable us to have multiple node implementations?
+
+[TIP]
+====
+One mechanism often employed by those who want to run custom node software is to position an up-to-date Bitcoin Core node to act as a "gateway" to the network.
+Internally your own node can then make a single connection to this Bitcoin Core node.
+This means that your custom internal node will now only receive transactions and blocks which have passed Bitcoin Core's consensus (or policy) checks, allowing you to be sure that your custom node is not accepting objects which could cause you to split onto a different chain tip.
+====

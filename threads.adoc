@@ -1,0 +1,113 @@
+:page-title: Threads
+:page-nav_order: 40
+:page-parent: Architecture
+== Threads
+
+The `main()` function starts the main bitcoind process thread, usefully named `bitcoind`.
+All subsequent threads are currently started as children of the `bitcoind` thread, although this is not an explicit design requirement.
+
+The Bitcoin Core Developer https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#threads=[docs^] contains a section on threads, which is summarised below in two tables, one for net threads, and one for other threads.
+
+.Non-net threads
+[%autowidth]
+|===
+|Name |Function |Description
+
+|`bitcoind`
+|`main()`
+|Responsible for starting up and shutting down the application, and spawning all sub-threads
+
+|`b-loadblk`
+|`ThreadImport`
+|Loads blocks from `blk*.dat` files or `-loadblock=<file>` on startup
+
+|`b-scriptch.x`
+|`ThreadScriptCheck`
+|Parallel script validation threads for transactions in blocks
+
+|`b-http`
+|`ThreadHTTP`
+|Libevent thread to listen for RPC and REST connections
+
+|`b-httpworker.x`
+|`StartHTTPServer`
+|HTTP worker threads. Threads to service RPC and REST requests
+
+|`b-txindex.x`
+|`ThreadSync`
+|Indexer threads. One thread per indexer
+
+|`b-scheduler`
+|`SchedulerThread`
+|Does asynchronous background tasks like dumping wallet contents, dumping `addrman` and running asynchronous `validationinterface` callbacks
+
+|`b-torcontrol`
+|`TorControlThread`
+|Libevent thread for tor connections
+
+|===
+
+[[net_threads]]
+=== Net threads
+
+.Net threads
+[%autowidth]
+|===
+|Name |Function |Description
+
+|`b-msghand`
+|`ThreadMessageHandler`
+|Application level message handling (sending and receiving). Almost all `net_processing` and validation logic runs on this thread
+
+|`b-dnsseed`
+|`ThreadDNSAddressSeed`
+|Loads addresses of peers from the `ThreadDNS`
+
+|`b-upnp`
+|`ThreadMapPort`
+|Universal plug-and-play startup/shutdown
+
+|`b-net`
+|`ThreadSocketHandler`
+|Sends/Receives data from peers on port 8333
+
+|`b-addcon`
+|`ThreadOpenAddedConnections`
+|Opens network connections to added nodes
+
+|`b-opencon`
+|`ThreadOpenConnections`
+|Initiates new connections to peers
+
+|`b-i2paccept`
+|`ThreadI2PAcceptIncoming`
+|Listens for and accepts incoming I2P connections through the I2P SAM proxy
+
+|===
+
+=== Thread debugging
+
+In order to debug a multi-threaded application like bitcoind using gdb you will need to enable following child processes.
+Below is shown the contents of a file `threads.brk` which can be sourced into gdb using `source threads.brk`, before you start debugging bitcoind.
+The file also loads break points where new threads are spawned.
+
+.threads.brk
+[source,bash]
+----
+set follow-fork-mode child
+break node::ThreadImport
+break StartScriptCheckWorkerThreads
+break ThreadHTTP
+break StartHTTPServer
+break ThreadSync
+break SingleThreadedSchedulerClient
+break TorControlThread
+break ThreadMessageHandler
+break ThreadDNSAddressSeed
+break ThreadMapPort
+break ThreadSocketHandler
+break ThreadOpenAddedConnections
+break ThreadOpenConnections
+break ThreadI2PAcceptIncoming
+----
+

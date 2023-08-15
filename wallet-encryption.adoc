@@ -1,0 +1,63 @@
+:page-title: Wallet Encryption
+:page-nav_order: 10
+:page-parent: Wallet
+include::tmp/links.adoc[]
+=== Encryption
+
+There is encryption in the wallet code, but it is found within both `CWallet` and `*ScriptPubKeyMan` so is not yet well encapsulated.
+
+IMPORTANT: When encryption is enabled secret data must only ever reside in memory and should **never** be written to disk.
+
+When you unlock an encrypted wallet you can set a `timeout`.
+When the timeout expires secret data is deleted from memory, and the wallet "re-locked".
+
+==== Decrypting the wallet
+
+As detailed in <<{wallet-database}wallet-key-types, Key Types>>, the `CMasterKey.vchCryptedKey` is the actual secret key used to en/de-crypt the keys in the wallet.
+
+`CWallet` stores a `CMasterKey`, which is **not** a https://github.com/bitcoinbook/bitcoinbook/blob/173974f69e263c7de536a334224d642e6dca7d71/ch05.asciidoc#HDWalletFromSeed[master private key^].
+The `CMasterKey` is encrypted by the user's passphrase.
+
+When the user changes their passphrase, they are only changing the encryption applied to the `CMasterKey`, the inner `vchCryptedKey` is not changed.
+This means that we do not have to read all items in the wallet database, decrypt them with the old key, encrypt them with the new key, and then write them, back to the database again.
+Instead, we only have to change the encryption applied to the `CMasterKey`, which is much less error-prone, and more secure.
+
+Each `CWallet` has a map of ``CMasterKey``s and when unlock is called it will try each one to see if it can decrypt and then unlock the wallet.
+
+==== Encrypting the wallet
+
+Only private keys are encrypted.
+This allows us to watch for new transactions _without_ having to decrypt the wallet as each new block|transaction arrives.
+
+Decrypting the Bitcoin Core wallet requires the user to enter their passphrase, so is not convenient to do at every new block.
+
+When encrypting a wallet, a `CMasterKey` encryption key is generated, which is then sent to the `ScriptPubKeyMan` to encrypt using its `.Encrypt()` method.
+
+Once the wallet is encrypted for the first time, we re-generate all of our keys.
+This is to avoid the wallet using things which were not "born encrypted" in the future.
+For `LegacyScriptPubKeyMan` this means creating a new HD seed, and for `DescriptorScriptPubKeyMan` 8 new descriptors.
+
+If the wallet has already been used before -- while it existed in un-encrypted state -- the old ``ScriptPubKeyMan``'s are retained and so remain usable, but are not marked as `active`.
+The wallet will switch to the new SPKM after encryption has completed by marking the new SPKM as `active`.
+
+We take extra care during the encryption phase to either complete atomically or fail.
+This includes database writes where we don't want to write half and crash, for example.
+Therefore we will throw an assertion if the write fails.
+
+[CAUTION]
+====
+When you instruct a BDB database to delete a record, they are actually kept but "marked as" deleted, and _might_ be fully deleted some time in the future.
+
+This is not appropriate for our use case, for example when asking the DB to delete private keys after the wallet is encrypted for the first time.
+Therefore we use some https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L758-L765[hacks^] so that when we request deletion of unencrypted private keys from the DB, they are properly deleted immediately and not "marked as" deleted.
+====
+
+[IMPORTANT]
+====
+When encryption is enabled secret data must only ever exist in decrypted form in memory.
+====
+
+[CAUTION]
+====
+See https://github.com/bitcoin/bitcoin/pull/27080[#27080] for details on how the master key was not always cleared fully from memory after the wallet was locked.
+====

@@ -1,0 +1,7 @@
+:page-title: Bitcoin design
+:page-nav_order: 30
+:page-parent: GUI
+== Bitcoin design
+
+The https://bitcoin.design/guide/[Bitcoin design guide^] provides some guidance on common pitfalls that Bitcoin GUI designers should look out for when designing apps (like `bitcoin-qt`).
+

@@ -1,0 +1,39 @@
+:page-title: Multiple transactions
+:page-nav_order: 10
+:page-parent: Transaction Validation
+include::tmp/links.adoc[]
+
+[#multiple_transactions]
+=== Multiple transactions (and packages)
+
+TODO: This section should start from `AcceptPackage()` and flow through from there, including `AcceptMultipleTransactions()` as a sub-section.
+
+It's possible to consider multiple transactions for validation together, via `AcceptMultipleTransactions()` found in _src/net_processing.cpp_.
+It's currently only available from tests (`test/tx_package_tests.cpp`) and the `testmempoolaccept` RPC (via `ProcessNewPackage()`), but the intention is for it to be available to packages received from the P2P network in the future.
+
+This validation flow has been created for usage with Package Mempool Accept, which glozow has written up in a https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[gist^] (https://archive.ph/Uhewe[archive^]).
+
+The flow here is similar to <{single-transactions}<accept_single_transaction, `AcceptSingleTransaction()`>> in that we start by grabbing `cs_main` before initializing validation state and workspaces, however this time we use `PackageValidationState` and a vector of workspaces, `std::vector<Workspace>`.
+Each transaction therefore has it's own workspace but all transactions in the package share a single validation state.
+This aligns with the goal of either accepting or rejecting the entire package as a single entity.
+
+Next come two `for` loops over the vector of workspaces (i.e. transactions).
+The first performs the <<{input-checks}prechecks,`PreChecks()`>>, but this time also freeing up coins to be spent by other transactions in this package.
+This would not usually be possible (nor make sense) _within_ an `AcceptTransaction()` flow, but within a package we want to be able to validate transactions who use as inputs, other transactions not yet added to our mempool:
+
+[source,cpp,options=nowrap]
+----
+    // Make the coins created by this transaction available for subsequent transactions in the
+    // package to spend. Since we already checked conflicts in the package and we don't allow
+    // replacements, we don't need to track the coins spent. Note that this logic will need to be
+    // updated if package replace-by-fee is allowed in the future.
+    assert(!args.m_allow_bip125_replacement);
+    m_viewmempool.PackageAddTransaction(ws.m_ptx);
+----
+
+If the `PreChecks` do not fail, we call `m_viewmempool.PackageAddTransaction()` passing in the workspace.
+This adds the transaction to a map in our Mempool called `std::unordered_map<COutPoint, Coin, SaltedOutpointHasher> m_temp_added;`, which is essentially a temporary cache somewhere in-between being validated and being fully added to the mempool.
+
+TODO: Fix after adding section on `AcceptPackage`
+
+After this first loop we perform `PackageMempoolChecks()` which first asserts that transactions are not already in the mempool, before checking the "PackageLimits".

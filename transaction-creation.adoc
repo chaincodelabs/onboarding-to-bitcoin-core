@@ -1,0 +1,30 @@
+:page-title: Transaction creation and signing
+:page-nav_order: 50
+:page-parent: Wallet
+=== Transaction creation
+
+Once the coins have been selected they are returned back to `CreateTransactionInternal()`, which will create the final transaction.
+
+Right now when we determine the change output, we don't use what `selectionResult` says the change output should be.
+What we actually do is make the tx with in? outputs and set the change amount to be the sum inputs-outputs, so the change amount includes the transaction fee.
+To get the correct change amount we now calculate the size of this after signing, we use dummysigner to add a dummy signature (74 0's and the correct script), and now we can calculate the correct fee.
+We reduce that fee from the change output amount, and if this now goes below *some threshold?* (the "cost of change" thing from BnB) or if it is dust we drop the change output and add it's value to the fee.
+
+So now we have an unsigned tx which we need to sign.
+
+=== Signing
+
+We pass the tx to `CWallet::SignTransaction()` which will call `IsMine()` on each input to figure out which ScriptPubKeyMan (spkman) owns that input, then ask the spkman to fetch its `SigningProviders` to provide the signer which can sign the transaction, and return that to us.
+
+With PSBTs we have the `fillPSBT()` method in `CWallet` which calls `*ScriptPubKeyMan::fillPSBT()`.
+We do this because we can add previous UTXOs due to transaction tracking; the SPKM adds the scripts and key derivation paths and will then optionally sign.
+
+== Separation of wallet and node
+
+Both the `bitcoind` and `bitcoin-qt` programs use the same source code for the wallet component.
+`bitcoin-qt` is not therefore a gui frontend for `bitcoind` but a stand-alone binary which happens to share much of the same code.
+There has been discussion since at least as early as 2014 about https://github.com/bitcoin/bitcoin/issues/3882[splitting wallet code^] out from the rest of the codebase, however this has not been completed yet.
+
+The https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Process-Separation[Process Separation^] project is tracking development working towards separating out node, wallet and GUI code even further.
+In the mean time developers have preferred to focus on improving the organisation of the (wallet) source code within the project and to focus on making wallet code more asynchronous and independent of node code, to avoid locking the node while wallet code-paths are executing.
+

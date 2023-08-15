@@ -1,0 +1,24 @@
+:page-title: Networking contribution to entropy
+:page-nav_order: 120
+:page-parent: P2P
+=== Networking contribution to node RNG entropy
+
+Entropy for the RNG is often harvested from network connections:
+
+.src/net.cpp
+[source,cpp,options=nowrap]
+----
+net.cpp
+488-
+489:    // We're making a new connection, harvest entropy from the time (and our peer count)
+490-    RandAddEvent((uint32_t)id);
+--
+743-
+744:    // We just received a message off the wire, harvest entropy from the time (and the message checksum)
+745-    RandAddEvent(ReadLE32(hash.begin()));
+--
+1160-
+1161:    // We received a new connection, harvest entropy from the time (and our peer count)
+1162-    RandAddEvent((uint32_t)id);
+----
+

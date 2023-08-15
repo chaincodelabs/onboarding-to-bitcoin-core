@@ -1,0 +1,41 @@
+:page-title: Testing your contributions
+:page-nav_order: 40
+:page-parent: Overview and Development Process
+==== Continuous integration
+
+When PRs are submitted against the primary Bitcoin Core repo a series of CI https://github.com/bitcoin/bitcoin/tree/v23.0/ci[tests^] will automatically be run.
+These include a series of linters and formatters such as `clang-format`, `flake8` and `shellcheck`.
+It's possible (and advised) to run these checks locally against any changes you make before you push them.
+
+In order to run the lints yourself you'll have to first make sure your python environment and system have the packages listed in the CI install https://github.com/bitcoin/bitcoin/blob/v23.0/ci/lint/04_install.sh[script].
+You can then run a decent sub-set of the checks by running:
+
+[source,bash]
+----
+python test/lint/lint-circular-dependencies.py
+
+# requires requires 'flake8', 'mypy', 'pyzmq', 'codespell', 'vulture'
+python test/lint/lint-python.py
+
+python test/lint/lint-whitespace.py
+----
+
+Or you can run all checks with:
+
+[source,bash]
+----
+python test/lint/all-lint.py
+----
+
+NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python on master.
++
+If you are following with tag v23.0 these may still exist as `*.sh`.
+
+Linting your changes reduces the chances of pushing them as a PR and then having them quickly being marked as failing CI. The GitHub PR page auto-updates the CI status.
+
+TIP: If you do fail a lint or any other CI check, force-pushing the fix to your branch will cancel the currently-running CI checks and restart them.
+
+==== Build issues
+
+Some compile-time issues can be caused by an unclean build directory.
+The comments in https://github.com/bitcoin/bitcoin/issues/19330[issue 19330^] provide some clarifications and tips on how other Contributors clean their directories, as well as some ideas for shell aliases to boost productivity.

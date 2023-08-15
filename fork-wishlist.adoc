@@ -1,0 +1,11 @@
+:page-title: Fork wish lists
+:page-nav_order: 50
+:page-parent: Consensus and Validation
+== Fork wish lists
+
+There are a number of items that developers have had on their wish lists to tidy up in future fork events.
+
+An https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2019-March/016714.html[email^] from Matt Corallo with the subject "The Great Consensus Cleanup" described a "wish list" of items developers were keen to tidy up in a future soft fork.
+
+The Hard Fork Wishlist is described on this en.bitcoin.it/wiki https://en.bitcoin.it/wiki/Hardfork_Wishlist[page^].
+The rationale for collecting these changes together, is that if backwards-incompatible (hard forking) changes are being made, then we "might as well" try and get a few in at once, as these events are so rare.

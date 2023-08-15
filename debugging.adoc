@@ -1,0 +1,12 @@
+:page-title: Debugging Bitcoin Core
+:page-nav_order: 50
+:page-parent: Overview and Development Process
+==== Debugging Bitcoin Core
+
+// Archived @ https://archive.is/hRExH
+Fabian Jahr has created a https://github.com/fjahr/debugging_bitcoin[guide^] on "Debugging Bitcoin Core", aimed at detailing the ways in which various Bitcoin Core components can be debugged, including the Bitcoin Core binary itself, unit tests, functional tests along with an introduction to core dumps and the Valgrind memory leak detection suite.
+
+Of particular note to Developers are the configure flags used to build Bitcoin Core without optimisations to permit more effective debugging of the various resulting binary files.
+
+Fabian has also presented on this topic a number of times.
+A https://btctranscripts.com/scalingbitcoin/tel-aviv-2019/edgedevplusplus/debugging-bitcoin/[transcript^] of his edgedevplusplus talk is available.

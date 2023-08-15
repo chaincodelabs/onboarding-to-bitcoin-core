@@ -1,0 +1,48 @@
+:page-title: Building Bitcoin Core
+:page-nav_order: 70
+:page-parent: Overview and Development Process
+=== Building from source
+
+When building Bitcoin Core from source, there are some platform-dependant instructions to follow.
+
+To learn how to build for your platform, visit the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/master/doc[bitcoin/doc^] directory, and read the file named "build-\*.md", where "*" is the name of your platform.
+For windows this is "build-windows.md", for macOS this is "build-osx.md" and for most linux distributions this is "build-unix.md".
+
+There is also a guide by Jon Atack on how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core^].
+
+Finally, Blockchain Commons also offer a guide to https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/A2_0_Compiling_Bitcoin_from_Source.md[building from source^].
+
+==== Cleaner builds
+
+It can be helpful to use a separate build directory e.g. `build/` when compiling from source.
+This can help avoid spurious Linker errors without requiring you to run `make clean` often.
+
+From within your Bitcoin Core source directory you can run:
+
+[source,bash]
+----
+# Clean current source dir in case it was already configured
+make distclean
+
+# Make new build dir
+mkdir build && cd build
+
+# Run normal build sequence with amended path
+../autogen.sh
+../configure --your-normal-options-here
+make -j `nproc`
+make check
+----
+
+[TIP]
+====
+To run individual functional tests using the bitcoind binary built in an out-of-source build change directory back to the root source and specify the _config.ini_ file from within the build directory:
+
+[source,bash]
+----
+$ pwd
+/path/to/source/build
+$ cd ..
+$ test/functional/p2p_ping.py --configfile build/test/config.ini
+----
+====

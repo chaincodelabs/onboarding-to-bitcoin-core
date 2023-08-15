@@ -1,0 +1,155 @@
+:page-title: Addrman
+:page-nav_order: 40
+:page-parent: P2P
+include::tmp/links.adoc[]
+=== Addrman
+
+Addrman is the in-memory database of peers and consists of the new and tried tables.
+These tables are stored in `peers.dat` and serve as cache for network information that the node gathered from previous connections, so that if it is rebooted it can quickly reestablish connections with its former peer network and avoid performing <<{bootstrapping}bootstrapping, the seeding process>> again. 
+
+Addrman is setup using `LoadAddrman` from _src/addrdb.cpp_, passing in the `NetGroupManager`, our global program `args` and a pointer to the (to be initialized) `Addrman`.
+`args` are used to determine whether consistency checks should run and to pass on the `datadir` value in order to attempt deserialization on any addrman database (`peers.dat`) that is found.
+
+Addresses are serialized back to disk both after the call to `CConnman::StopNodes()`, but also periodically (by default every 15 minutes) as scheduled by `CConnman::Start()`:
+
+[source,cpp]
+----
+    // Dump network addresses
+    scheduler.scheduleEvery([this] { DumpAddresses(); }, DUMP_PEERS_INTERVAL);
+----
+
+==== Adding addresses to addrman
+
+Addresses learned about over the wire will be https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.cpp#L2897-L2908[deserialized^] into a vector of ``CAddress``-es.
+After determining whether we should expend resources on processing these addresses -- check that address relay with this peer is permitted _and_ that peer is not marked as misbehaving -- we shuffle the addresses and begin testing them as candidates for addition to our addrman.
+
+Address candidate testing consists of checking:
+
+* we are not rate-limiting the peer who sent us the address
+* it is a full node (via service flag bits)
+* if we already know of the address
+* if they're automatically discouraged or manually banned
+* `IsReachable()` and `IsRoutable()`
+
+Once these checks have finished we will add all the addresses we were happy with by calling `AddrMan::Add()` and passing the vector of good addresses in along with metadata on who sent us this address in the form of a `CNetAddr` (the source address).
+The source address is notably used later in `Add()` (by `AddrmanImpl::AddSingle()`) to determine which new bucket this new address should be placed into as an anti-sybil measure.
+
+Addresses are added into the appropriate bucket and position in `vvNew`.
+If there **is not** an address in the corresponding bucket/position then the new address will be added there immediately.
+If there **is** currently an address in the corresponding bucket/position then https://github.com/bitcoin/bitcoin/blob/v23.0/src/addrman.cpp#L67-L85[`IsTerrible()`^] is called to determine whether the old address should be evicted to make room for the new one or not, in which case the new address is simply dropped.
+
+TIP: This eviction behaviour is distinct from test-before-evict described below in <<Good>>.
+
+==== Good
+
+New connections are initiated by <<Connman>>, in `CConnman::ThreadOpenConnections()`.
+Addresses are considered "good" and will begin being processed by `Addrman::Good()` if:
+
+. we have received a version message from them
+. it was an https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.cpp#L2732-L2747[outbound^] connection
+
+Next we use the following process to determine whether the address should be added to one of the buckets in the `vvTried` set:
+
+. we will first check that the address i) does not already exist in `vvTried`, and that ii) it _does_ exist in `vvNew`.
+. if the address is not yet in `vvTried` we will determine its bucket and position and then check if there is already an address at that position.
+. if there is an address there, we will initiate a `FEELER` connection to the existing node.
+. if the feeler is successful then we drop the new address and keep what we have.
+. if the feeler is unsuccessful then we drop the old address and insert the new address at this location using `MakeTried()`.
+
+This process is called https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks#countermeasure-3-test-before-evict---9037[test-before-evict^].
+
+==== Select
+
+`CConnman::ThreadOpenConnections()` also handles selection of new peers to connect to, via `Addrman::Select()`.
+
+This first occurs when we want to try a new https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2114-L2125[feeler^], but we will use the same approach for https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2128-L2129[non-feeler^] connections too.
+
+The `Select()` function contains a lot of https://github.com/bitcoin/bitcoin/blob/v23.0/src/addrman.cpp#L703-L770[interesting^] logic, specifically related to injecting randomness into the process of drawing a new address to connect to from our untried buckets.
+
+It starts by using a 50% chance between selecting an address from our `tried` and `new` buckets, before using additional (non-cryptographic) randomness to select a bucket and position, before iterating over the bucket until it finds an address.
+Once it has selected an address, it uses additional randomness via `GetChance()`, to determine whether it will actually _use_ this address to connect to.
+
+The purpose of the additional `chance` in address selection is that it helps to https://github.com/bitcoin/bitcoin/blob/v23.0/src/addrman.cpp#L87-L100[deprioritize^] recently-tried and failed addresses.
+
+The use of randomness like this in addrman is to combat types of attack where our addrman might become "poisoned" with a large number of sybil or otherwise-bad addresses.
+The use of bucketing and randomness means that these types of attacks are much harder to pull off by an attacker, requiring for example a large number of nodes on different Autonomous Systems.
+
+=== Banman
+
+Banman is generally used as a filter to determine whether we should accept a new incoming connection from a certain IP address, or less-frequently to check whether we should make an out-bound connection to a certain IP address:
+
+* We do not accept connections from banned peers
+* We only accept connections from discouraged peers if our inbound slots aren't (almost) full
+* We do not process (check `IsReachable()` and `IsRoutable()` and `RelayAddress()`) addresses received in an `ADDR` / `ADDRV2` which are banned, but do remember that we have received them
+
+Banman is setup with a simple call to its constructor, passing in a `banlist` and `bantime` argument.
+`banlist` will store previously-banned peers from last shutdown, while `bantime` determines how long the node discourages "https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.h#L72-L77[misbehaving^]" peers.
+
+Banman operates primarily with bare IP addresses (`CNetAddr`) but can also, when initiated by the user, ban an entire subnet (as a `CSubNet`).
+
+Note that banman handles https://github.com/bitcoin/bitcoin/blob/v23.0/src/banman.h#L28-L56[both^] manual bans initiated by the user (with `setban`) and also automatic discouragement of peers based on P2P behaviour.
+
+The banman header file https://github.com/bitcoin/bitcoin/blob/v23.0/src/banman.h#L28-L56[contains^] some good background on what banning can and can't protect against, as well as why we do not automatically ban peers in Bitcoin Core.
+
+=== Connman
+
+Connman is used to manage connections and maintain statistics on each node connected, as well as network totals.
+There are many connection-related program options for it such as number of connections and whitebound ports/interfaces.
+It takes an Addrman and a NetGroupManager to its constructor, along with two random seeds used to seed the SipHash randomizer.
+
+TIP: The nonces generated by the randomizer are used to detect us making new connections to ourself, as the incoming nonce in the version message would match our `nLocalHostNonce`
+
+Connman is started via `node.connman->Start()` in _init.cpp_.
+This begins by calling `init()` which binds to any ports selected, before starting up an I2P session if the I2P proxy is found.
+Next it schedules sending `GETADDR` to any seednodes provided (via `-seednodes`) using the `ThreadOpenConnections()` loop, and then continues by loading anchor connections from _anchors.dat_.
+Following this the various <<{threads}net_threads,net threads>> are started up.
+
+As connman has a pointer to the node's addrman it can directly fetch new addresses to serve via `CConnman:GetAddresses()`.
+If new addresses are requested from a remote P2P node (via `GETADDR`), then it will use a https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L1129-L1154[cached^] addr response to respond with.
+This helps to defeat surveillance which is seeking to determine which other peers your node is connected to.
+
+Within `CConnman` we maintain https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L1123[`m_nodes`^], a vector of connections to other nodes.
+That vector is updated and accessed by various threads, including:
+
+. The https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1709-L1718[socket handler thread^], which is responsible for reading data from the sockets into receive buffers, and also for accepting new incoming connections.
+. The https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1912[open connections thread^], which is responsible for opening new connections to peers on the network.
+. The https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2313[message handler thread^], which is responsible for reading messages from the receive buffer and passing them up to net_processing.
+
+Since the vector can be updated by multiple threads, it is guarded by a mutex called https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L1123-L1125[`m_nodes_mutex`^].
+
+==== CConnman::ThreadOpenConnections()
+
+This thread begins by making any manually-specified connections before entering a double-nested `while` loop.
+The outer loop handles making a connection on each loop according certain priorities and the number of connections we currently have:
+
+._net.cpp#L2028_
+[source,cpp]
+----
+// Determine what type of connection to open. Opening
+// BLOCK_RELAY connections to addresses from anchors.dat gets the highest
+// priority. Then we open OUTBOUND_FULL_RELAY priority until we
+// meet our full-relay capacity. Then we open BLOCK_RELAY connection
+// until we hit our block-relay-only peer limit.
+// GetTryNewOutboundPeer() gets set when a stale tip is detected, so we
+// try opening an additional OUTBOUND_FULL_RELAY connection. If none of
+// these conditions are met, check to see if it's time to try an extra
+// block-relay-only peer (to confirm our tip is current, see below) or the next_feeler
+// timer to decide if we should open a FEELER.
+----
+
+In addition to filling out connections up to full-relay and block-relay-only capacity it also periodically makes a feeler connection to a random node from addrman to sync headers and test that we haven't been eclipsed.
+
+After selecting which type of connection we are going to attempt on this iteration we enter the inner loop which attempts to make the connection itself.
+We select the connection by assigning it to `addrconnect`.
+
+. If it is trying to make an anchor connection then simply set `addrconnect` to the selected `addr` and break from the loop early
+. If it is trying to make a feeler connection then we request a collision address or if one is not available then select another `vvTried` table address using `addrman.Select()`.
+. If it is neither an anchor or a feeler just call `addrman.Select()`.
+
+TIP: A "collision address" means that another address had tried to evict this address from `vvTried` table, these addresses are marked in `Addrman.m_tried_collisions`.
+
+If the various checks pass, then finish by calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L2177[`OpenNetworkConnection()`^].
+`OpenNetworkConnection()` makes the connection by calling `ConnectNode()`, which if successful creates a new `CNode` object for the connected node and returns it.
+Next we initialize the `CNode` with cconnman's pointer to `peerman`, via `m_msgproc->InitializeNode(pnode)`.
+Finally we add the connected and initialized node to `CConnman.m_nodes`.
+

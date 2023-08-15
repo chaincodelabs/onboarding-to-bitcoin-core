@@ -1,0 +1,28 @@
+:page-title: Message relay
+:page-nav_order: 60
+:page-parent: P2P
+[[message_relay]]
+== Message relay
+
+.Relay policy of different messages
+[cols="1,3,3"]
+|===
+|Message type |Function |Who
+
+|Addresses
+|`PeerManagerImpl::RelayAddress()`
+a|Outbound peers & inbound peers who send an addr-related message but not block-relay-only peers
+
+Reachable addresses to 2 peers. Unreachable addresses randomly to 1 or 2 peers.
+
+|Transactions
+|`PeerManagerImpl::RelayTransaction()`
+|All connected peers
+
+|Blocks
+a|`PeerManagerImpl::UpdatedBlockTip()`
+
+`PeerManagerImpl::MaybeSendAddr()`
+|All connected peers
+
+|===

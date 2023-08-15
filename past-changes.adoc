@@ -1,0 +1,150 @@
+:page-title: Researching past changes
+:page-nav_order: 60
+:page-parent: Overview and Development Process
+=== Codebase archaeology
+
+When considering changing code it can be helpful to try and first understand the rationale behind why it was implemented that way originally.
+One of the best ways to do this is by using a combination of git tools:
+
+* `git blame`
+* `git log -S`
+* `git log -G`
+* `git log -p`
+* `git log -L`
+
+As well as the discussions in various places on the GitHub repo.
+
+==== git blame
+
+The git `blame` command will show you when (and by who) a particular line of code was last _changed_.
+
+For example, if we checkout Bitcoin Core at https://github.com/bitcoin/bitcoin/tree/v22.0[v22.0^] and we are planning to make a change related to the `m_addr_send_times_mutex` found in _src/net_processing.cpp_, we might want to find out more about its history before touching it.
+
+With `git `blame` we can find out the last person who touched this code:
+
+[source,bash,options="nowrap"]
+----
+# Find the line number for blame
+$ grep -n m_addr_send_times_mutex src/net_processing.cpp
+233:    mutable Mutex m_addr_send_times_mutex;
+235:    std::chrono::microseconds m_next_addr_send GUARDED_BY(m_addr_send_times_mutex){0};
+237:    std::chrono::microseconds m_next_local_addr_send GUARDED_BY(m_addr_send_times_mutex){0};
+4304:    LOCK(peer.m_addr_send_times_mutex);
+----
+
+[source,bash,options=nowrap]
+----
+$ git blame -L233,233 src/net_processing.cpp
+
+76568a3351 (John Newbery 2020-07-10 16:29:57 +0100 233)     mutable Mutex m_addr_send_times_mutex;
+----
+
+With this information we can easily look up that commit to gain some additional context:
+
+[source,bash,options=nowrap]
+----
+$ git show 76568a3351
+
+───────────────────────────────────────
+commit 76568a3351418c878d30ba0373cf76988f93f90e
+Author: John Newbery <john@johnnewbery.com>
+Date:   Fri Jul 10 16:29:57 2020 +0100
+
+    [net processing] Move addr relay data and logic into net processing
+
+----
+
+So we've learned now that this mutex was moved here by John from _net.{cpp|h}_ in it's most recent touch.
+Let's see what else we can find out about it.
+
+==== git log -S
+
+`git log -S` allows us to search for commits where this line was _modified_ (not where it was only moved, for that use `git log -G`).
+
+[TIP]
+====
+A 'modification' (vs. a 'move') in git parlance is the result of uneven instances of the search term in the commit diffs' add/remove sections.
+
+This implies that this term has either been added or removed in the commit.
+====
+
+[source,bash,options=nowrap]
+----
+$ git log -S m_addr_send_times_mutex
+───────────────────────────────────────
+commit 76568a3351418c878d30ba0373cf76988f93f90e
+Author: John Newbery <john@johnnewbery.com>
+Date:   Fri Jul 10 16:29:57 2020 +0100
+
+    [net processing] Move addr relay data and logic into net processing
+
+───────────────────────────────────────
+commit ad719297f2ecdd2394eff668b3be7070bc9cb3e2
+Author: John Newbery <john@johnnewbery.com>
+Date:   Thu Jul 9 10:51:20 2020 +0100
+
+    [net processing] Extract `addr` send functionality into MaybeSendAddr()
+
+    Reviewer hint: review with
+
+     `git diff --color-moved=dimmed-zebra --ignore-all-space`
+
+───────────────────────────────────────
+commit 4ad4abcf07efefafd439b28679dff8d6bbf62943
+Author: John Newbery <john@johnnewbery.com>
+Date:   Mon Mar 29 11:36:19 2021 +0100
+
+    [net] Change addr send times fields to be guarded by new mutex
+
+----
+
+We learn now that John also originally added this to _net.{cpp|h}_, before later moving it into _net_processing.{cpp|h}_ as part of a push to separate out `addr` relay data and logic from _net.cpp_.
+
+==== git log -p
+
+`git log -p` (usually also given with a file name argument) follows each commit message with a _patch_ (diff) of the changes made by that commit to that file (or files).
+This is similar to `git blame` except that `git blame` shows the source of only lines _currently_ in the file.
+
+==== git log -L
+
+The `-L` parameter provided to git log will allow you to trace certain lines of a file through a range given by `<start,<end>`.
+
+However, newer versions of git will also allow you to provide `git log -L` with a function name and a file, using:
+
+[source,shell]
+----
+git log -L :<funcname>:<file>
+----
+
+This will then display commits which modified this function in your pager.
+
+==== git log --follow _file..._
+
+One of the most famous https://github.com/bitcoin/bitcoin/pull/9260[file renames^] was _src/main.{h,cpp}_ to _src/validation.{h,cpp}_ in 2016.
+If you simply run `git log src/validation.h`, the oldest displayed commit is one that implemented the rename.
+`git log --follow src/validation.h` will show the same recent commits followed by the older _src/main.h_ commits.
+
+To see the history of a file that's been removed, specify " -- " before the file name, such as:
+[source,bash]
+----
+git log -- some_removed_file.cpp
+----
+
+==== PR discussion
+
+To get even more context on the change we can leverage GitHub and take a look at the comments on the PR where this mutex was introduced (or at any subsequent commit where it was modified).
+To find the PR you can either paste the commit hash (`4ad4abcf07efefafd439b28679dff8d6bbf62943`) into GitHub, or list merge commits in reverse order, showing oldest merge with the commit at the top to show the specific PR number e.g.:
+
+[source,bash,options=nowrap]
+----
+$ git log --merges --reverse --oneline --ancestry-path 4ad4abcf07efefafd439b28679dff8d6bbf62943..upstream | head -n 1
+
+d3fa42c79 Merge bitcoin/bitcoin#21186: net/net processing: Move addr data into net_processing
+----
+
+Reading up on https://github.com/bitcoin/bitcoin/pull/21186[PR#21186^] will hopefully provide us with more context we can use.
+
+[example]
+====
+We can see from the linked https://github.com/bitcoin/bitcoin/issues/19398#issue-646725848[issue 19398^] what the motivation for this move was.
+====

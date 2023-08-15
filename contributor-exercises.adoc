@@ -1,0 +1,229 @@
+:page-title: Exercises
+:page-nav_order: 200
+:page-parent: Overview and Development Process
+== Exercises
+
+Subsequent sections will contain various exercises related to their subject areas which will require controlling Bitcoin Core nodes, compiling Bitcoin Core and making changes to the code.
+
+To prepare for this we will begin with the following exercises which will ensure that our environment is ready:
+
+. Build Bitcoin Core from source
+- [ ] Clone Bitcoin Core repository from GitHub
+- [ ] Check out the latest release tag (e.g. `v24.0.1`)
+- [ ] Install any dependencies required for your system
+- [ ] Follow the build instructions to compile the programs
+- [ ] Run `make check` to run the https://github.com/bitcoin/bitcoin/tree/master/src/test#readme[unit tests^]
+- [ ] Follow the documentation to install dependencies required to run the https://github.com/bitcoin/bitcoin/tree/master/test[functional tests^]
+- [ ] Run the functional tests
+. Run a `bitcoind` node in regtest mode and control it using the `cli` tool +
++
+TIP: `./src/bitcoind -regtest` will start bitcoind in regtest mode. You can then control it using `./src/bitcoin-cli -regtest -getinfo`
+. Run and control a Bitcoin Core node using the `TestShell` python class from the test framework in a Jupyter notebook
+** See <<test_shell_nodes, Running nodes via Test Framework>> for more information on how to do this
+. Review a Pull Request from the repo
+- [ ] Find a PR (which can be open or closed) on GitHub which looks interesting and/or accessible
+- [ ] Checkout the PR locally
+- [ ] Review the changes
+- [ ] Record any questions that arise during code review
+- [ ] Build the PR
+- [ ] Test the PR
+- [ ] Break a test / add a new test
+- [ ] Leave review feedback on GitHub, possibly including:
++
+ACK/NACK
++
+Approach
++
+How you reviewed it
++
+Your system specifications if relevant
++
+Any suggested nits
+
+[#test_shell_nodes]
+.Running nodes via Test Framework
+****
+[discrete]
+== Why
+
+Using Bitcoin Core's Test Framework means that nodes can be started, controlled and stopped using a python control class.
+Additionally, they are run in a temporary directory which is automatically removed by the operating system, if not done
+manually.
+
+In addition to this, the `TestShell` class has an extremely similar interface to `bitcoin-cli`, where most `bitcoin-cli` commands have an equivalent `TestShell` method, and arguments can be supplied positionally or as named values.
+Specifically, all `bitcoind` RPCs are available to `TestShell`.
+
+However, certain `bitcoin-cli` commands, for example `-getinfo` require `bitcoin-cli` to call multiple RPCs and combine the results into something more user-friendly.
+These commands are not natively available to `TestShell`, but you can re-create them yourself by running multiple `TestShell` RPCs and combining the outputs to mimic the `bitcoin-cli` commands!
+
+When `TestShell` is combined with a jupyter notebook the result is easy-to-setup ephemeral nodes where iteration on complex commands is more pleasant than in the shell, and complex sequences of commands can be reproduced without having to write bash scripts or use shell history.
+
+Once a complex command or sequence of commands is established, they can generally be translated to `bitcoin-cli` commands or a shell script without much difficulty.
+
+[discrete]
+== How
+
+You **MUST** have a compiled `bitcoind` binary in the Bitcoin Core source directory.
+You can use any recent supported version of Bitcoin Core.
+
+In order to add startup (`bitcoind` program) options to our node(s) we need https://github.com/bitcoin/bitcoin/pull/26617/commits/989a52e0a50c0ae30a5c2bd3c08bb3ad1363a250[this^] commit.
+We can include this two ways:
+
+. Use the master branch of Bitcoin Core and running `git pull`, which will include the change.
+. Use any recent tag (e.g. v24.0.1) and running `git cherry-pick 989a52e0` to pull that change into the Test Framework code.
+
+You **MUST** have a copy of the jupyter notebook, either manually downloaded from https://github.com/chaincodelabs/onboarding-to-bitcoin-core or by cloning the onboarding-to-bitcoin-core repo (recommended) with:
+
+[source, bash]
+----
+git clone https://github.com/chaincodelabs/onboarding-to-bitcoin-core.git
+----
+
+You **MAY** want to use a python virtual environment (recommended) which can be done as follows when in the onboarding to bitcoin core top level directory:
+
+[source, bash]
+----
+cd /path/to/source/onboarding-to-bitcoin-core
+python3 -m venv "obc-venv"
+source obc-venv/bin/activate
+----
+
+TIP: if using fish shell you can use: `source obc-venv/bin/activate.fish` instead
+
+Once your venv is set up and activated you can install the requirements for jupyter notebook using:
+
+[source, bash]
+----
+pip install -r requirements.txt
+----
+
+Next start the notebook with:
+
+[source, bash]
+----
+jupyter notebook
+----
+
+This will open a list of all the files in this directory.
+Opening the file named `exercise_tutorial.ipynb` will start the notebook containing instructions on how to use `TestShell` from the test Framework.
+
+When you are finished you can deactivate the venv using
+
+[source, bash]
+----
+deactivate
+----
+
+TIP: Don't forget to re-activate your venv each time you want to start the Jupyter notebook after deactivating the venv!
+
+[discrete]
+== Quick use
+
+Once you have familiarized yourself with the `TestShell` method using `exercise_tutorial.ipynb`, you can instead start new notebooks for exercises based on the `exercise_base.ipynb` notebook, which has much of the instruction removed and will let you get started faster.
+
+If you correct the import path for your system in this file and save it, you can then easily make copies of it to use as start points for different exercises:
+
+image::jupyter_duplicate.png[width=300]
+
+****
+
+////
+== Group work
+
+=== Signet
+
+Either:
+
+* One member of the group create a private signet as documented on the Bitcoin Wiki https://en.bitcoin.it/wiki/Signet#Custom_Signet[Custom Signet] page.
+* Distribute the `signetchallenge` value
+* One or all group members can act as Signet miners
+* Have all group members connect in to the custom signet
+* Some notes on this https://hackmd.io/KLaH9u6iTBuNokLhgJ0lnA[here].
+
+OR:
+
+* Group members request some signet coins from the https://signet.bc-2.jp/[signet faucet] or using the https://github.com/bitcoin/bitcoin/tree/master/contrib/signet#getcoinspy[getcoins.py] script.
++
+NOTE: The Signet `getcoins.py` script may not work if a captcha has been added to the site.
+
+THEN:
+
+* Send coins around the group
+
+== Practice
+
+=== Research topics/questions
+
+* What stops a hacker hijacking the Bitcoin Core website and hosting malicious binaries?
+** How about malicious binaries hosted by linux package managers?
+* Where can you go for help if Bitcoin Core doesn't build on your machine?
+* Before you create a PR to the main bitcoin core repo, what checks should you do locally?
+** Are there any additional checks you can think of which are only run in the bitcoin core repo (and not your fork)?
+
+=== Solo work
+
+.
+
+==== Git exercises
+
+* Understand lsilva01's https://github.com/lsilva01/operating-bitcoin-core-v1/blob/main/git-tutorial.md[git tutorial for Bitcoin Core]
+* https://chris.beams.io/posts/git-commit/[Write good commit messages]
+
+==== GitHub workflow basics
+
+* Fork the https://github.com/bitcoin/bitcoin[bitcoin core repository]
+** GitHub provides a guide on how to https://guides.github.com/activities/forking/[fork a project]
+* Download a clone of your fork of the bitcoin project to your local machine
+* Checkout a tag, branch or PR
+
+==== Building bitcoin from source
+
+* Compile the source code you cloned
+* Run the tests
+. https://github.com/bitcoin/bitcoin/tree/master/test[Project test overview]
+. https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional test suite]
+. Also see https://github.com/bitcoin/bitcoin/tree/master/test#running-the-tests[Bitcoin Core, running the tests]
+. https://github.com/bitcoin/bitcoin/tree/master/src/test/README.md[Bitcoin Core, unit tests]
+
+==== Cross-Compile Bitcoin Core
+
+Bitcoin Core has a build system that allows for cross-compiling to various systems.
+More on this system can be found under the https://github.com/bitcoin/bitcoin/tree/master/depends[bitcoin/depends] sub-directory.
+
+* Starting from a Linux Host or Virtual Machine, take a look at the depends https://github.com/bitcoin/bitcoin/tree/master/depends#readme[README].
+* Install the necessary dependencies for cross-compilation to Windows
+* Follow the instructions and cross-compile for Windows
+* Run and test the cross-compiled binary on a Windows host or Virtual Machine
+
+==== Review a PR
+
+* Find a PR (which can be open or closed) on GitHub which looks interesting and/or accessible
+* Checkout the PR locally
+* Review the changes
+** Record any questions that arise during code review
+* Build the PR
+* Test the PR
+* Break a test / add a new test
+* Leave review feedback on GitHub, possibly including:
+** ACK/NACK
+** Approach
+** How you reviewed it
+** Your system specifications if relevant
+** Suggesting nits
+
+==== Create a test using test framework
+
+* You can refer to the https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[Functional Test Framework] doc
+* Try and write a new functional test which can send p2p messages between nodes
++
+TIP: starting with `ping` and `pong` messages might be easiest
+* Try writing a more advanced test
+
+=== Group work
+
+* Each submit a PR on a team member's fork of Bitcoin Core (not the main repo)
+* Review a different team member's PR
+* Submit your review of the PR as a GitHub comment on the PR
+
+////
+

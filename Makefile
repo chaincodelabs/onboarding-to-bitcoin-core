@@ -24,6 +24,8 @@ build:
 	@# for schema validation.
 	@sleep 0.1
 
+	mkdir -p tmp
+	cp links-separate.adoc tmp/links.adoc
 	bundle exec jekyll build $(JEKYLL_FLAGS)
 
 test-before-build: $(compatibility_validation) $(topic_validation)
@@ -50,6 +52,8 @@ test-after-build: build
 	bundle exec htmlproofer --disable-external --ignore-urls '/^\/bin/.*/' ./_site
 
 build-other-versions:
+	mkdir -p tmp
+	cp links-onepage.adoc tmp/links.adoc
 	mkdir -p bin
 	asciidoctor -o book.html index.adoc
 	## Delete non-deterministic asciidoctor output

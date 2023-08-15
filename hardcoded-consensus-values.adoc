@@ -1,0 +1,40 @@
+:page-title: Hardcoded consensus values
+:page-nav_order: 80
+:page-parent: Consensus and Validation
+== Hardcoded consensus values
+
+_consensus/consensus.h_ contains a number of `static const` values relating to consensus rules.
+These are globally shared between files such as _validation.cpp_, _rpc_mining.cpp_ and _rpc/mining.cpp_.
+These consensus-critical values are marked as `const` so that there is no possibility that they can be changed at any point during program execution.
+
+One example of this would be the maximum block weight which should not ever be exceeded:
+
+[source,cpp]
+----
+static const unsigned int MAX_BLOCK_WEIGHT = 4000000;
+----
+
+_consensus/amount.h_ contains the conversion rate between satoshis and one "bitcoin", as well as a `MAX_MONEY` constant.
+These are marked as `constexpr` to indicate that they should be evaluated at compile time and then remain as `const` during execution.
+
+[source,cpp]
+----
+/** The amount of satoshis in one BTC. */
+static constexpr CAmount COIN = 100000000;
+
+/** No amount larger than this (in satoshi) is valid.
+ *
+ * Note that this constant is *not* the total money supply, which in Bitcoin
+ * currently happens to be less than 21,000,000 BTC for various reasons, but
+ * rather a sanity check. As this sanity check is used by consensus-critical
+ * validation code, the exact value of the MAX_MONEY constant is consensus
+ * critical; in unusual circumstances like a(nother) overflow bug that allowed
+ * for the creation of coins out of thin air modification could lead to a fork.
+ * */
+static constexpr CAmount MAX_MONEY = 21000000 * COIN;
+----
+
+[TIP]
+====
+Do you think that the `COIN` constant is necessary at a consensus level, or is it a Bitcoin Core-specific abstraction?
+====

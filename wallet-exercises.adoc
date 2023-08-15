@@ -1,0 +1,96 @@
+:page-title: Wallet exercises
+:page-nav_order: 160
+:page-parent: Wallet
+== Exercises
+
+include::exercise-intro.adoc[]
+
+. Modify a wallet RPC
+- [ ] Create a descriptor wallet
+- [ ] Generate coins to yourself
+- [ ] Remove the `"dummy"` parameter from the `getbalance` Wallet RPC
+- [ ] Ensure that the `rpc_help.py` functional test passes (but ignore other test failures), fixing any errors
++
+TIP: run `test/functional/rpc_help.py` to just run a single test
+- [ ] Check that the rpc call `getbalance 3 true true` passes with the `dummy` parameter removed
+////
+- [ ] Why do we need to keep this parameter for backwards compatibility?
+////
+
+. `IsMine`
+- [ ] Create a descriptor wallet
+- [ ] Generate coins to yourself
+- [ ] Send coins to yourself in a transaction and generate a block to confirm
+- [ ] Modify the wallet's `IsMine()` logic to always return `false`
+- [ ] Generate a new block and try to send coins to yourself in a transaction again
+- Observe the changes
+
+. Coin Selection
+- [ ] Create a descriptor wallet
+- [ ] Generate 200 blocks to yourself
+- [ ] Call `listunspent` and then `send` a large amount (e.g. 600 BTC) to yourself and observe how many inputs were used
+- [ ] Add a new [.underline]#preferred# coin selection algorithm to the wallet that uses *all* UTXOs in the wallet and optionally remove the other algorithms.
+- [ ] Redo the send and confirm that this time it will select all inputs in the wallet for the transaction
+
+. Adding a new RPC
+- [ ] Add a new RPC which when called will simply return to the user a random UTXO from the wallet in the form
++
+[source,json]
+----
+{
+  "txid": <txid>,
+  "vout": <vout>
+}
+----
+
+////
+
+. Wallet Database
+- [ ] Ensure Bitcoin Core is compiled with `sqlite` support (check you have `sqlite3` on your $PATH: `command -v sqlite3` and that your `config.status` contains an sqlite3 line: `grep sqlite3 config.status`)
+
+
+
+
+
+
+== Validation interface
+
+TODO
+
+== COutput
+
+TODO
+
+== HWI
+
+== Relation to consensus soft forks
+
+Much of the meat of the recently soft-forked changes (e.g. Taproot) reside not inside consensus code, but rather require improvements to the wallet.
+
+== Removed text
+
+* When adding new wallet features which will be included in the GUI, it can be good practice to first implement them as RPC commands because it's easier to create good test coverage for them.
+* Advanced transaction signature operations (e.g. signature aggregation, sighash flags) happen in the wallet code.
+
+=== Concepts
+
+* Wallet architecture
+* key management
+** HD wallets
+** Output script descriptors
+* Separation of wallet and node functionality
+* Key Management
+* Transaction Construction
+** Taproot
+** SegWit
+** Bech32
+** PSBT
+** Coin selection
+** CPFP
+** RBF
+** Transaction batching
+** Adaptor signatures
+* Multiwallet
+* Hardware wallet interface (HWI)
+* QT
+////
