@@ -1,0 +1,28 @@
+:page-title: Bootstrapping
+:page-nav_order: 50
+:page-parent: P2P
+[[bootstrapping]]
+== Bootstrapping
+
+Bootstrapping is probably the most dangerous moment in a node's life.
+If the new node cannot make at least one connection to an honest node, from whom it can eventually learn more honest addresses, then it may not ever be able to join the most-work bitcoin chain without manual user intervention.
+
+NOTE: Manual intervention here would require the user to find the IP address of a known-honest node and connect to it either using `addnode` or `connect`.
+
+When the node first starts up, and if no node addresses are manually specified, we have no choice but to fetch addresses from one (or more) hardcoded DNS seed(s) the list of which can be found in https://github.com/bitcoin/bitcoin/blob/v23.0/src/chainparams.cpp#L121-L129[_src/chainparams.cpp_^].
+
+If the node is fed only attacker-controlled addresses by one or more dishonest DNS seed(s) then it has little opportunity to join the rest of the honest network.
+However, if one or more of the addresses returned by the DNS query are honest then we want the node to be able to (eventually) find and connect to the honest network.
+
+Note that if the DNS seed queries are unsuccessful, or the node is being run in a Tor-only mode (and currently the DNS seeds cannot support long Tor V3 addresses) then bitcoind will fall back to connecting to a hard-coded https://github.com/bitcoin/bitcoin/blob/v23.0/src/chainparamsseeds.h[list^] of seed nodes.
+This fall back functionality could help to protect against e.g. an attack on the DNS seed infrastructure.
+
+[[service_flags]]
+== Service flags
+
+Nodes can advertise https://github.com/bitcoin/bitcoin/blob/v24.0.1/src/protocol.h#L266-L296[service flags] (a.k.a. "service bits") indicating which services that node supports.
+
+== Managing connections
+
+An enumeration of the different types of connections, along with detailed descriptions on their functions, can be found in https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.h#L117-L184[src/_net.h_].
+

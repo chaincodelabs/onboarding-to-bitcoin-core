@@ -1,0 +1,15 @@
+:page-title: Responsible disclosure
+:page-nav_order: 110
+:page-parent: Consensus and Validation
+== Responsible Disclosure
+
+Bitcoin Core has a defined process for reporting security vulnerabilities via it's responsible disclosure process.
+This is detailed in https://github.com/bitcoin/bitcoin/blob/master/SECURITY.md[SECURITY.md^].
+
+Bugs which would need to be disclosed by following this process are generally those which could result in a consensus-failure, theft of funds, or creation of additional supply tokens (new coin issuance).
+If bugs of this nature are posted publicly then inevitably one or more persons will try to enact them, possibly causing severe harm or loss to one or many people.
+
+If you would like to learn more about the responsible disclosure process and why it's so important for Bitcoin Core, you can read the following:
+
+. https://medium.com/mit-media-lab-digital-currency-initiative/http-coryfields-com-cash-48a99b85aad4[Responsible disclosure in the era of cryptocurrencies^]
+. https://cacm.acm.org/magazines/2020/10/247597-responsible-vulnerability-disclosure-in-cryptocurrencies/fulltext[Responsible Vulnerability Disclosure in Cryptocurrencies^]

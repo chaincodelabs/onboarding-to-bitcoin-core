@@ -1,0 +1,24 @@
+:page-title: Multiple chains
+:page-nav_order: 100
+:page-parent: Consensus and Validation
+== Multiple chains
+
+TODO: Reorgs, undo data, `DisconnectBlock`
+
+Bitcoin nodes should ultimately converge in consensus on the most-work chain.
+Being able to track and monitor multiple chain (tips) concurrently is a key requirement for this to take place.
+There are a number of different states which the client must be able to handle:
+
+. A single, most-work chain being followed
+. Stale blocks learned about but not used
+. Full reorganisation from one chain tip to another
+
+`BlockManager` is tasked with maintaining a tree of all blocks learned about, along with their total work so that the most-work chain can be quickly determined.
+
+`CChainstate` (https://github.com/bitcoin/bitcoin/pull/24513[renamed^] to `Chainstate` in v24.0) is responsible for updating our local view of the best tip, including reading and writing blocks to disk, and updating the UTXO set.
+A single `BlockManager` is shared between all instances of `CChainState`.
+
+`ChainstateManager` is tasked with managing multiple ``CChainState``s.
+Currently just a "regular" IBD chainstate and an optional snapshot chainstate, which might in the future be used as part of the https://bitcoinops.org/en/topics/assumeutxo/[assumeUTXO^] project.
+
+When a new block is learned about (from `src/net_processing.cpp`) it will call into ``ChainstateManager``s `ProcessNewBlockHeaders` method to validate it.

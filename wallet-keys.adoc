@@ -1,0 +1,28 @@
+:page-title: Keys in the wallet
+:page-nav_order: 120
+:page-parent: Wallet
+=== Keys in the wallet
+
+==== Legacy wallet keys
+
+Legacy wallets used the "keypool" model which stored a bunch of keys.
+See https://github.com/bitcoin/bitcoin/blob/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/wallet/scriptpubkeyman.h#L52-L100[_src/wallet/scriptbpubkeyman.h_#L52-L100^] for historical context on the "keypool" model.
+
+The wallet would then simply iterate over each public key and generate a scriptPubKey (a.k.a. PubKey script) and address for each type of script the wallet supported.
+However this approach has a number of shortcomings (from least to most important):
+
+. One key could have multiple addresses
+. It was difficult to sign for multisig
+. Adding new script functionality required adding new hardcoded script types into the wallet code _for each new type of script_.
+
+Such an approach was not scalable in the long term and so a new format of wallet needed to be introduced.
+
+==== Descriptor wallet keys
+
+Descriptor wallets instead store output script "descriptors".
+These descriptors can be of *any* valid script type, including arbitrary scripts which might be "unknown" to the wallet software, and this means that wallets can deterministically generate addresses for any type of valid descriptor provided by the user.
+
+Descriptors not only contain what is needed to generate an address, they also include all the script template data needed to "solve" (i.e. spend) outputs received at them.
+In other words they permit a valid `scriptSig` (`redeemScript` or `witnessScript`) to be generated.
+The document https://github.com/bitcoin/bitcoin/blob/v23.0/doc/descriptors.md[Support for Output Descriptors in Bitcoin Core^] provides more details and examples of these output descriptors.
+

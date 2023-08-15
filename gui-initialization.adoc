@@ -1,0 +1,33 @@
+:page-title: GUI initialization
+:page-nav_order: 20
+:page-parent: GUI
+include::tmp/links.adoc[]
+== Main GUI program
+
+The loading point for the GUI is _src/qt/main.cpp_.
+`main()` calls `GuiMain()` from _src/qt/bitcoin.cpp_, passing along any program arguments with it.
+`GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
+
+Next an empty `NodeContext` is set up, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
+Recall that in <<{wallet-init}wallet_component_initialisation>> we also saw the wallet utilizing a `NodeContext` as part of its `WalletInitInterface`.
+In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
+
+After some QT setup, command-line and application arguments are parsed.
+What follows can be outlined from the code comments:
+
+[start=3]
+. Application identification
+. Initialization of translations, so that intro dialogue is in user's language
+. Now that settings and translations are available, ask user for data directory
+. Determine availability of data directory and parse bitcoin.conf
+. Determine network (and switch to network specific options)
+. URI IPC sending
+. Main GUI initialization
+
+== GUI initialisation
+
+After configuration the GUI is initialized.
+Here the `Node` object created earlier is passed to `app.SetNode()` before a window is created and the application executed.
+
+The bulk of the Qt GUI classes are defined in _src/qt/bitcoingui.{h|cpp}_.
+

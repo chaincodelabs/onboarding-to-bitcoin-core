@@ -1,0 +1,89 @@
+:page-title: ScriptPubKeyManagers
+:page-nav_order: 110
+:page-parent: Wallet
+[id=scriptpubkeymanagers]
+== ScriptPubKeyManagers (SPKM)
+
+Each wallet contains one or more ``ScriptPubKeyManager``s which are derived from the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/scriptpubkeyman.h#L166[base^] SPKM class and are in control of storing the ``scriptPubkey``s managed by that wallet.
+
+****
+"A wallet" in the general sense therefore becomes "a collection of ``ScriptPubKeyManager``s", which are each managing an address type.
+****
+
+In the current implementation, this means that a default (descriptor) wallet consists of 8 ``ScriptPubKeyManager``s, one SPKM for each combination shown in the table <<descriptor-spkmans,below>>.
+
+[id=descriptor-spkmans]
+.Descriptor wallet SPKMans
+[%autowidth.stretch]
+|===
+
+|{nbsp} |LEGACY |P2SH-SEGWIT |BECH32 |BECH32M
+
+|Receive
+|✓
+|✓
+|✓
+|✓
+
+
+|Change
+|✓
+|✓
+|✓
+|✓
+
+|===
+
+Here is the _descriptor_ wallet code fragment which sets up an SPKM for each `OUTPUT_TYPE`:
+
+.src/wallet/wallet.cpp#SetupDescriptorScriptPubKeyMans()
+[source,cpp,options=nowrap]
+----
+// ...
+
+for (bool internal : {false, true}) {
+    for (OutputType t : OUTPUT_TYPES) {
+        auto spk_manager = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this));
+        if (IsCrypted()) {
+            if (IsLocked()) {
+                throw std::runtime_error(std::string(__func__) + ": Wallet is locked, cannot setup new descriptors");
+            }
+            if (!spk_manager->CheckDecryptionKey(vMasterKey) && !spk_manager->Encrypt(vMasterKey, nullptr)) {
+                throw std::runtime_error(std::string(__func__) + ": Could not encrypt new descriptors");
+            }
+        }
+        spk_manager->SetupDescriptorGeneration(master_key, t, internal);
+        uint256 id = spk_manager->GetID();
+        m_spk_managers[id] = std::move(spk_manager);
+        AddActiveScriptPubKeyMan(id, t, internal);
+    }
+}
+
+// ...
+----
+
+By contrast a Legacy wallet will set up a **single** SPKM which will then be _aliased_ to a SPKM for each of the 6 `LEGACY_OUTPUT_TYPES`: `LEGACY`, `P2SH-SEGWIT` and `BECH32`.
+This gives it the external appearance of 6 distinct SPKMans, when really it only has 1:
+
+.src/wallet/wallet.cpp#SetupLegacyScriptPubKeyMan()
+[source,cpp,options=nowrap]
+----
+// ...
+
+auto spk_manager = std::unique_ptr<ScriptPubKeyMan>(new LegacyScriptPubKeyMan(*this));
+for (const auto& type : LEGACY_OUTPUT_TYPES) {
+    m_internal_spk_managers[type] = spk_manager.get();
+    m_external_spk_managers[type] = spk_manager.get();
+}
+m_spk_managers[spk_manager->GetID()] = std::move(spk_manager);
+
+// ...
+----
+
+SPKMans are stored in maps inside a `CWallet` according to output type.
+"External" and "Internal" (SPKMans) refer to whether the addresses generated are designated for giving out "externally", i.e. for receiving new payments to, or for "internal", i.e. change addresses.
+
+Prior to https://github.com/bitcoin/bitcoin/commit/c729afd0a3b74a3943e4c359270beaf3e6ff8a7b[c729afd0^] the equivalent SPKM functionality (fetching new addresses and signing transactions) was contained within `CWallet` itself, now however is split out for better maintainability and upgradability properties as brought about by the https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Wallet-Class-Structure-Changes[wallet box class structure changes^].
+Therefore `CWallet` objects no longer handle keys and addresses.
+
+The change to a `CWallet` made up of (multiple) ``{Descriptor|Legacy}ScriptPubKeyMan``'s is also sometimes referred to as the "Wallet Box model", where each SPKM is thought of as a distinct "box" within the wallet, which can be called upon to perform new address generation and signing functions.

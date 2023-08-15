@@ -1,0 +1,19 @@
+:page-title: Mempool unbroadcast set
+:page-nav_order: 40
+:page-parent: Mempool
+== Mempool unbroadcast set
+
+The mempool contains an "unbroadcast" set called `m_unbroadcast_txids`.
+As the name implies this stores the txids of transactions which are in our mempool but have not been verified as broadcast to the wider P2P network.
+This might occur for example if a transaction is submitted locally (e.g. from the wallet or RPC), but we are not yet connected to any peers.
+
+. When a transaction is submitted to the network via `BroadcastTransaction()` it is added to the unbroadcast set in the mempool, before `PeerManager` calls `RelayTransaction()` to attempt initial broadcast.
+. When a transaction is heard about from the P2P network (via `getdata` in response to an `INV`), the transaction will be https://github.com/bitcoin/bitcoin/blob/v23.0/src/net_processing.cpp#L2022[removed] from the unbroadcast set.
++
+TIP: Transactions are also removed from the set on reorgs, new blocks arriving or if they've "expired" via `RemoveStaged()`
+
+`PeerManager` schedules `ReattemptInitialBroadcast()` to be run every 10 minutes.
+This function loops over the unbroadcast set and either attempts rebroadcast or removes the transaction from the unbroadcast set if it is no longer in our mempool.
+
+TIP: amiti wrote a https://gist.github.com/amitiuttarwar/b592ee410e1f02ac0d44fcbed4621dba[gist^] on her proposal to improve rebroadcast logic in Bitcoin Core.
+

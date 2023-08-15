@@ -1,0 +1,40 @@
+:page-title: Wallet locks
+:page-nav_order: 80
+:page-parent: Wallet
+== Controlling the wallet
+
+As we can see wallet component startup and shutdown is largely driven from outside the wallet codebase from _src/init.cpp_.
+
+Once the wallet component is started and any wallets supplied via argument have been verified and loaded, wallet functionality ceases to be called from _init.cpp_ and instead is controlled using external programs in a number of ways.
+The wallet can be controlled using `bitcoin-cli` or `bitcoin-qt` GUI, and wallet files can be interacted with using the stand-alone `bitcoin-wallet` tool.
+
+Both `bitcoind` and `bitcoin-qt` run a (JSON) RPC server which is ready to service, amongst other things, commands to interact with wallets.
+The command line tool `bitcoin-cli` will allow interaction of any RPC server started by either `bitcoind` or `bitcoin-qt`.
+
+TIP: If using `bitcoin-qt` there is also an RPC console built into the GUI or you can run with `-server=1` to allow access via `bitcoin-cli`.
+
+If using the `bitcoin-qt` GUI itself then communication with the wallet is done directly via qt's https://github.com/bitcoin/bitcoin/blob/v23.0/src/qt/walletmodel.h#L51-L52[`WalletModel` interface^].
+
+Commands which can be used to control the wallet via RPC are listed in https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/rpc/wallet.cpp#L662-L731[_rpcwallet.cpp_^].
+
+=== Wallet via RPC
+
+If we take a look at the https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/rpc/wallet.cpp#L195-L238[`loadwallet` RPC^] we can see similarities to ``WalletClientImpl``'s `LoadWallets()` function.
+
+However this time the function will check the `WalletContext` to check that we have a wallet context (in this case a reference to a chain interface) loaded.
+Next it will call https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L260-L271[`wallet.cpp#LoadWallet`^] which starts by grabbing `g_loading_wallet_mutex` and adding the wallet to `g_loading_wallet_set`, before calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L227-L257[`LoadWalletInternal`^] which adds the wallet to `vpwallets` and sets up various event notifications.
+
+Further operation of the wallet RPCs are detailed in their man pages, but one thing to take note of is that whilst `loadwallet()` (and `unloadwallet()`) both take a `wallet_name` argument, the other wallet RPCs do not.
+Therefore in order to control a specific wallet from an instance of `bitcoin{d|-qt}` that has multiple wallets loaded, bitcoin-cli must be called with the `-rpcwallet` argument, to specify the wallet which the action should be performed against, e.g. `bitcoin-cli --rpcwallet=your_wallet_name getbalance`
+
+=== Via `bitcoin-cli` tool
+
+****
+Blockchain Commons contains numerous guides and examples of controlling the wallet using `bitcoin-cli`, including:
+
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/04_0_Sending_Bitcoin_Transactions.md[Sending Bitcoin Transactions^] including using raw transactions
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/05_0_Controlling_Bitcoin_Transactions.md[Controlling Bitcoin Transactions^] using RBF and CPFP
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/06_0_Expanding_Bitcoin_Transactions_Multisigs.md[Using multisig^] to send and receive
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/07_0_Expanding_Bitcoin_Transactions_PSBTs.md[Creating and using PSBTs^] and integrating them with hardware wallets
+* https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/08_0_Expanding_Bitcoin_Transactions_Other.md[Adding locktimes and OP_RETURN data^]
+****

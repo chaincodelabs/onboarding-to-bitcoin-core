@@ -1,0 +1,176 @@
+:page-title: Making forking changes
+:page-nav_order: 40
+:page-parent: Consensus and Validation
+== Making forking changes
+
+There is some debate around whether it's preferable to make changes via soft or hard fork.
+Each technique has advantages and disadvantages.
+
+.Hard vs soft forks for changes
+[%autowidth]
+|===
+|Type |Advantages |Disadvantages
+
+|Soft fork
+a|
+
+* Backwards compatible
+* **Low risk of chain split** in worst case
+
+a|
+
+* Cannot change all values (e.g. block size, money supply)
+* Might require clever programming tricks
+* Might introduce "technical debt" and associated comprehension burden on reviewers and future programmers
+
+|Hard fork
+a|
+
+* Can change any values you want (e.g. block size, money supply)
+* Might be cleaner (code-wise) and therefore easier to reason about
+
+a|
+
+* Not backwards compatible
+** Requires all nodes to upgrade in lock-step
+* **High risk of chainsplit**
+* We have no experience with them
+* Other changes often required
+* See bitcoincore.org for https://bitcoincore.org/en/2015/12/23/capacity-increases-faq/[more information^]
+
+|===
+
+== Upgrading consensus rules with soft forks
+
+When soft-forking in new bitcoin consensus rules it is important to consider how old nodes will interpret the new rules.
+For this reason the preferred method historically was to make something (e.g. an unused OPCODE which was to be repurposed) "non-standard" prior to the upgrade.
+Making the opcode non-standard has the effect that transaction scripts using it will not be relayed by nodes using this policy.
+Once the soft fork is activated policy is amended to make relaying transactions using this opcode standard policy again, so long as they comply with the ruleset of the soft fork.
+
+.Soft forking marble statues
+[sidebar]
+****
+An analogy might be to think of the current consensus ruleset like a big block of marble.
+The current rules have already been carved out of it and eventually it will form into a complex statue.
+
+As we soft fork new rules into bitcoin we are taking an un-touched area of the marble and carving something new out of it.
+Importantly with soft forks we can only ever take parts of the marble _away_, so we must be considerate about what, where and how much we carve out for any upgrade.
+
+There are parts of the statue currently untouched because they're reserved for future upgrades.
+****
+
+Using the analogy above, we could think of OP_NOP opcodes as unsculpted areas of marble.
+
+TIP: Currently OP_NOP1 and OP_NOP4-NOP_NOP10 remain available for this.
+
+Once the opcode has been made non-standard we can then sculpt the new rule from the marble and later re-standardize transactions using the opcode so long as they follow the new rule.
+
+This makes sense from the perspective of an old, un-upgraded node who we are trying to remain in consensus with.
+From their perspective they see an OP_NOP performing (like the name implies) nothing, but not marking the transaction as invalid.
+After the soft fork they will _still_ see the (repurposed) OP_NOP apparently doing nothing but also not failing the transaction.
+
+However from the perspective of the upgraded node they now have two possible evaluation paths for the OP_NOP: 1) Do nothing (for the success case) and 2) Fail evaluation (for the failure case).
+This is summarized in the table below.
+
+.Soft forking changes using OP_NOP opcodes
+[%autowidth]
+|===
+| |Before soft fork |After soft fork
+
+|Legacy node
+|1) Nothing
+|1) Nothing
+
+|Upgraded Node
+|1) Nothing
+|1) Nothing (soft forked rule evaluation success) +
+2) Mark transaction invalid (soft forked rule evaluation failure)
+
+|===
+
+You may notice here that there is still room for discrepancy; a miner who is not upgraded could possibly include transactions in a block which were valid according to legacy nodes, but invalid according to upgraded nodes.
+If this miner had any significant hashpower this would be enough to initiate a chainsplit, as upgraded miners would not follow this tip.
+
+.Selecting upgrade activation times
+[sidebar]
+****
+Originally Satoshi used height-based upgrade points for activating soft forks.
+The bitcoin network was so small and concentrated, and Satoshi could dictate the height quite easily, that this worked OK in that era.
+
+After Satoshi left attempts were made to make the activation point a more predictable moment in _time_; with the intent on assisting engineers and services who relied on knowing when the upgrade was likely to activate (as wall time).
+For this reason BIP16 and BIP30 were activated on a (block) timestamp, after miners had signalled readiness for the upgrade in their coinbase transactions.
+
+The concept of miner activated soft forks (MASF) were invented with https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki[BIP34^] which said that every coinbase transaction needed to include the (block) height as the first item in its scriptSig, along with an increased block version number.
+The block height requirement had the effect that no two coinbase transactions could have the same txid, which was previously possible (see https://blockstream.info/block/00000000000271a2dc26e7667f8419f2e15416dc6955e5a6c6cdf3f2574dd08e[1^] and https://blockstream.info/block/00000000000743f190a18c5577a3c2d2a1f610ae9601ac046a38084ccb7cd721[2^] for example).
+The increased version number was accompanied by rules which https://github.com/bitcoin/bitcoin/pull/1526/commits[stipulated^] a form of miner readiness signalling, which could avoid a diktat from any individual about what time a particular upgrade should be activated.
+
+[TIP]
+====
+The UTXO in the second of those two blocks, along with a second block also containing a duplicate coinbase txid have a https://github.com/bitcoin/bitcoin/commit/ab91bf39b7c11e9c86bb2043c24f0f377f1cf514[special carve-out^] in the code to enable them to pass validation.
+
+Unfortunately though the second UTXO effectively overwrote the first in the UTXO set, so in both cases 50 BTC was lost from the spendable supply.
+====
+
+MASF was used for BIP65 and BIP66.
+A summary of the mechanism is:
+
+* If 750/1000 blocks signal this new version number then the new rule is active.
+* At 950/1000 you *must* signal.
+** Forcibly kick the last 5% stragglers out.
+
+However, even using miner signalling for BIP16 had already caused drama, as the idea of activation based on miner signalling was interpreted as a vote (by only miners), rather than what it was, which was miners saying "yes, I am ready for the upgrade".
+
+When upgrading via soft fork we want everyone to be on the same page to minimize the risk of a chainsplit and miner signalling was deemed the best method we had to achieve rough consensus on this.
+
+[quote,Eric Lombrozo, Bitcoin Magazine]
+____
+Whenever we want to change the consensus rules, this presents a serious problem because we don’t really want to just force new rules on the network. There’s no central authority that can do this really. We need to have a way for the network to adapt to the new rules, decide whether or not it wants to adjust to these rules, and to make sure that everyone still ends up agreeing in the end.
+____
+
+In the end bitcoin developers concluded that MASF indeed had potential for centralization and so produced the https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki[BIP9^] specification with which to use for future upgrades.
+
+****
+
+Repurposing OP_NOPs does have its limitations.
+First and foremost they cannot manipulate the stack, as this is something that un-upgraded nodes would not expect or validate identically.
+Getting rid of the OP_DROP requirement when using repurposed OP_NOPs would require a hard fork.
+
+Examples of soft forks which re-purposed OP_NOPs include CLTV and CSV.
+Ideally these operations would remove the subsequent object from the stack when they had finished processing it, so you will often see them followed by OP_DROP which removes the object, for example in the script used for the `to_local` output in a lightning commitment transaction:
+
+.Lightning https://github.com/lightning/bolts/blob/master/03-transactions.md#to_local-output[commitment transaction^] output
+[source,text,highlight=6;7]
+----
+OP_IF
+    # Penalty transaction
+    <revocationpubkey>
+OP_ELSE
+    `to_self_delay`
+    OP_CHECKSEQUENCEVERIFY
+    OP_DROP
+    <local_delayedpubkey>
+OP_ENDIF
+OP_CHECKSIG
+----
+
+There are other limitations associated with repurposing OP_NOPs, and ideally bitcoin needed a better upgrade system...
+
+=== SegWit upgrade
+
+SegWit was the first attempt to go beyond simply repurposing OP_NOPs for upgrades.
+The idea was that the `scriptPubKey`/`redeemScript` would consist of a 1 byte push opcode (0-16) followed by a data push between 2 and 40 bytes.
+The value of the first push would represent the version number, and the second push the https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program[witness program^].
+If the conditions to interpret this as a SegWit script were matched, then this would be followed by a `witness`, whose data varied on whether this was a P2WPKH or P2WSH witness program.
+
+Legacy nodes, who would not have the witness data, would interpret this output as `anyonecanspend` and so would be happy to validate it, whereas upgraded nodes could validate it using the additional `witness` against the new rules.
+To revert to the statue analogy this gave us the ability to work with a new area of the marble which was entirely untouched.
+
+The addition of a versioning scheme to SegWit was a relatively late addition which stemmed from noticing that, due to the CLEANSTACK policy rule which required exactly 1 true element to remain on the stack after execution, SegWit outputs would be of the form `OP_N + DATA`.
+With SegWit we wanted a compact way of creating a new output which didn't have any consensus rules associated with it, yet had lots of freedom, was ideally already non-standard, and was permitted by CLEANSTACK.
+
+The solution was to use two pushes: according to old nodes there are two elements, which was non-standard.
+The first push must be at least one byte, so we can use one of the `OP_N` opcodes, which we then interpret as the SegWit version.
+The second is the data we have to push.
+
+Whilst this immediately gave us new upgrade paths via SegWit versions Taproot (SegWit version 1) went a step further and declared _new opcodes inside of SegWit_, also evaluated as `anyonecanspend` by nodes that don't support SegWit, giving us yet more soft fork upgradability.
+These opcodes could in theory be used for anything, for example if there was ever a need to have a new consensus rule on 64 bit numbers we could use one of these opcodes.

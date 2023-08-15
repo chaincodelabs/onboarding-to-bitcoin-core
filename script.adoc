@@ -1,0 +1,19 @@
+= Script
+:page-nav_order: 70
+:page-has_children: true
+
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+== Script origins
+
+. New scripts are created when creating a new address.
+. Scripts can be learned about when we receive a new transaction from the P2P network or from a newly-connected block.
+. With Taproot there may be scripts in alternative Tapscript execution paths which nobody on the network will ever learn about.
+
+== Scripts in Bitcoin Core
+
+The primary script objects are found in _script.h_.
+An enum over all the permitted OPCODES, `enum opcodetype`.
+The `CScriptNum` class which handles arithmetic operations on integer ``CScriptNum``s, whether from a loose `int_64t` or from a second `CScriptNum` object.
+The `CScript` class which supports serializing data into scripts, along with many helper functions such as returning the script type.
+

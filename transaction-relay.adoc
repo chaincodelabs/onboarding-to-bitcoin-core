@@ -1,0 +1,71 @@
+:page-title: Transaction relay
+:page-nav_order: 80
+:page-parent: P2P
+include::tmp/links.adoc[]
+[[transaction_relay]]
+=== Transaction relay
+
+Relaying transactions is a core tenet of a Bitcoin node, along with <<{address-relay}address_relay>> and <<{block-relay}block_relay>>.
+However, we don't necessarily want to immediately relay transactions we accept into our mempool immediately for the following reasons:
+
+. Privacy: Adding a small delay in transaction relay helps obscure the route transactions take, making it harder to use transaction timing to infer the structure of the network or the original source of the transaction.
+. Load balancing: Having a small delay in transaction relay helps avoid the possibility that all transactions will be requested from the peer with the lowest network latency simply because they announce the transaction first.
+. Saving bandwidth: Having a longer delay in transaction relay may allow some transactions to not be relayed at all, eg in the case where a low fee rate transaction is accepted into the mempool and then evicted due to being at the bottom of the mempool, or RBFed prior to being relayed.
+
+==== Rejecting incoming transactions
+
+In addition to being careful about transaction relay, we must also reject (some) incoming transactions before they enter our mempool, which acts as a DoS prevention measure for our node.
+If we were to accept and blindly relay all transactions INVed to us by our peers, then an attacker could cheaply use (waste) a node's system resources and bandwidth, and have their attack amplified by the transaction flooding mechanism.
+
+How do we currently limit incoming transactions?
+
+. We reject transactions which don't pass policy checks e.g.:
+.. We reject transactions that don't pay the https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L833[mempool min fee] (set based on maximum mempool size)
+.. We reject RBF transactions that don't https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L927-L928[increase the fee rate] by more than `-incrementalrelayfee`
+. We reject transactions which don't pass replacement/package checks.
+. We reject transactions which don't pass consensus checks.
+
+What other mechanisms _could_ we consider using before the <<{single-transactions}single_transactions,ATMP>> checks are performed?
+
+. We _could_ reject transactions from individual peers that send transactions at too high a rate, however this would just encourage attackers to make multiple connections, using up additional inbound slots
+. We _could_ ignore transactions from any peer once some rate limit is hit, however this would drop high feerate transactions from innocent peers which would be doubly undesirable
+. We _could_ artificially increase our mempool min fee when a rate limit is exceeded, even if the mempool is not full?
+
+==== Initial broadcast
+
+If a spy is able to identify which node initially broadcast a transaction, there's a high probability that that node is the source wallet for the transaction.
+To avoid that privacy leak, we try to be intentional about how we relay and request transactions.
+We don't want to reveal the exact contents of our mempool or the precise timing when we received a transaction.
+
+https://github.com/bitcoin/bitcoin/pull/18861[PR#18861^] improved transaction-origin privacy.
+The idea is that if we haven't yet announced a transaction to a peer, we shouldn't fulfil any `GETDATA` requests for that transaction from that peer.
+The implementation for that PR checks the list of transactions we are about to announce to the peer (`setInventoryTxToSend`), and if it finds the transaction that the peer has requested, then responds with a `NOTFOUND` instead of with the transaction.
+
+[TIP]
+====
+While this helps in many cases, why is it still an imperfect heuristic?
+====
+
+https://github.com/bitcoin/bitcoin/pull/19109[PR#19109^] further reduces the possible attack surface.
+It introduces a per-peer rolling bloom filter (`m_recently_announced_invs`) to track which transactions were recently announced to the peer.
+When the peer requests a transaction, we check the filter before fulfilling the request and relaying the transaction.
+
+==== Rebroadcasting transactions
+
+Hiding links between wallet addresses and IP addresses is a key part of Bitcoin privacy.
+Many techniques exist to help users obfuscate their IP address when submitting their own transactions, and various P2P changes have been proposed with the goal of hiding transaction origins.
+
+Beyond initial broadcast, _rebroadcast_ behaviour can also leak information.
+If a node rebroadcasts its own wallet transactions differently from transactions received from its peers, for example more frequently, then adversaries could use this information to infer transaction origins even if the initial broadcast revealed nothing.
+
+The goal is to improve privacy by making node rebroadcast behaviour for wallet transactions indistinguishable from that of other peers' transactions.
+
+https://github.com/bitcoin/bitcoin/pull/21061[PR#21061^] adds a `TxRebroadcast` module responsible for selecting transactions to be rebroadcast and keeping track of how many times each transaction has been rebroadcast.
+After each block, the module uses the miner and other heuristics to select transactions from the mempool that it believes "should" have been included in the block and re-announces them (disabled by default for now).
+
+Rebroadcasts happen once per new block.
+The set of transactions to be rebroadcast is calculated as follows:
+
+* The node regularly estimates the minimum feerate for transactions to be included in the next block, `m_cached_fee_rate`.
+* When a new block arrives, the transactions included in the block are removed from the mempool. The node then uses `BlockAssembler` to calculate which transactions (with a total weight up to 3/4 of the block maximum) from the mempool are more than 30 minutes old and have a minimum feerate of `m_cached_fee_rate`. This results in a set of transactions that our node would have included in the last block.
+* The rebroadcast attempt tracker, `m_attempt_tracker`, tracks how many times and how recently we've attempted to rebroadcast a transaction so that we don't spam the network with re-announcements.

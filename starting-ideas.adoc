@@ -1,0 +1,28 @@
+:page-title: Getting started with development
+:page-nav_order: 110
+:page-parent: Overview and Development Process
+=== Getting started with development
+
+One of the roles most in-demand from the project is that of code review, and in fact this is also one of the best ways of getting familiarized with the codebase too!
+Reviewing a few PRs and adding your review comments to the PR on GitHub can be really valuable for you, the PR author and the bitcoin community.
+This https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html[Google Code Health^] blog post gives some good advice on how to go about code review and getting past "feeling that you're not as smart as the programmer who wrote the change".
+If you're going to ask some questions as part of review, try and keep questions https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html[respectful^].
+
+There is also a Bitcoin Core PR https://bitcoincore.reviews/[Review Club^] held weekly on IRC which provides an ideal entry point into the Bitcoin Core codebase.
+A PR is selected, questions on the PR are provided beforehand to be discussed on irc.libera.chat #bitcoin-core-pr-reviews IRC room and a host will lead discussion around the changes.
+
+Aside from review, there are 3 main avenues which might lead you to submitting your *own* PR to the repository:
+
+. Finding a `good first issue`, as tagged in the https://github.com/bitcoin/bitcoin/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22[issue tracker^]
+. Fixing a bug
+. Adding a new feature (that you want for yourself?)
+
+Choosing a "good first issue" from an area of the codebase that seems interesting to you is often a good approach.
+This is because these issues have been somewhat implicitly "concept ACKed" by other Contributors as "something that is likely worth someone working on".
+Don't confuse this for meaning that if you work on it that it is certain to be merged though.
+
+If you don't have a bug fix or new feature in mind and you're struggling to find a good first issue which looks suitable for you, don't panic.
+Instead keep reviewing other Contributors' PRs to continue improving your understanding of the process (and the codebase) while you watch the Issue tracker for something which you like the look of.
+
+When you've decided what to work on it's time to take a look at the current behaviour of that part of the code and perhaps more importantly, try to understand _why_ this was originally implemented in this way.
+This process of codebase "archaeology" will prove invaluable in the future when you are trying to learn about other parts of the codebase on your own.

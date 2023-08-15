@@ -1,0 +1,115 @@
+:page-title: Using a test network
+:page-nav_order: 90
+:page-parent: Overview and Development Process
+=== Testing
+
+Three types of test network are available:
+
+1. Testnet
+2. Regtest
+3. Signet
+
+These three networks all use coins of zero value, so can be used experimentally.
+
+They primary differences between the networks are as follows:
+
+.Comparison of different test networks
+[cols="1h,1,1,1"]
+|===================================================================================================================================
+| Feature                   | Testnet                        | Regtest                       | Signet
+
+| Mining algorithm          | Public hashing with difficulty | Local hashing, low difficulty | Signature from authorized signers
+| Block production schedule | Varies per hashrate            | On-demand                     | Reliable intervals (default 2.5 mins)
+| P2P port                  | 18333                          | 18444                         | 38333
+| RPC port                  | 18332                          | 18443                         | 38332
+| Peers                     | Public                         | None                          | Public
+| Topology                  | Organic                        | Manual                        | Organic
+| Chain birthday            | 2011-02-02                     | At time of use                | 2020-09-01
+| Can initiate re-orgs      | If Miner                       | Yes                           | No
+| Primary use               | Networked testing              | Automated integration tests   | Networked testing
+|===================================================================================================================================
+
+==== Signet
+
+Signet is both a tool that allows Developers to create their own networks for testing interactions between different Bitcoin software, and the name of the most popular of these public testing networks.
+Signet was codified in https://github.com/bitcoin/bips/tree/master/bip-0325.mediawiki[BIP 325^].
+
+To connect to the "main" Signet network, simply start bitcoind with the signet option, e.g. `bitcoind -signet`.
+Don't forget to also pass the signet option to `bitcoin-cli` if using it to control bitcoind, e.g. `bitcoin-cli -signet your_command_here`.
+Instructions on how to setup your own Signet network can be found in the Bitcoin Core Signet https://github.com/bitcoin/bitcoin/tree/master/contrib/signet/README.md[README.md^].
+The Bitcoin wiki Signet https://en.bitcoin.it/wiki/Signet[page^] provides additional background on Signet.
+
+==== Regtest
+
+Another test network named _regtest_, which stands for _regression test_, is also available.
+This network is enabled by starting bitcoind with the `-regtest` option.
+This is an entirely self-contained mode, giving you complete control of the state of the blockchain.
+Blocks can simply be mined on command by the network operator.
+
+The https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional tests^] use this mode, but you can also run it manually.
+It provides a good means to learn and experiment on your own terms.
+It's often run with a single node but may be run with multiple co-located (local) nodes (most of the functional tests do this).
+The blockchain initially contains only the genesis block, so you need to mine >100 blocks in order to have any spendable coins from a mature coinbase.
+Here's an example session (after you've built `bitcoind` and `bitcoin-cli`):
+
+[source,bash,options="nowrap"]
+----
+$ mkdir -p /tmp/regtest-datadir
+$ src/bitcoind -regtest -datadir=/tmp/regtest-datadir
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
+{
+  "chain": "regtest",
+  "blocks": 0,
+  "headers": 0,
+  "bestblockhash": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206",
+  _(...)_
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir createwallet testwallet
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir -generate 3
+{
+  "address": "bcrt1qpw3pjhtf9myl0qk9cxt54qt8qxu2mj955c7esx",
+  "blocks": [
+    "6b121b0c094b5e107509632e8acade3f6c8c2f837dc13c72153e7fa555a29984",
+    "5da0c549c3fddf2959d38da20789f31fa7642c3959a559086436031ee7d7ba54",
+    "3210f3a12c25ea3d8ab38c0c4c4e0d5664308b62af1a771dfe591324452c7aa9"
+  ]
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getblockchaininfo
+{
+  "chain": "regtest",
+  "blocks": 3,
+  "headers": 3,
+  "bestblockhash": "3210f3a12c25ea3d8ab38c0c4c4e0d5664308b62af1a771dfe591324452c7aa9",
+  _(...)_
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir getbalances
+{
+  "mine": {
+    "trusted": 0.00000000,
+    "untrusted_pending": 0.00000000,
+    "immature": 150.00000000
+  }
+}
+$ src/bitcoin-cli -regtest -datadir=/tmp/regtest-datadir stop
+----
+
+You may stop and restart the node and it will use the existing state.
+(Simply remove the data directory to start again from scratch.)
+
+Blockchain Commons offer a guide to https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/A3_0_Using_Bitcoin_Regtest.md[Using Bitcoin Regtest^].
+
+==== Testnet
+
+Testnet is a public bitcoin network where mining is performed in the usual way (hashing) by decentralized miners.
+
+However, due to much lower hashrate (than mainnet), testnet is susceptible extreme levels of inter-block volatility due to the way the difficulty adjustment (DA) works: if a mainnet-scale miner wants to "test" their mining setup on testnet then they may cause the difficulty to increase greatly.
+Once the miner has concluded their tests they may remove all hashpower from the network at once.
+This can leave the network with a high difficulty which the DA will take a long time to compensate for.
+
+Therefore a https://en.bitcoin.it/wiki/Testnet#Differences["20 minute" rule^] was introduced such that the difficulty would reduce to the minimum for one block before returning to its previous value.
+This ensures that there are no intra-block times greater than 20 minutes.
+
+However there is a bug in the implementation which means that if this adjustment occurs on a difficulty adjustment block the difficulty is lowered to the minimum for one block but then not reset, making it permanent rather than a one-off adjustment.
+This will result in a large number of blocks being found until the DA catches up to the level of hashpower on the network.
+
+It's usually preferable to test private changes on a local regtest, or public changes on a Signet for this reason.

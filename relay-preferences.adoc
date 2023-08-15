@@ -1,0 +1,15 @@
+:page-title: Relay preferences
+:page-nav_order: 100
+:page-parent: P2P
+=== Notifying peers of relay preferences
+
+Currently, block-relay-only connections are established indirectly:
+
+* When making an outbound block-relay-only connection, a node sets the boolean flag `fRelay` in the version message to `false`.
+* `fRelay` (introduced in the context of https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki[BIP 37^]) does not imply that transactions cannot be sent for the entire duration of the connection - in its original use case with BIP37, relay of transactions can be activated later on.
+* `fRelay=false` is also used in *-blocksonly* mode, a low-bandwidth option in which a node does not want to receive transactions from *any peer*, but does participate in address relay.
+
+Therefore, nodes currently don't have a notion which of their incoming peers see the connection as block-relay-only and don't have any logic attached to it.
+
+https://github.com/bitcoin/bitcoin/pull/20726[PR#20726^], accompanied by the new BIP proposal https://github.com/sdaftuar/bips/blob/2021-02-bip338-fixups/bip-0338.mediawiki[BIP 338^], introduces the new p2p message `disabletx` for block-relay-only connections, which makes it explicit that no messages related to transaction relay should ever be exchanged over the duration of the connection.
+

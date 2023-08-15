@@ -1,0 +1,43 @@
+= Wallet
+:page-nav_order: 30
+:page-has_children: true
+
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+Bitcoin Core includes an optional wallet component.
+The wallet allows users to make and receive transactions using their own node, so that they can validate incoming payment against their own node.
+
+The wallet component has the following general aims:
+
+. Have best-in-class security
+** Be extremely well tested
+** Be reviewed by competent developers
+. Have good privacy by default
+. Be smart about coin selection with respect to:
+** Transaction fees
+** Privacy
+. Implement state-of-the-art features:
+** Taproot
+** Wallet descriptors
+** Miniscript
+. Be backwards compatible with old (Bitcoin Core) wallet files where possible
+
+Wallets can be one of two types, "legacy" or https://github.com/bitcoin/bitcoin/blob/v23.0/doc/descriptors.md["descriptor"^].
+
+[TIP]
+====
+Bitcoin Core moved to descriptor wallets as they are unambiguous as to which public keys and scripts should be used.
+
+They also simplify backups and make im/ex-porting wallet keys into other software less error-prone.
+====
+
+== Wallet overview
+
+////
+* https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.1_regions.asciidoc#wallet_region[Bitcoin core onboarding - wallet/^] describes the main functions of a wallet, along with some differences between legacy and descriptor wallets.
+////
+
+****
+Blockchain Commons provides some examples of https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/03_3_Setting_Up_Your_Wallet.md[Setting up a wallet] using the `bitcoin-cli tool.
+****
+

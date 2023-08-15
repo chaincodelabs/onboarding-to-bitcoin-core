@@ -1,0 +1,95 @@
+:page-title: Wallet Database
+:page-nav_order: 0
+:page-parent: Wallet
+=== Wallet Database
+
+Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.
+
+TIP: The version of BDB we used for the wallet is unmaintained, so new wallets should prefer sqlite format
+
+The wallet is stored on disk as a Key Value store.
+
+.Wallet database
+[mermaid,target=wallet-database,format=svg,align="center"]
+....
+flowchart BT
+   database["database\n(KV store)"]
+
+    Transactions --> database
+    Keys --> database
+    Key_metadata --> database
+    wallet_metadata --> database
+    database -- load db --> CWallet
+....
+
+These are some of the https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L30-L62[records^] which help us regenerate a descriptor wallet (populating a `DescriptorScriptPubKeyMan` (DSPKM)) from the database:
+
+[source,cpp,options=nowrap]
+----
+// walletdb.cpp
+const std::string WALLETDESCRIPTOR{"walletdescriptor"};
+const std::string WALLETDESCRIPTORCACHE{"walletdescriptorcache"};
+const std::string WALLETDESCRIPTORLHCACHE{"walletdescriptorlhcache"};
+const std::string WALLETDESCRIPTORCKEY{"walletdescriptorckey"};
+const std::string WALLETDESCRIPTORKEY{"walletdescriptorkey"};
+----
+
+For Legacy wallets (populating a `LegacyScriptPubKeyMan` (LSPKM)) we use the records with `*.KEY` & `SCRIPT`.
+
+Wallet metadata may include a `tipLocator` -- the most recent tip -- and a wallet `version` which is used in database upgrades.
+
+To load the wallet we read the database by iterating the records and loading them to `CWallet`, using `ReadKeyValue()` to deserialize.
+
+.Loading wallet records from the database
+[cols="2,3"]
+|===
+|Record |Load point
+
+|`DBKeys::TX`
+|(Bitcoin) transactions end up in `mapWallet` via the call to `pwallet->LoadToWallet(hash, fill_wtx)`
+
+|`DBKeys::KEY`
+|Keys for legacy wallets are loaded into `CKey` or `Key`, then read into the appropriate SPKM (or one is created and keys added to it) using `pwallet->GetOrCreateLegacyScriptPubKeyMan()`.
+
+a|`DBKeys::WALLETDESCRIPTOR` +
+`DBKeys::WALLETDESCRIPTORCACHE` +
+`DBKeys::WALLETDESCRIPTORLHCACHE` +
+`DBKeys::WALLETDESCRIPTORKEY` +
+`DBKeys::WALLETDESCRIPTORCKEY`
+
+|Descriptor wallet information generally goes into `DescriptorScriptPubKeyMan`.
+
+a|`DBKeys::NAME` +
+`DBKeys::PURPOSE`
+
+|Addresses go into `m_address_book`
+
+|===
+
+You can see where all the other DB records are deserialized to by examining the `ReadKeyValue()` https://github.com/bitcoin/bitcoin/blob/master/src/wallet/walletdb.cpp#L321-L746[function].
+
+The various `*ScriptPubkeyMan` objects are all owned by the `CWallet` instance eventually, however `LegacyScriptPubKeyMan` is both created and owned by `CWallet`, whereas `DescriptorScriptPubKeyMan` is created externally to `CWallet` and only after loading exists in the `CWallet` context.
+
+Note that `TxSpends` is **not** tracked in the wallet database (and loaded at startup), but instead is rebuilt from scratch because it's fast to do so and we must reload every transaction anyway, so it's not much more work to regenerate `TxSpends` at the same time.
+////
+TODO: Why do we reload every transaction anyway ^?
+////
+
+=== Key-type classes in the wallet
+
+There are a number of `Key` classes in the wallet code and keeping track of their functions can be confusing at times due to naming similarities.
+Below are listed some of these classes along with some primary functions.
+
+[id=wallet-key-types]
+****
+[horizontal]
+`CKey`:: An encapsulated private key. Used for signing and deriving child keys.
+`CKeyID`:: A _reference_ to a `CKey` by the hash160 of its pubkey. Used for key lookups when fetching keys e.g. for signing.
+`CPrivKey`:: A serialized (OpenSSL format) private key with associated parameters. Used to read/write private keys to/from the database.
+`CPubKey`:: A public key. Used in many places.
+`CExtKey`:: An extended public key (includes private key and chaincode). Used for deriving BIP32 child keys.
+`CMasterKey`:: Contains an encryption salt `vchSalt` and a randomly generated encryption key `vchCryptedKey`. The `CMasterKey` object itself is what is encrypted by the user's passphrase and the inner `vchCryptedKey` is what is used to en/de-crypt the wallet keys.
+`CKeyingMaterial`:: Plain text which is to be encrypted or has been decrypted using the `CMasterKey`.
+`CKeyPool`:: A single key which has been taken from a ``CWallet``'s keypool for use. `CKeyPool` keys are stored in the wallet database.
+`CryptedKeyMap`:: A map of `CKeyID` to a pair of (`CPubKey` + an encrypted private key). Used to lookup keys (by `CKeyID`) when the wallet is encrypted.
+****

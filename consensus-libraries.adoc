@@ -1,0 +1,53 @@
+:page-title: Consensus libraries
+:page-nav_order: 70
+:page-parent: Consensus and Validation
+== libbitcoinconsensus
+
+The libbitcoinconsensus library is described in the 0.10.0 release notes:
+
+[quote]
+____
+Consensus library
+
+Starting from 0.10.0, the Bitcoin Core distribution includes a consensus library.
+
+The purpose of this library is to make the verification functionality that is
+critical to Bitcoin's consensus available to other applications, e.g. to language
+bindings such as [python-bitcoinlib](https://pypi.python.org/pypi/python-bitcoinlib) or
+alternative node implementations.
+
+This library is called `libbitcoinconsensus.so` (or, `.dll` for Windows).
+Its interface is defined in the C header [bitcoinconsensus.h](https://github.com/bitcoin/bitcoin/blob/0.10/src/script/bitcoinconsensus.h).
+
+In its initial version the API includes two functions:
+
+- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction
+correctly spends the passed scriptPubKey under additional constraints indicated by flags
+- `bitcoinconsensus_version` returns the API version, currently at an experimental `0`
+
+The functionality is planned to be extended to e.g. UTXO management in upcoming releases, but the interface
+for existing methods should remain stable.
+____
+
+== libbitcoinkernel
+
+The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel^] project seeks to modularise Bitcoin Cores' consensus engine and make it easier for developers to reason about when they are modifying code which could be consensus-critical.
+
+This project differs from `libbitcoinconsensus` in that it is designed to be a stateful engine, with a view to eventually: being able to spawn its own threads, do caching (e.g. of script and signature verification), do its own I/O, and manage dynamic objects like a mempool.
+Another benefit of fully extracting the consensus engine in this way may be that it becomes easier to write and reason about consensus test cases.
+
+In the future, if a full de-coupling is successfully completed, other Bitcoin applications might be able to use `libbitcoinkernel` as their own consensus engine permitting multiple full node implementations to operate on the network in a somewhat safer manner than many of them operate under today.
+The initial objective of this library however is to actually have it used by Bitcoin Core internally, something which is not possible with libbitcoinconsensus due to it's lack of caching and state (making it too slow to use).
+
+Some examples have surfaced recently where script validation in the BTCD code (used internally by LND) has diverged from the results from Bitcoin Core:
+
+. https://twitter.com/brqgoo/status/1579216353780957185[Witness size check^]: https://github.com/lightningnetwork/lnd/issues/7002[issue^] and https://github.com/btcsuite/btcd/pull/1896[fix^]
+. https://twitter.com/brqgoo/status/1587397646125260802[Max witness items check^]: https://github.com/btcsuite/btcd/issues/1906[issue^] and https://github.com/btcsuite/btcd/pull/1907[fix^].
+
+The implementation approaches of libbitcoinconsensus and libbitcoinkernel also differ; with lb-consensus parts of consensus were moved into the library piece by piece, with the eventual goal that it would be encapsulated.
+lb-kernel takes a different approach -- first cast a super wide net around everything needed to run a consensus engine, and then gradually strip pieces out where they can be.
+In theory this should get us something which Bitcoin Core can use much faster (in fact, you can build the optional `bitcoin-chainstate` binary which already has some functionality).
+
+Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR^].
+It also has its own project https://github.com/bitcoin/bitcoin/projects/18[board^] to track progress.
+

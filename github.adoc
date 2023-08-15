@@ -1,0 +1,55 @@
+:page-title: Development workflow
+:page-nav_order: 10
+:page-parent: Overview and Development Process
+== Development workflow
+
+Bitcoin Core uses a GitHub-based workflow for development.
+The primary function of GitHub in the workflow is to discuss patches and connect them with review comments.
+
+While some other prominent projects, e.g. the Linux kernel, use email to solicit feedback and review, Bitcoin Core has used GitHub for many years.
+Initially, Satoshi distributed the code through private emails and hosting source archives at bitcoin.org, and later by hosting on SourceForge (which used SVN but did not at that time have a pull request system like GitHub).
+The earliest reviewers submitted changes using patches either through email exchange with Satoshi, or by posting them on the bitcoin forum.
+
+In August 2009, the source code was moved to GitHub by Sirius, and development has remained there and used the GitHub workflows ever since.
+
+=== Use of GitHub
+
+The GitHub side of the Bitcoin Core workflow for Contributors consists primarily of:
+
+* Issues
+* PRs
+* Reviews
+* Comments
+
+Generally, issues are used for two purposes:
+
+. Posting known issues with the software, e.g., bug reports, crash logs
+. Soliciting feedback on potential changes without providing associated code, as would be required in a PR.
+
+GitHub provides their own https://guides.github.com/features/issues/[guide^] on mastering Issues which is worth reading to understand the feature-set available when working with an issue.
+
+PRs are where Contributors can submit their code against the main codebase and solicit feedback on the concept, the approach taken for the implementation, and the actual implementation itself.
+
+PRs and Issues are often linked to/from one another:
+
+[example]
+====
+One common workflow is when an Issue is opened to report a bug.
+After replicating the issue, a Contributor creates a patch and then opens a PR with their proposed changes.
+
+In this case, the Contributor should, in addition to comments about the patch, reference that the patch fixes the issue.
+For a patch which fixes issue 22889 this would be done by writing "fixes #22889" in the PR description or in a commit message.
+In this case, the syntax "fixes #issue-number" is caught by GitHub's https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue[pull request linker^], which handles the cross-link automatically.
+====
+
+Another use-case of Issues is soliciting feedback on ideas that might require _significant_ changes.
+This helps free the project from having too many PRs open which aren't ready for review and might waste reviewers' time.
+In addition, this workflow can also save Contributors their _own_ valuable time, as an idea might be identified as unlikely to be accepted _before_ the contributor spends their time writing the code for it.
+
+Most code changes to bitcoin are proposed directly as PRs -- there's no need to open an Issue for every idea before implementing it unless it may require significant changes.
+Additionally, other Contributors (and would-be Reviewers) will often agree with the approach of a change, but want to "see the implementation" before they can really pass judgement on it.
+
+GitHub is therefore used to help store and track reviews to PRs in a public way.
+
+Comments (inside Issues, PRs, Projects etc.) are where all (GitHub) users can discuss relevant aspects of the item and have history of those discussions preserved for future reference.
+Often Contributors having "informal" discussions about changes on e.g. IRC will be advised that they should echo the gist of their conversation as a comment on GitHub, so that the rationale behind changes can be more easily determined in the future.

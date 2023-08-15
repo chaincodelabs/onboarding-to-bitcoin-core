@@ -1,0 +1,161 @@
+:page-title: Overview of bitcoind
+:page-nav_order: 20
+:page-parent: Architecture
+== Overview of bitcoind
+
+The following diagram gives a brief overview of how some of the major components in bitcoind are related.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+NOTE: dashed lines indicate optional components
+
+.`bitcoind` overview
+[mermaid, target=bitcoind-overview, format=svg, id=bitcoind-overview]
+....
+flowchart LR
+    bitcoind
+    RPCServer -.-> bitcoind
+    RESTServer -.-> bitcoind
+    Node -----> bitcoind
+    AddrMan --> Node
+    CConnman --> Node
+    Interfaces::Chain --> Node
+    ChainstateManager --> Node
+    NetGroupManager --> AddrMan
+    CTxMemPool --> Node
+    PeerManager --> Node
+    Wallet -.-> bitcoind
+    ScriptPubKeyMan --> Wallet
+    WalletDatabase --> Wallet
+    sqlite -.-> WalletDatabase
+    BDB -.-> WalletDatabase
+    Logger --> bitcoind
+    ZMQ -.-> bitcoind
+    BlockManager --> ChainstateManager
+    LevelDB --> BlockManager
+....
+
+.Brief description of components in <<bitcoind-overview>>
+[%autowidth]
+|===
+|Component |Simplified description
+
+|`AddrMan`
+|Manage peers' network addresses
+
+|`CConnman`
+|Manage network connections to peers
+
+|`Interfaces::Chain`
+|Give clients access to chain state, fee rate estimates, notifications and allow tx submission
+
+|`ChainstateManager`
+|An interface for interacting with 1 or 2 chainstates (1. IBD-verified, 2. optional snapshot)
+
+|`NetGroupManager`
+|Manage net groups. Ensure we don't connect to multiple nodes in the same ASN bucket
+
+|`CTxMemPool`
+|Validate and store (valid) transactions which may be included in the next block
+
+|`PeerManager`
+|Manage peer state and interaction e.g. processing messages, fetching blocks & removing for misbehaviour
+
+|`BlockManager`
+|Maintains a tree of blocks on disk (via LevelDB) to determine most-work tip
+
+|`ScriptPubKeyMan`
+|Manages `scriptPubKeys` in a wallet. Can give out new `scriptPubKeys` as well as call into a `SigningProvider` to sign transactions
+
+|===
+
+== `bitcoin-cli` overview
+
+The following diagram gives a brief overview of the major components in bitcoin-cli.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+.`bitcoin-cli` overview
+[mermaid, target=bitcoin-cli-overview, format=svg, id=bitcoin-cli-overview-chart]
+....
+flowchart LR
+    BaseRequestHandler["BaseRequestHandler()"]
+    AddrInfoRequestHandler["AddrInfoRequestHandler()"]
+    ConnectAndCallRPC["ConnectAndCallRPC()"]
+    GetInfoRequestHandler["GetInfoRequestHandler()"]
+    NetInfoRequestHandler["NetInfoRequestHandler()"]
+    GenerateToAddressHandler["GenerateToAddressHandler()"]
+    DefaultRequestHandler["DefaultRequestHandler()"]
+    BaseRequestHandler --> AddrInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> NetInfoRequestHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> GenerateToAddressHandler --> ConnectAndCallRPC
+    BaseRequestHandler --> DefaultRequestHandler --> ConnectAndCallRPC
+    ConnectAndCallRPC <---> bitcoin-cli
+    ArgsManager --> bitcoin-cli
+....
+
+== Wallet structure
+
+The following diagram gives a brief overview of how the wallet is structured.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+NOTE: dashed lines indicate optional components
+
+.Wallet structure overview
+[mermaid, target=bitcoin-wallet-overview, format=svg]
+....
+flowchart LR
+    ScriptPubKeyMan --> DescriptorScriptPubKeyMan
+    ScriptPubKeyMan --> LegacyScriptPubKeyMan
+    subgraph Descriptor or Legacy wallet
+    DescriptorScriptPubKeyMan
+    LegacyScriptPubKeyMan
+    end
+    DescriptorScriptPubKeyMan -.-> CWallet
+    LegacyScriptPubKeyMan -.-> CWallet
+    Interfaces::Chain --> CWallet
+    WalletDatabase --> CWallet
+    cs_wallet{{cs_wallet}} ---> CWallet
+
+    subgraph BDB or sqlite database
+    BDB
+    sqlite
+    end
+    BDB -.-> WalletDatabase
+    sqlite -.-> WalletDatabase
+
+    SigningProvider --> ScriptPubKeyMan
+    WalletStorage --> ScriptPubKeyMan
+    Scripts --> ScriptPubKeyMan
+    Keys --> ScriptPubKeyMan
+....
+
+.Brief description of components
+[%autowidth]
+|===
+|Component |Simplified description
+
+|`WalletDatabase`
+|Represents a single wallet. Handles reads and writes to disk
+
+|`ScriptPubKeyMan`
+|Base class for the below SPKM classes to override before being used by `CWallet`
+
+|`DescriptorScriptPubKeyMan`
+|A SPKM for https://github.com/bitcoin/bitcoin/pull/16528[descriptor-based^] wallets
+
+|`LegacyScriptPubKeyMan`
+|A SPKM for legacy wallets
+
+|`SigningProvider`
+|An interface for a `KeyStore` to sign transactions from
+
+|`Interfaces::Chain`
+|Give clients access to chain state, fee rate estimates, notifications and allow tx submission
+
+|`cs_wallet`
+|The primary wallet lock, held for atomic wallet operations
+
+|===

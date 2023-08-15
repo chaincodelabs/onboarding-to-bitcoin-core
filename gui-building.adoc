@@ -1,0 +1,30 @@
+:page-title: Building the GUI
+:page-nav_order: 10
+:page-parent: GUI
+include::tmp/links.adoc[]
+== Building the GUI
+
+`bitcoin-qt`, which includes the QT GUI with the node, is built automatically when the build dependencies are met.
+Required packages to meet dependencies can be found in the build instructions in _src/doc/build-*.md_ as appropriate for your platform.
+If you have the required packages installed but do not wish to build the `bitcoin-qt` then you must run `./configure` with the option `--with-gui=no`.
+
+[NOTE]
+====
+If the build is configured with `--enable-multiprocess` then additional binaries will be built:
+
+. `bitcoin-node`
+. `bitcoin-wallet`
+. `bitcoin-gui`
+====
+
+== Qt
+
+QT is currently very intertwined with the rest of the codebase.
+See the library <<{library-structure}library-dependency-graph,depencency graph>> for more context.
+
+Developers would ideally like to reduce these dependencies in the future.
+
+== Qt documentation
+
+There is useful documentation for developers looking to contribute to the Qt side of the codebase found at https://github.com/bitcoin-core/bitcoin-devwiki/wiki//Developer-Notes-for-Qt-Code[Developer Notes for Qt Code^].
+
