@@ -47,6 +47,10 @@ gh_edit_branch: "2023-08-jekyllify" # the branch that your docs is served from
 # gh_edit_source: docs # the source that your files originate from
 gh_edit_view_mode: "edit" # "tree" or "edit" if you want the user to jump into the editor immediately
 
+mermaid:
+  # Version of mermaid library
+  # Pick an available version from https://cdn.jsdelivr.net/npm/mermaid/
+  version: "9.1.3"
 
 # Exclude from processing.
 # The following items will not be processed, by default.
