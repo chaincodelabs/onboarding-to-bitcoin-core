@@ -6,6 +6,13 @@ GEM
       public_suffix (>= 2.0.2, < 6.0)
     afm (0.2.2)
     asciidoctor (2.0.20)
+    asciidoctor-diagram (2.2.11)
+      asciidoctor (>= 1.5.7, < 3.x)
+      asciidoctor-diagram-ditaamini (~> 1.0)
+      asciidoctor-diagram-plantuml (~> 1.2021)
+      rexml
+    asciidoctor-diagram-ditaamini (1.0.3)
+    asciidoctor-diagram-plantuml (1.2023.10)
     async (2.6.3)
       console (~> 1.10)
       fiber-annotation
@@ -140,6 +147,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  asciidoctor-diagram
   html-proofer
   jekyll (~> 4.3.2)
   jekyll-asciidoc (~> 3.0.0)
