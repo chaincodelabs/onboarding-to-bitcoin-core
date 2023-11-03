@@ -1,3 +1,5 @@
+TIP: Help maintain this document: https://github.com/chaincodelabs/onboarding-to-bitcoin-core[https://github.com/chaincodelabs/onboarding-to-bitcoin-core^]
+
 = Overview & Development process 
 
 TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
