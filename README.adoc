@@ -1,5 +1,5 @@
 = Onboarding to Bitcoin Core
 
-This documentation is currently hosted at https://bitcoincore.wtf[bitcoincore.wtf] however this location may be subject to change in the future.
+This documentation is currently hosted at https://bitcoincore.academy[bitcoincore.academy] however this location may be subject to change in the future.
 
 See https://github.com/chaincodelabs/onboarding-to-bitcoin-core/blob/master/asciidoc_workflow.adoc[asciidoc_workflow.adoc] for tips on contributing and instructions for running locally.
