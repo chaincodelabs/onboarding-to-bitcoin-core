@@ -32,5 +32,18 @@ id=$( podman run --cap-add NET_ADMIN --cap-add NET_RAW --detach -v $REPO:/srv/ -
 podman attach $id
 ```
 
+Or for Docker:
 
+```
+REPO=~/repos/onboarding-to-bitcoin-core/
 
+# docker build
+docker build -f $REPO/Dockerfile -t guide $REPO
+# or with docker buildx
+docker build --load -f $REPO/Dockerfile -t guide $REPO
+
+id=$( docker run --detach -v $REPO:/srv/ -p 8080:4000 -it guide:latest )
+docker attach $id
+
+bundle install # shouldn't be needed after Dockerfile build, but it is...
+```
