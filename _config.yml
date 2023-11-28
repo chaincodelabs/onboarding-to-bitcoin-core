@@ -25,9 +25,9 @@ description: >- # this means to ignore newlines until "baseurl:"
   line in _config.yml. It will appear in your document head meta (for
   Google search results) and in your feed.xml site description.
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://bitcoincore.wtf" # the base hostname & protocol for your site, e.g. http://example.com
-#twitter_username: jekyllrb
-#github_username:  jekyll
+url: "https://bitcoincore.academy" # the base hostname & protocol for your site, e.g. http://example.com
+twitter_username: chaincodelabs
+github_username:  chaincodelabs
 
 # Build settings
 theme: just-the-docs
@@ -49,10 +49,9 @@ keep_files:
 # Footer "Edit this page on GitHub" link text
 gh_edit_link: true # show or hide edit this page link
 gh_edit_link_text: "Edit this page on GitHub."
-gh_edit_repository: "https://github.com/just-the-docs/just-the-docs" # the github URL for your repo
 gh_edit_repository: "https://github.com/bitcoin-dev-project/onboarding-to-bitcoin-core" # the github URL for your repo
-gh_edit_branch: "2023-08-jekyllify" # the branch that your docs is served from
-# gh_edit_source: docs # the source that your files originate from
+gh_edit_branch: "gh_pages" # the branch that your docs is served from
+gh_edit_source: "master" # the source that your files originate from
 gh_edit_view_mode: "edit" # "tree" or "edit" if you want the user to jump into the editor immediately
 
 mermaid:
@@ -67,23 +66,8 @@ mermaid:
 #
 # Excluded items can be processed by explicitly listing the directories or
 # their entries' file path in the `include:` list.
-#
-# exclude:
-#   - .sass-cache/
-#   - .jekyll-cache/
-#   - gemfiles/
-#   - Gemfile
-#   - Gemfile.lock
-#   - node_modules/
-#   - vendor/bundle/
-#   - vendor/cache/
-#   - vendor/gems/
-#   - vendor/ruby/
 exclude:
-  - README.adoc
-  - asciidoc_workflow.adoc
-  - jekyll_workflow.md
-  - old.index.adoc
+  - .jekyll-cache/
   - 01_overview-and-development.adoc
   - 02_architecture.adoc
   - 03_consensus-and-validation.adoc
@@ -94,10 +78,20 @@ exclude:
   - 08_script.adoc
   - 09_build-system.adoc
   - 10_rpc.adoc
+  - asciidoc_workflow.adoc
+  - index.adoc
+  - old.index.adoc
+  - settings.adoc
+  - README.adoc
+  - book.html
   - Gemfile
   - Gemfile.lock
+  - jekyll_workflow.md
   - Makefile
   - mermaid-config.json
+  - node_modules/
   - qa/
-  - index.adoc
-  - book.html
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
