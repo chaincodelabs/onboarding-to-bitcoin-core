@@ -21,6 +21,16 @@ asciidoctor index.adoc
 
 Simply host _index.html_ along with the _images/_ directory and its contents at the root of your web server to serve the documentation.
 
+=== Adding mermaid diagrams
+
+If you add a mermaid diagram to an article, you must add:
+
+----
+:mermaid-puppeteer-config: ./puppeteer-config.json
+----
+
+To the header of the file, in order that the Container/Dockerfile can have mermaid-cli pass the puppeteer config to puppeteer.
+
 === Regenerate mermaid diagrams
 
 In order to regenerate the mermaid diagrams, you will need https://github.com/mermaid-js/mermaid-cli[mermaid-cli] and https://docs.asciidoctor.org/diagram-extension/latest/[asciidoctor-diagram] installed.

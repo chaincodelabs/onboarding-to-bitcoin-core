@@ -3,6 +3,7 @@
 :page-nav_order: 90
 :page-parent: Consensus and Validation
 :page-has_children: true
+:mermaid-puppeteer-config: ./puppeteer-config.json
 include::tmp/links.adoc[]
 
 [#transaction_validation]

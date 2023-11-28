@@ -1,6 +1,8 @@
 :page-title: Wallet Database
 :page-nav_order: 0
 :page-parent: Wallet
+:config: ./mermaid-config.json
+:mermaid-puppeteer-config: ./puppeteer-config.json
 === Wallet Database
 
 Wallets are stored on disk as databases, either using Berkeley Database (BDB) or sqlite format.

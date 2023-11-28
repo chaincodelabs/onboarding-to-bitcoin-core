@@ -1,6 +1,7 @@
 :page-title: Tests overview
 :page-nav_order: 30
 :page-parent: Architecture
+:mermaid-puppeteer-config: ./puppeteer-config.json
 == Tests overview
 
 .Tests overview

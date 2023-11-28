@@ -1,6 +1,7 @@
 :page-title: Overview of bitcoind
 :page-nav_order: 20
 :page-parent: Architecture
+:mermaid-puppeteer-config: ./puppeteer-config.json
 == Overview of bitcoind
 
 The following diagram gives a brief overview of how some of the major components in bitcoind are related.

@@ -1,6 +1,7 @@
 :page-title: Library structure
 :page-nav_order: 50
 :page-parent: Architecture
+:mermaid-puppeteer-config: ./puppeteer-config.json
 == Library structure
 
 Bitcoin Core compilation outputs a number of libraries, some which are designed to be used internally, and some which are designed to be re-used by external applications.

@@ -1,6 +1,7 @@
 :page-title: Additional and removal of transactions
 :page-nav_order: 30
 :page-parent: Mempool
+:mermaid-puppeteer-config: ./puppeteer-config.json
 include::tmp/links.adoc[]
 == Addition to the mempool
 

@@ -1,6 +1,7 @@
 :page-title: Node components
 :page-nav_order: 20
 :page-parent: P2P
+:mermaid-puppeteer-config: ./puppeteer-config.json
 == Node P2P components
 
 .Node P2P components
