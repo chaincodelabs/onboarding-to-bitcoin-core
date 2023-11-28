@@ -34,9 +34,17 @@ theme: just-the-docs
 plugins:
   - jekyll-feed
 
+asciidoc:
+  processor: asciidoctor
+
 asciidoctor:
   attributes:
     imagesdir: images
+    source-highlighter: rouge
+    rouge-style: github
+
+keep_files:
+  - images
 
 # Footer "Edit this page on GitHub" link text
 gh_edit_link: true # show or hide edit this page link

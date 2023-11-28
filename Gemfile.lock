@@ -156,6 +156,7 @@ DEPENDENCIES
   json-schema
   just-the-docs
   mdl
+  rouge
   toml
 
 RUBY VERSION
