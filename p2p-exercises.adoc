@@ -25,8 +25,8 @@ You can use `dig` or `nslookup` to retrieve seeds from the DNS seeder from the D
 +
 [CAUTION]
 ====
-If you try this with the mainnet seeds you will need to consider which <<{bootstrapping}service_flags, service flags>> the seeder advertises support for.
-For example, if a seed node advertises `x1` support this means they return ip addresses of nodes advertizing the `NODE_NETWORK` service flag.
+If you try this with the mainnet seeds you will need to consider which xref:bootstrapping.adoc#service_flags[service flags] the seeder advertises support for.
+For example, if a seed node advertises `x1` support this means they return IP addresses of nodes advertizing the `NODE_NETWORK` service flag.
 
 You could query these from sipa's mainnet seeder by prepending `x1` to the subdomain e.g. `nslookup x1.seeder.bitcoin.sipa.be`
 ====

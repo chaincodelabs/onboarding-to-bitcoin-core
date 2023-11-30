@@ -50,7 +50,7 @@ Bitcoin Core employs a number of techniques in the P2P domain to try and protect
 |Ephemeral block-relay-only connections for headers
 |Eclipse attacks
 
-|<<{p2p-violations}p2p_violations,Disconnecting>> "misbehaving" peers
+|xref:p2p-violations.adoc#p2p_violations[Disconnecting] "misbehaving" peers
 |Exhaust CPU/memory
 
 |Peer rotation/eviction
@@ -87,9 +87,9 @@ https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks
 
 If a malicious entity was able to identify the topography of the network then they could see that by taking specific nodes down, maybe via a DOS service or any attack that they can use, they can cause a partition in the entire network.
 
-There are <<{message-relay}message_relay, three main messages that are gossiped around the network>> and **each message offers a unique set of information that allows an adversary to identify who your neighbors are**. 
+There are xref:message-relay.adoc#message_relay[three main messages that are gossiped around the network] and **each message offers a unique set of information that allows an adversary to identify who your neighbors are**.
 
-<<{block-relay}block_relay,Block relay>> leaks the least information and we can leverage that for a feature called `block-relay-only` connections, a type of connection where nodes do not participate in transaction or address relay and only relay blocks.
+xref:block-relay.adoc#block_relay[Block relay] leaks the least information and we can leverage that for a feature called `block-relay-only` connections, a type of connection where nodes do not participate in transaction or address relay and only relay blocks.
 An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so **these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks**.
 
 https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^] introduced `block-relay-only` connections.

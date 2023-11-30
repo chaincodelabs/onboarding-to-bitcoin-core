@@ -9,7 +9,7 @@ The loading point for the GUI is _src/qt/main.cpp_.
 `GuiMain` starts by calling `SetupEnvironment()` which amongst other things, configures the runtime locale and charset.
 
 Next an empty `NodeContext` is set up, which is then populated into a fully-fledged node interface via being passed to `interfaces::MakeNode()`, which returns an `interfaces::Node`.
-Recall that in <<{wallet-init}wallet_component_initialisation>> we also saw the wallet utilizing a `NodeContext` as part of its `WalletInitInterface`.
+Recall that in xref:wallet-init.adoc#wallet_component_initialisation[wallet component initialization] we also saw the wallet utilizing a `NodeContext` as part of its `WalletInitInterface`.
 In both cases the `NodeContext` is being used to pass chain and network references around without needing to create globals.
 
 After some QT setup, command-line and application arguments are parsed.

@@ -73,7 +73,7 @@ This is going to check the transaction against our individual node's policies.
 ====
 Note that local node policies are not necessarily consensus-binding, but are designed to help prevent resource exhaustion (e.g. DoS) on our node.
 
-See the <<{transaction-validation}transaction_validation>> and <<{locating-consensus-code}consensus_in_bitcoin_core>> sections for more information on the differences between policy and consensus.
+See the xref:transaction-validation.adoc#transaction_validation[transaction validation] and xref:locating-consensus-code.adoc#consensus_in_bitcoin_core[consensus in bitcoin core] sections for more information on the differences between policy and consensus.
 ====
 
 `PolicyScriptChecks()` starts with initialisation of the transaction into a `CTransaction`, before beginning to https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L973-L999[check^] the input scripts against the script flags.
@@ -177,7 +177,7 @@ static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationS
 `PackageMempoolChecks` are designed to "Enforce package mempool ancestor/descendant limits (distinct from individual ancestor/descendant limits done in PreChecks)".
 They take a vector of ``CTransactionRef``s and a `PackageValidationState`.
 
-Again we take <<{single-transactions}multiple_locks,two locks>> before checking that the transactions are not in the mempool.
+Again we take xref:single-transactions.adoc#multiple_locks[two locks] before checking that the transactions are not in the mempool.
 Any transactions which are part of the package and were in the mempool will have already been removed by `MemPoolAccept::AcceptPackage()`.
 
 Finally we check the package limits, which consists of checking the {ancestor|descendant} {count|size}.

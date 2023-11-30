@@ -20,7 +20,7 @@ If the build is configured with `--enable-multiprocess` then additional binaries
 == Qt
 
 QT is currently very intertwined with the rest of the codebase.
-See the library <<{library-structure}library-dependency-graph,depencency graph>> for more context.
+See the library xref:library-structure.adoc#library-dependency-graph[depencency graph] for more context.
 
 Developers would ideally like to reduce these dependencies in the future.
 

@@ -4,7 +4,7 @@
 include::links-onepage.adoc[]
 == Validating scripts
 
-For some additional context on how scripts are validated in Bitcoin see <<{script-appendix}executing_scripts>> in the Appendix.
+For some additional context on how scripts are validated in Bitcoin see xref:script-appendix.adoc#executing_scripts[executing scripts] in the Appendix.
 
 Transactions contain a vector of inputs (`CTxIn`) and vector of outputs (`CTxOut`), along with other required data.
 
@@ -20,7 +20,7 @@ Each `CTxOut` contains:
 * `CAmount nValue;`
 * `CScript scriptPubKey;`
 
-When a new transaction is learned about from the wallet or P2P network (as a TX INV ) it is passed to <<{single-transactions}single_transactions, `AcceptToMemoryPool()`>> which will run the various script checks.
+When a new transaction is learned about from the wallet or P2P network (as a TX INV ) it is passed to xref:single-transactions.adoc#single_transactions[`AcceptToMemoryPool()`] which will run the various script checks.
 
 TIP: Transactions learned about directly in blocks have their scripts validated via `ActivateBestChainStep()` --> `ConnectBlock()` --> `ConnectTip()` --> `CChainState::ConnectBlock()` (https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L1924-L2232[link^]), which will end up calling `CheckTxInputs()` and `CheckInputScripts()`, as described in the subsequent section on <<PolicyScriptChecks script checks, PolicyScriptChecks>>.
 

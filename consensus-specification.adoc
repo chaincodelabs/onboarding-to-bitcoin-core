@@ -5,7 +5,7 @@ include::links-onepage.adoc[]
 == Bitcoin core consensus specification
 
 A common question is where the bitcoin protocol is documented, i.e. specified.
-However bitcoin does not have a formal specification, even though many ideas have some specification (in <<{bips}bips>>) to aid re-implementation.
+However bitcoin does not have a formal specification, even though many ideas have some specification (in xref:bips.adoc[BIPS]) to aid re-implementation.
 
 IMPORTANT: The requirements to be compliant with "the bitcoin spec" are to be bug-for-bug compatible with the Bitcoin Core implementation.
 

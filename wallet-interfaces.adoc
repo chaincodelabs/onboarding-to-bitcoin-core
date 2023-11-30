@@ -11,4 +11,4 @@ In order to facilitate code separation, distinct interfaces between the node and
 * The wallet holds a https://github.com/bitcoin/bitcoin/blob/v23.0/src/node/interfaces.cpp#L452[`ChainImpl`^] interface to call functions on the node.
 * The node notifies the wallet about new transactions and blocks through the https://github.com/bitcoin/bitcoin/blob/v23.0/src/node/interfaces.cpp#L364[`CValidationInterface`^].
 
-TIP: For more information on `*Impl` classes see <<{appendix}pimpl-technique,PIMPL technique>> in the appendix.
+TIP: For more information on `*Impl` classes see xref:appendix.adoc#pimpl-technique[PIMPL technique] in the appendix.

@@ -20,7 +20,7 @@ Components of consensus-related code can be found across the Bitcoin Core codeba
 ----
 
 Consensus-critical functions can also be found in proximity to code which could affect whether a node considers a transaction or block valid.
-This could extend to, for example, block storage <<{consensus-bugs}database_consensus,database>> code.
+This could extend to, for example, block storage xref:consensus-bugs.adoc#database_consensus[database] code.
 
 An abbreviated list of some of the more notable consensus functions and variables is shown below.
 

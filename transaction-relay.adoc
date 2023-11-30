@@ -5,7 +5,7 @@ include::links-onepage.adoc[]
 [[transaction_relay]]
 === Transaction relay
 
-Relaying transactions is a core tenet of a Bitcoin node, along with <<{address-relay}address_relay>> and <<{block-relay}block_relay>>.
+Relaying transactions is a core tenet of a Bitcoin node, along with xref:address-relay.adoc#address_relay[address relay] and xref:block-relay.adoc#block_relay[block relay].
 However, we don't necessarily want to immediately relay transactions we accept into our mempool immediately for the following reasons:
 
 . Privacy: Adding a small delay in transaction relay helps obscure the route transactions take, making it harder to use transaction timing to infer the structure of the network or the original source of the transaction.
@@ -25,7 +25,7 @@ How do we currently limit incoming transactions?
 . We reject transactions which don't pass replacement/package checks.
 . We reject transactions which don't pass consensus checks.
 
-What other mechanisms _could_ we consider using before the <<{single-transactions}single_transactions,ATMP>> checks are performed?
+What other mechanisms _could_ we consider using before the xref:single-transactions.adoc#single_transactions[ATMP] checks are performed?
 
 . We _could_ reject transactions from individual peers that send transactions at too high a rate, however this would just encourage attackers to make multiple connections, using up additional inbound slots
 . We _could_ ignore transactions from any peer once some rate limit is hit, however this would drop high feerate transactions from innocent peers which would be doubly undesirable

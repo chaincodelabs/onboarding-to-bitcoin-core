@@ -93,7 +93,7 @@ PR https://github.com/bitcoin/bitcoin/pull/19602[19602^] enables migration of le
 Although legacy wallets are now effectively end of life it's still relevant to have documentation for legacy wallets.
 ****
 
-See the section on how wallets determine whether transactions belong to them using the <<{transaction-identification}ismine-enum,IsMine>> enum for more in-depth information.
+See the section on how wallets determine whether transactions belong to them using the xref:transaction-identification.adoc#ismine-enum[enum] for more in-depth information.
 
 === Conflict tracking
 

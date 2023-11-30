@@ -29,7 +29,7 @@ Because `-blocksonly` is a global startup option, it therefore applies to all co
 block-relay-only connections are a specific type of connection which is used by Bitcoin Core full nodes to only participate in block relay.
 
 As currently implemented block-relay-only connections (introduced in https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^]), disables both transaction and address relay.
-Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see <<{p2p-attacks}eclipse_attacks>> for more use cases of these connections).
+Bitcoin Core nodes per default settings make two *outbound* block-relay-only connections in addition to 8 regular outbound connections (also see xref:p2p-attacks.adoc#eclipse_attacks[eclipse attacks] for more use cases of these connections).
 
 
 [id=blocksonly-vs-block-relay-only]

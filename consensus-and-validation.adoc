@@ -15,7 +15,7 @@ WARNING: If all nodes do not compute consensus values identically (including edg
 
 For more information on how the bitcoin networks' decentralized consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus^].
 
-TIP: In Bitcoin Core there are an extra level of validation checks applied to incoming transactions in addition to consensus checks called "policy" which have a slightly different purpose, see <<{consensus-v-policy}consensus_vs_policy>> for more information on the differences between the two.
+TIP: In Bitcoin Core there are an extra level of validation checks applied to incoming transactions in addition to consensus checks called "policy" which have a slightly different purpose, see xref:consensus-v-policy.adoc#consensus_vs_policy[consensus vs policy] for more information on the differences between the two.
 
 Consensus::
 A collection of functions and variables which **must** be computed identically to all https://bitnodes.io/nodes/[other^] nodes on the network in order to remain in consensus and therefore on the main chain.

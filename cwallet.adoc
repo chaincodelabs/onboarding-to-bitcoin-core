@@ -40,6 +40,6 @@ These include options such as `-addresstype`, `-changetype`, `-mintxfee` and `-m
 It is at this stage that warnings for unusual or unsafe values of these arguments are generated to be returned to the user.
 
 After the wallet is fully initialized and setup, its keypool will be topped up before the wallet is locked and registered with the Validation interface, which will handle callback notifications generated during the (optional) upcoming chain rescan.
-The rescan is smart in detecting the wallet "birthday" using metadata stored in the <<{scriptpubkeymanagers}scriptpubkeymanagers,SPKM>> and won't scan blocks produced before this date.
+The rescan is smart in detecting the wallet "birthday" using metadata stored in the xref:scriptpubkeymanagers.adoc#scriptpubkeymanagers[SPKM] and won't scan blocks produced before this date.
 
 Finally, the `walletinterface` is setup for the wallet before the `WalletInstance` is returned to the caller.

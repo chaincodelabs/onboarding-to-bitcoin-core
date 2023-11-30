@@ -13,7 +13,7 @@ When the timeout expires secret data is deleted from memory, and the wallet "re-
 
 ==== Decrypting the wallet
 
-As detailed in <<{wallet-database}wallet-key-types, Key Types>>, the `CMasterKey.vchCryptedKey` is the actual secret key used to en/de-crypt the keys in the wallet.
+As detailed in xref:wallet-database.adoc#wallet-key-types[Key types], the `CMasterKey.vchCryptedKey` is the actual secret key used to en/de-crypt the keys in the wallet.
 
 `CWallet` stores a `CMasterKey`, which is **not** a https://github.com/bitcoinbook/bitcoinbook/blob/173974f69e263c7de536a334224d642e6dca7d71/ch05.asciidoc#HDWalletFromSeed[master private key^].
 The `CMasterKey` is encrypted by the user's passphrase.

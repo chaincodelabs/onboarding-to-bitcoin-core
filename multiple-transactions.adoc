@@ -13,12 +13,12 @@ It's currently only available from tests (`test/tx_package_tests.cpp`) and the `
 
 This validation flow has been created for usage with Package Mempool Accept, which glozow has written up in a https://gist.github.com/glozow/dc4e9d5c5b14ade7cdfac40f43adb18a[gist^] (https://archive.ph/Uhewe[archive^]).
 
-The flow here is similar to <{single-transactions}<accept_single_transaction, `AcceptSingleTransaction()`>> in that we start by grabbing `cs_main` before initializing validation state and workspaces, however this time we use `PackageValidationState` and a vector of workspaces, `std::vector<Workspace>`.
+The flow here is similar to xref:single-transactions.adoc#accept_single_transaction[`AcceptSingleTransaction()`] in that we start by grabbing `cs_main` before initializing validation state and workspaces, however this time we use `PackageValidationState` and a vector of workspaces, `std::vector<Workspace>`.
 Each transaction therefore has it's own workspace but all transactions in the package share a single validation state.
 This aligns with the goal of either accepting or rejecting the entire package as a single entity.
 
 Next come two `for` loops over the vector of workspaces (i.e. transactions).
-The first performs the <<{input-checks}prechecks,`PreChecks()`>>, but this time also freeing up coins to be spent by other transactions in this package.
+The first performs the xref:input-checks.adoc#prechecks[`PreChecks()`], but this time also freeing up coins to be spent by other transactions in this package.
 This would not usually be possible (nor make sense) _within_ an `AcceptTransaction()` flow, but within a package we want to be able to validate transactions who use as inputs, other transactions not yet added to our mempool:
 
 [source,cpp,options=nowrap]

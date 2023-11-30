@@ -14,7 +14,7 @@ Contextual checks require some knowledge of the current "state", e.g. ChainState
 
 Context-free checks only require the information required in the transaction itself.
 
-For more info, see <<{transaction-validation}glozow-tx-mempool-validation,glozow's notes>> on transaction "Validation and Submission to the Mempool".
+For more info, see xref:transaction-validation.adoc#glozow-tx-mempool-validation[glozow's notes] on transaction "Validation and Submission to the Mempool".
 ====
 
 What are some examples of each?::

@@ -1,4 +1,4 @@
-:page-title: Additional and removal of transactions
+:page-title: Addition and removal of transactions
 :page-nav_order: 30
 :page-parent: Mempool
 :mermaid-puppeteer-config: ./puppeteer-config.json
@@ -6,7 +6,7 @@ include::links-onepage.adoc[]
 == Addition to the mempool
 
 Transactions are added to the mempool via `addUnchecked()` as part of the `AcceptToMemoryPool()` flow.
-See <<{transaction-validation}transaction_validation>> for more information on how this flow is entered.
+See xref:transaction-validation.adoc[Transaction validation] for more information on how this flow is entered.
 
 WARNING: The function name `addUnchecked` specifically refers to the fact that no checks are being performed, so this must not be called until policy checks have passed.
 
@@ -41,7 +41,7 @@ Transactions are removed from the mempool for a number of reasons:
 
 . A new block has been connected `removeForBlock()`
 . A re-org is taking place `removeForReorg()`
-. The transaction has <<{mempool-lifecycle}default_mempool_expire,expired>> `Expire()`
+. The transaction has xref:mempool-lifecycle.adoc#default_mempool_expire[expired] `Expire()`
 . The transaction is being replaced by a higher-fee version `MemPoolAccept::Finalize()`
 . The mempool must be trimmed back down below its maximum size `TrimToSize()`
 

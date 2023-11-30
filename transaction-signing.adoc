@@ -170,7 +170,7 @@ We can see this switch in `ProduceSignature()`:
     }
 ----
 
-Finally, if all went well the signature is checked with <<{validating-scripts}verifyscript,`VerifyScript()`>>.
+Finally, if all went well the signature is checked with xref:validating-scripts.adoc#verifyscript[`VerifyScript()`].
 
 === Creating a signature
 

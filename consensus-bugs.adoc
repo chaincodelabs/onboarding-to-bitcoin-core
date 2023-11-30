@@ -109,7 +109,7 @@ Do you think this approach -- first altering policy, followed later by consensus
 Are there circumstances where it might not make sense?
 ====
 
-Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954^] which switched to using the in-house libsecp256k1 library (as a <<{subtrees}subtrees,subtree>>) for signature verification.
+Having OpenSSL as a consensus-critical dependency to the project was ultimately fixed in https://github.com/bitcoin/bitcoin/pull/6954[PR#6954^] which switched to using the in-house libsecp256k1 library (as a xref:subtrees.adoc#subtrees[subtree]) for signature verification.
 
 [[database_consensus]]
 === Database consensus
@@ -188,7 +188,7 @@ If they do, then the changes will end up being either a soft or hard fork, depen
 
 WARNING: As <<Database consensus,described>>, certain Bitcoin Core components, such as the block database can also unwittingly introduce forking behaviour, even though they do not directly modify consensus rules.
 
-Some of the components which are known to alter consensus behaviour, and should therefore be approached with caution, are listed in the section <<{locating-consensus-code}consensus-components,consensus components>>.
+Some of the components which are known to alter consensus behaviour, and should therefore be approached with caution, are listed in the section xref:locating-consensus-code.adoc#consensus-components[consensus components].
 
 Changes are not made to consensus values or computations without extreme levels of review and necessity.
 In contrast, changes such as refactoring can be (and are) made to areas of consensus code, when we can be sure that they will not alter consensus validation.

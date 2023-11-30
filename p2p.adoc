@@ -10,10 +10,10 @@ Anybody should be free and able to run a node and join the network.
 
 The Bitcoin P2P network serves 3 purposes:
 
-* <<{address-relay}address_relay, Gossiping addresses>> of known reachable nodes on the network
-* <<{transaction-relay}transaction_relay, Relaying unconfirmed transactions>>
-* <<{block-relay}block_relay, Propagating blocks>>
+* xref:address-relay.adoc#address_relay[Gossiping addresses] of known reachable nodes on the network
+* xref:transaction-relay.adoc#transaction_relay[Relaying unconfirmed transactions]
+* xref:block-relay.adoc#block_relay[Propagating blocks]
 
-Although these three purposes share the same network, they have different design goals and properties. 
+Although these three purposes share the same network, they have different design goals and properties.
 Transaction relay is optimized for a combination of redundancy/robustness to peer misbehaviour as well as bandwidth minimization, while block relay is optimized to minimize delay.
 

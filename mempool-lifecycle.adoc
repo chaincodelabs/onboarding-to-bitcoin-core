@@ -67,7 +67,7 @@ While the node is running the mempool is persisted in memory.
 By default the mempool is limited to 300MB as specified by `DEFAULT_MAX_MEMPOOL_SIZE`.
 This can be overridden by the program option `maxmempoolsize`.
 
-See <<{mempool-tx-format}mempool_tx_format>> for more information on what data counts towards this limit, or review the `CTxMemPool` data members which store current usage metrics e.g. `CTxMemPool::cachedInnerUsage` and the implementation of e.g. `CTxMemPool::DynamicMemoryUsage()`.
+See xref:mempool-tx-format.adoc#mempool_tx_format[mempool tx format] for more information on what data counts towards this limit, or review the `CTxMemPool` data members which store current usage metrics e.g. `CTxMemPool::cachedInnerUsage` and the implementation of e.g. `CTxMemPool::DynamicMemoryUsage()`.
 
 === Mempool shutdown
 

@@ -6,7 +6,7 @@ include::links-onepage.adoc[]
 === Coin selection
 
 See https://bitcoinops.org/en/topics/coin-selection/[Bitcoin Optech^] for more information on coin selection.
-There is a section digging deeper into the coin selection code found <<{constructing-transactions}coin-selection,below>>.
+There is a section digging deeper into the coin selection code found xref:constructing-transactions.adoc#coin-selection[below].
 To select inputs to a transaction our primary considerations are privacy and fees.
 
 The below sections form an overview of creating a transaction via `CreateTransactionInternal()`.
@@ -47,7 +47,7 @@ If this is still unsuccessful it increases the number of ancestors and descendan
 ==== `AttemptSelection()`
 
 This function is orchestrating the <<GroupOutputs,Output group>> creation, and then the <<selectCoins,coin selection>>.
-Currently, this is always based on the <<{constructing-transactions}coin-selection,waste metric>>.
+Currently, this is always based on the xref:constructing-transactions.adoc#coin-selection[waste metric].
 
 It is using 3 algorithms and then selecting the "best" of the three (based on the waste metric):
 

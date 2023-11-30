@@ -97,7 +97,7 @@ Further down in `ThreadDNSAddressSeed()` we see such a magic number:
 unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
 ----
 
-If after 60 seconds we have not made any connections, then `ThreadOpenConnections` will deserialize the hardcoded seeds and https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1960-L1987[add^] them to <<Addrman,addrman>> as candidates for connection.
+If after 60 seconds we have not made any connections, then `ThreadOpenConnections` will deserialize the hardcoded seeds and https://github.com/bitcoin/bitcoin/blob/v23.0/src/net.cpp#L1960-L1987[add^] them to xref:addrman.adoc#[addrman]  as candidates for connection.
 ////
 
 include::message-relay.adoc[]

@@ -19,4 +19,4 @@ See the full https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.
 == Implementation separation
 
 Many of the classes found throughout the codebase use the PIMPL technique to separate their implementation from the external representation.
-See <<{appendix}pimpl-technique,PIMPL technique>> in the Appendix for more information.
+See xref:appendix.adoc#pimpl-technique[PIMPL technique] in the Appendix for more information.
