@@ -31,10 +31,6 @@ test-before-build: $(compatibility_validation) $(topic_validation)
 	bundle exec mdl -g -r MD009 .
 
 test-after-build: build
-	## Check for unexpected changes between the Jekyll version and
-	##the one-page asciidoc version
-	#FIXME diff -u $$( find qa -type f | sort -n | tail -n1 ) bin/book.html
-
 	## Check for broken Markdown reference-style links that are displayed in text unchanged, e.g. [broken][broken link]
 	## Check for duplicate anchors
 	! find _site/ -name '*.html' | while read file ; do \

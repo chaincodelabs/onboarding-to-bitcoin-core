@@ -90,7 +90,6 @@ exclude:
   - Makefile
   - mermaid-config.json
   - node_modules/
-  - qa/
   - vendor/bundle/
   - vendor/cache/
   - vendor/gems/
