@@ -1,7 +1,7 @@
 :page-title: GUI initialization
 :page-nav_order: 20
 :page-parent: GUI
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == Main GUI program
 
 The loading point for the GUI is _src/qt/main.cpp_.

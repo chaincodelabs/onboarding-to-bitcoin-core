@@ -1,7 +1,7 @@
 :page-title: Consensus bugs
 :page-nav_order: 30
 :page-parent: Consensus and Validation
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == Consensus and validation bugs
 
 Consensus and validation bugs can arise both from inside the Bitcoin Core codebase itself, and from external dependencies.

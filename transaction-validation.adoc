@@ -4,7 +4,7 @@
 :page-parent: Consensus and Validation
 :page-has_children: true
 :mermaid-puppeteer-config: ./puppeteer-config.json
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 
 [#transaction_validation]
 Transactions can originate from the P2P network, the wallet, RPCs or from tests.

@@ -2,7 +2,7 @@
 :page-nav_order: 30
 :page-parent: Mempool
 :mermaid-puppeteer-config: ./puppeteer-config.json
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == Addition to the mempool
 
 Transactions are added to the mempool via `addUnchecked()` as part of the `AcceptToMemoryPool()` flow.

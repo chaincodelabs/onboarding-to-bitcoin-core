@@ -1,7 +1,7 @@
 :page-title: Consensus specification
 :page-nav_order: 60
 :page-parent: Consensus and Validation
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == Bitcoin core consensus specification
 
 A common question is where the bitcoin protocol is documented, i.e. specified.

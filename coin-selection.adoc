@@ -1,7 +1,7 @@
 :page-title: Coin selection
 :page-nav_order: 40
 :page-parent: Wallet
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 [id=coin-selection-overview]
 === Coin selection
 

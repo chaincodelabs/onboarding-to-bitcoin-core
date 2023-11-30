@@ -1,7 +1,7 @@
 :page-title: Validating scripts
 :page-nav_order: 0
 :page-parent: Script
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == Validating scripts
 
 For some additional context on how scripts are validated in Bitcoin see <<{script-appendix}executing_scripts>> in the Appendix.

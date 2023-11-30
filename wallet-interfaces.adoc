@@ -3,7 +3,7 @@
 :page-parent: Wallet
 === Wallet interfaces
 
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 
 In order to facilitate code separation, distinct interfaces between the node and the wallet have been created:
 

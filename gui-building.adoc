@@ -1,7 +1,7 @@
 :page-title: Building the GUI
 :page-nav_order: 10
 :page-parent: GUI
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == Building the GUI
 
 `bitcoin-qt`, which includes the QT GUI with the node, is built automatically when the build dependencies are met.

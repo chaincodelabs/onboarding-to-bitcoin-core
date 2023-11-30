@@ -1,7 +1,7 @@
 :page-title: CWallet
 :page-nav_order: 100
 :page-parent: Wallet
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 == CWallet
 
 The `CWallet` object is the fundamental wallet representation inside Bitcoin Core.

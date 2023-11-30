@@ -1,7 +1,7 @@
 :page-title: Calculating a balance
 :page-nav_order: 30
 :page-parent: Wallet
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 === Calculating a balance
 
 For balance calculation we https://github.com/bitcoin/bitcoin/blob/master/src/wallet/receive.cpp#L293-L320[iterate^] `mapWallet` and add values to a `Balance` struct.

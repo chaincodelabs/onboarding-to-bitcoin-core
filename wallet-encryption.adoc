@@ -1,7 +1,7 @@
 :page-title: Wallet Encryption
 :page-nav_order: 10
 :page-parent: Wallet
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 === Encryption
 
 There is encryption in the wallet code, but it is found within both `CWallet` and `*ScriptPubKeyMan` so is not yet well encapsulated.

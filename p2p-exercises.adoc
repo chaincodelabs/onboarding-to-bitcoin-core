@@ -1,7 +1,7 @@
 :page-title: P2P exercises
 :page-nav_order: 160
 :page-parent: P2P
-include:tmp/links.adoc
+include:links-onepage.adoc
 == Exercises
 
 include::exercise-intro.adoc[]

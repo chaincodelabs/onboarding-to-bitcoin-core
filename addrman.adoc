@@ -1,7 +1,7 @@
 :page-title: Addrman
 :page-nav_order: 40
 :page-parent: P2P
-include::tmp/links.adoc[]
+include::links-onepage.adoc[]
 === Addrman
 
 Addrman is the in-memory database of peers and consists of the new and tried tables.
