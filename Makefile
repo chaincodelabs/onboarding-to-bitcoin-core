@@ -50,7 +50,8 @@ test-after-build: build
 
 build-other-versions:
 	mkdir -p bin
-	asciidoctor -o book.html index.adoc
+	## Set imagesdir to parent_dir/images to work with jekyll build
+	bundle exec asciidoctor -r asciidoctor-diagram -o book.html index.adoc --attribute imagesdir=../images
 	## Delete non-deterministic asciidoctor output
 	sed -i '/^Last updated /d' book.html
 	mv book.html bin/
