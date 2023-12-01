@@ -1,0 +1,22 @@
+:page-title: Peer state
+:page-nav_order: 130
+:page-parent: P2P
+== Peer state
+
+Peer state is divided into two types:
+
+* **Network/Connection state**; any low level stuff, sending/receiving bytes, keeping statistics, eviction logic, etc.
+* **Application state**; any data that is transmitted within P2P message payloads, and the processing of that data. 
+Examples are tx inventory, addr gossiping, ping/pong processing.
+
+There are three main data structures that handle peer state:
+
+* `CNode` (defined in `net.h`, used by `m_nodes`(`CConnman`) and covered by `m_nodes_mutex`) is concerned with the **connection state** of the peer.
+* `CNodeState` (defined in `netprocessing.cpp`, used by `m_node_states`(`PeerManager`) and covered by `cs_main`) is concerned with the **application state** of the peer. 
+** It maintains validation-specific state about nodes, therefore guarded by `cs_main`.
+* `Peer` (defined in `netprocessing.cpp`, used by `m_peer_map`(`PeerManager`) and covered by `m_peer_mutex`) is concerned with the **application state** of the peer. 
+** It doesn't contain validation-critical data, therefore it is not guarded by `cs_main`
+
+However, there is still some _application state_ contained in `CNode` for historic reasons.
+https://github.com/bitcoin/bitcoin/issues/19398[Issue 19398^] outlines the process to eventually move this out of `CNode` as well as the reasoning behind the introduction of the `Peer` struct.
+

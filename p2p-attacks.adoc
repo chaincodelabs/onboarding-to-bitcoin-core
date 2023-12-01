@@ -1,0 +1,105 @@
+:page-title: P2P attacks
+:page-nav_order: 10
+:page-parent: P2P
+include::links-onepage.adoc[]
+== P2P attacks
+
+In a permissionless system two types of users are both _equally_ free to access and attempt to use the network:
+
+. Honest users
+. Attackers/spammers
+
+Types of activities an attacker might attempt to perform on a target node which involve the P2P layer include:
+
+* Exhaust CPU/memory
+** Create infinite loops
+** Cause OOM (exhaust memory)
+** Clog up network traffic
+** Fill mempool with garbage
+** Temporarily stall the network
+* Eclipse/sybil attacks
+** Reduce privacy
+** Cause network splits
+** https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse^] attack
+** https://en.wikipedia.org/wiki/Sybil_attack[Sybil^] attack
+
+The Bitcoin protocol does not have a concept of node identifiers or other reputation system through which we can permanently block a node we identify as malicious from future communications.
+If a node reconnects to us using a different IP address we will not be able to tell it was the same node we had seen before.
+Make no mistake that this is a large win for the censorship-resistance of the network, but it makes P2P implementation more precarious.
+
+Our program must contain logic to protect against the above attacks in a scenario where they may happen often and freely.
+Bitcoin Core employs a number of techniques in the P2P domain to try and protect against these types of attacks including:
+
+.Protective counter-measures
+[%autowidth.stretch]
+|===
+|Technique |Protection
+
+|Proof of Work*
+|Exhaust CPU/memory
+
+|Mempool policy for transactions
+|Exhaust CPU/memory
+
+|Peer address bucketing
+|Eclipse/Sybil attacks
+
+|`block-relay-only` connections
+|Eclipse attacks
+
+|Ephemeral block-relay-only connections for headers
+|Eclipse attacks
+
+|xref:p2p-violations.adoc#p2p_violations[Disconnecting] "misbehaving" peers
+|Exhaust CPU/memory
+
+|Peer rotation/eviction
+|Eclipse/sybil attacks
+
+|Protected peers (from eviction)
+|Eclipse attacks
+
+|Anchor peers
+|Eclipse attacks
+
+|===
+
+TIP: * If an "attacker" has sufficient hash power, then from a PoW perspective they are not really an attacker.
+
+////
+See glozow's https://vimeo.com/704956163[presentation^] on Censorship and DoS Attacks: An intro to Mempool Policy at Advancing Bitcoin 2022 for a synopsis of mempool policy.
+////
+
+[[eclipse_attacks]]
+=== Eclipse attacks
+
+https://bitcoinops.org/en/topics/eclipse-attacks/[Eclipse attacks^] occur when an adversary is able to isolate a victim's node from the rest of the network.
+
+A _restart-based eclipse attack_ occurs when the adversary is able to add its own addresses to the victim's address manager and then force the victim to restart.
+If the attack succeeds, the victim will make all of its connections to the adversary's addresses when it restarts.
+
+https://github.com/bitcoin/bitcoin/issues/17326[Issue 17326^] proposed persisting the node's outbound connection list to disk, and on restart reconnecting to the same peers.
+It's worth reading the full discussion in that issue, since there are a lot of subtle points around which peers should be persisted.
+
+https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Addrman-and-eclipse-attacks[Addrman and eclipse attacks(bitcoin-devwiki)^] attempts to describe the mechanisms implemented in Bitcoin Core to mitigate eclipse attacks followed by open questions and areas of further research.
+
+=== Identification of the network topology
+
+If a malicious entity was able to identify the topography of the network then they could see that by taking specific nodes down, maybe via a DOS service or any attack that they can use, they can cause a partition in the entire network.
+
+There are xref:message-relay.adoc#message_relay[three main messages that are gossiped around the network] and **each message offers a unique set of information that allows an adversary to identify who your neighbors are**.
+
+xref:block-relay.adoc#block_relay[Block relay] leaks the least information and we can leverage that for a feature called `block-relay-only` connections, a type of connection where nodes do not participate in transaction or address relay and only relay blocks.
+An effective way for a spy node to infer the network topology is to observe the timing and details of transaction and address relay, so **these block-relay-only connections obfuscate network topology and help to mitigate eclipse attacks**.
+
+https://github.com/bitcoin/bitcoin/pull/15759[PR#15759^] introduced `block-relay-only` connections.
+After these changes, nodes by default open two outbound block-relay-only connections on startup.
+
+https://github.com/bitcoin/bitcoin/pull/17428[PR#17428^] introduced the idea of anchors, persist peers to reconnect after restart.
+If you persist the connection to some peers is great for reliability but it would not be very good for privacy if we were to reconnect to the full relay connections.
+So instead, we use the `block-relay-only` connections and reconnect to those.
+
+https://github.com/bitcoin/bitcoin/pull/19858[PR#19858^] proposes a more advanced use of block-relay-only connections to further mitigate eclipse attacks.
+The node will periodically initiate an _additional_ block-relay-only connection which it uses only to sync headers in order to try and learn about new blocks.
+If this reveals new blocks, the eviction logic will rotate out an existing block-relay-only connection.
+If no new blocks are discovered, the connection is closed.

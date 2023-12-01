@@ -1,0 +1,15 @@
+:page-title: P2P violations
+:page-nav_order: 140
+:page-parent: P2P
+[[p2p_violations]]
+== P2P violations
+
+Bitcoin Core has several options for how to treat peers that violate the rules of the P2P protocol:
+
+. Ignore the individual message, but continue processing other messages from that peer
+. Increment the peer's "misbehaviour" score, and punish the peer once its score goes above a certain amount
+. Disconnect from the peer
+. Disconnect from the peer and prevent any later connections from that peer's address (discouragement)
+
+Since https://github.com/bitcoin/bitcoin/pull/20079[PR#20079^] we now treat handshake misbehaviour like an unknown message
+

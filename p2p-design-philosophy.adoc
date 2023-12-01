@@ -1,0 +1,48 @@
+:page-title: Design philosophy
+:page-nav_order: 0
+:page-parent: P2P
+== Design philosophy
+
+The P2P design philosophy is outlined in the bitcoin devwiki article https://github.com/bitcoin-core/bitcoin-devwiki/wiki/P2P-Design-Philosophy[P2P Design Philosophy^].
+A synopsis of the ideas can be found in the first few paragraphs:
+
+[quote]
+____
+For the Bitcoin network to remain in consensus, the network of nodes must not be partitioned.
+So for an individual node to remain in consensus with the network, it must have at least one connection to that network of peers that share its consensus rules.
+
+...
+
+We can't rely on inbound peers to be honest, because they are initiated by others.
+It's impossible for us to know, for example, whether all our inbound peers are controlled by the same adversary.
+
+Therefore, in order to try to be connected to the honest network, we focus on having good outbound peers, as we get to choose who those are.
+____
+
+The document, which is worth reading in its entirely, continues by assuming the case that we don't have any inbound peers but also considering that any inbound peers we _do_ have shouldn't be able to interfere with the P2P logic proposed.
+
+== Design goals
+
+:amiti-attacking: https://btctranscripts.com/la-bitdevs/2020-04-16-amiti-uttarwar-attacking-bitcoin-core/
+
+Amiti Uttarwar created a framework of 5 goals she sees for the P2P network.
+
+TLDR; We want valid messages to make it out to the network (**reliable**) in a reasonable amount of time (**timely**) and for nodes to be able to get onto the network and stay on the network of their own accord (**accesible**).
+These three values seem quite important for any peer-to-peer network to be successful but in Bitcoin we have two additional.
+**Privacy** because it is money and **upgradeability** because of the ethos of Bitcoin.
+
+. **Reliable**; if a node submits a valid message to the network it will eventually be delivered to all other nodes on the network.
+. **Timely**; each of the messages have to make it out in a reasonable amount of time.
+    * Reasonable amount of time for a transaction is different than for a block and reasonable amount of time for a block to be propagated for a normal user versus a miner is very different as well.
+. **Accessible**; the requirement to be able to participate must be low. Also an adversary shouldn’t be able to keep a node off the network.
+    * Currently it is still possible to run a full Bitcoin Core node on a Raspberry Pi which is a low barrier-to-entry.
+. **Private**; because it is money and fundamentally it comes down to the idea of not wanting to connect your real world identity with your onchain interactions.
+. **Upgradeable**; stems from the ethos that if a user decides to buy into the rule set at a specific point in time they should always be able to transact with the rule set they initially bought into.
+
+**Reliability** vs **Privacy** can seem at odds with one another as is really hard to design and achieve both of them at the same time. 
+For example, **value long-lasting connections**, can help for reliable delivery but **comes against privacy**. 
+**Dynamic connections** help maintain transaction privacy, but **comes against reliability**.
+Reliability is you want to tell everyone your message, but privacy is you don’t want them to know that it is your message. 
+
+See the {amiti-attacking}[transcript^] for more detail on each of those points.
+

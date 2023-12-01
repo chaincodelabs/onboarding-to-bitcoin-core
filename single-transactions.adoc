@@ -1,0 +1,182 @@
+:page-title: Single transactions
+:page-nav_order: 0
+:page-parent: Transaction Validation
+:mermaid-puppeteer-config: ./puppeteer-config.json
+[[single_transactions]]
+=== Single transactions
+
+`AcceptToMemoryPool()` (ATMP) is where the checks on single transactions occur before they enter the mempool.
+
+.ATMP validation flow chart
+[mermaid,target=ATMP-validation-flow,format=svg,id=ATMP-validation-flow]
+....
+flowchart TB
+    success[MempoolAcceptResult::Success]
+    failure[MempoolAcceptResult::Failure]
+    process_tx["ChainstateManager::ProcessTransaction()"]
+    maybe_update["CChainState::MaybeUpdateMempoolForReorg()"]
+    load_mempool["LoadMempool()"]
+    atmp["AcceptToMemoryPool()"]
+    accept_single["AcceptSingleTransaction()"]
+    finalise["Finalize()"]
+
+    %% think this is too much detail
+    %% process_msg["PeerManagerImpl::ProcessMessage()"]
+    %% process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
+    %% broadcast_tx["BroadcastTransaction()"]
+    %% process_msg --> process_tx
+    %% process_orphan --> process_tx
+    %% broadcast_tx --> process_tx
+
+    maybe_update --> atmp
+    process_tx --> atmp
+    load_mempool --> atmp
+
+    atmp --> accept_single
+    accept_single --> PreChecks
+    PreChecks --> ReplacementChecks
+    PreChecks -- fail --> failure
+    ReplacementChecks --> PolicyScriptChecks
+    ReplacementChecks -- fail --> failure
+    PolicyScriptChecks --> ConsensusScriptChecks
+    PolicyScriptChecks -- fail --> failure
+    ConsensusScriptChecks -- if test_accept --> success
+    ConsensusScriptChecks -- fail ---> failure
+    ConsensusScriptChecks --> finalise
+    finalise --> success
+
+    classDef green fill:#00A000,color:white,stroke:green;
+    classDef red fill:#BA3925,color:white,stroke:red;
+    class AcceptToMemoryPool,success green
+    class failure, red
+....
+
+You can see the calls to the various `*Checks()` functions in the <<ATMP-validation-flow,call graph>>, and the order in which they are run.
+
+Let's take a look inside ``AcceptToMemoryPool()``'s inner function `AcceptSingleTransaction()` which handles running the checks:
+
+.src/validation.cpp
+[source,cpp,highlight=8;10;14;16,options=nowrap,id=accept_single_transaction]
+----
+MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
+{
+    AssertLockHeld(cs_main);
+    LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
+
+    Workspace ws(ptx);
+
+    if (!PreChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    if (m_rbf && !ReplacementChecks(ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    // Perform the inexpensive checks first and avoid hashing and signature verification unless
+    // those checks pass, to mitigate CPU exhaustion denial-of-service attacks.
+    if (!PolicyScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    if (!ConsensusScriptChecks(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    // Tx was accepted, but not added
+    if (args.m_test_accept) {
+        return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
+    }
+
+    if (!Finalize(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
+
+    GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
+
+    return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
+}
+----
+
+[TIP]
+====
+We purposefully run checks in this order so that the least computationally-expensive checks are run first.
+This means that we can hopefully fail early and minimise CPU cycles used on invalid transactions.
+====
+
+WARNING: If an attacker could force us to perform many expensive computations simply by sending us many invalid transactions then it would be inexpensive to bring our node to a halt.
+
+Once `AcceptSingleTransaction` has acquired the `cs_main` and `m_pool.cs` locks it initializes a `Workspace` struct -- a storage area for (validation status) state which can be shared by the different validation checks.
+Caching this state avoids performing the same computations multiple times and is important for performance.
+It will pass this workspace, along with the struct of `ATMPArgs` it received as argument, to the checks.
+
+.Click to see the code comments on why we hold _two_ locks before performing consensus checks on transactions
+[%collapsible,id=multiple_locks]
+====
+.src/txmempool.h#CTxMemPool
+[source,cpp,options=nowrap]
+----
+/**
+ * This mutex needs to be locked when accessing `mapTx` or other members
+ * that are guarded by it.
+ *
+ * @par Consistency guarantees
+ *
+ * By design, it is guaranteed that:
+ *
+ * 1. Locking both `cs_main` and `mempool.cs` will give a view of mempool
+ *    that is consistent with current chain tip (`::ChainActive()` and
+ *    `CoinsTip()`) and is fully populated. Fully populated means that if the
+ *    current active chain is missing transactions that were present in a
+ *    previously active chain, all the missing transactions will have been
+ *    re-added to the mempool and should be present if they meet size and
+ *    consistency constraints.
+ *
+ * 2. Locking `mempool.cs` without `cs_main` will give a view of a mempool
+ *    consistent with some chain that was active since `cs_main` was last
+ *    locked, and that is fully populated as described above. It is ok for
+ *    code that only needs to query or remove transactions from the mempool
+ *    to lock just `mempool.cs` without `cs_main`.
+ *
+ * To provide these guarantees, it is necessary to lock both `cs_main` and
+ * `mempool.cs` whenever adding transactions to the mempool and whenever
+ * changing the chain tip. It's necessary to keep both mutexes locked until
+ * the mempool is consistent with the new chain tip and fully populated.
+ */
+mutable RecursiveMutex cs;
+----
+====
+
+The `Workspace` is initialized with a pointer to the transaction (as a `CTransactionRef`) and holds some https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L553-L593[additional^] information related to intermediate state.
+
+We can look at the https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L469-L534[`ATMPArgs` struct^] to see what other information our mempool wants to know about in addition to transaction information.
+
+.ATMPArgs
+[sidebar]
+****
+`m_accept_time` is the local time when the transaction entered the mempool.
+It's used during the mempool transaction eviction selection process as part of `CTxMemPool::Expire()` where it is referenced by the name `entry_time`:
+
+.Click to see `entry_time` being used in `Expire()`
+[%collapsible]
+====
+.src/txmempool.cpp#CTXMemPool::Expire()
+[source,cpp,highlight=4;6,options=nowrap]
+----
+int CTxMemPool::Expire(std::chrono::seconds time)
+{
+    AssertLockHeld(cs);
+    indexed_transaction_set::index<entry_time>::type::iterator it = mapTx.get<entry_time>().begin();
+    setEntries toremove;
+    while (it != mapTx.get<entry_time>().end() && it->GetTime() < time) {
+        toremove.insert(mapTx.project<0>(it));
+        it++;
+    }
+    setEntries stage;
+    for (txiter removeit : toremove) {
+        CalculateDescendants(removeit, stage);
+    }
+    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY);
+    return stage.size();
+}
+----
+====
+
+`m_bypass_limits` is used to determine whether we should enforce mempool fee limits for this transaction.
+If we are a miner we may want to ensure _our own_ transactions would pass mempool checks, even if we don't attach a fee to them.
+
+`m_test_accept` is used if we just want to run mempool checks to test validity, but not actually add the transaction into the mempool yet.
+This happens when we want to broadcast one of our own transactions, done by calling `BroadcastTransaction` from `node/transaction.cpp#BroadcastTransaction()` or from the `testmempoolaccept()` RPC.
+****
+
+If all the checks pass and this was not a `test_accept` submission then we will `MemPoolAccept::Finalize` the transaction, adding it to the mempool, before trimming the mempool size and updating any affected RBF transactions as required.

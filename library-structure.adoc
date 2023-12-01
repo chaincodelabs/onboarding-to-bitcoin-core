@@ -1,0 +1,57 @@
+:page-title: Library structure
+:page-nav_order: 50
+:page-parent: Architecture
+:mermaid-puppeteer-config: ./puppeteer-config.json
+== Library structure
+
+Bitcoin Core compilation outputs a number of libraries, some which are designed to be used internally, and some which are designed to be re-used by external applications.
+The internally-used libraries generally have unstable APIs making them unsuitable for re-use, but `libbitcoin_consensus` and `libbitcoin_kernel` are designed to be re-used by external applications.
+
+Bitcoin Core has a https://github.com/bitcoin/bitcoin/blob/master/doc/design/libraries.md[guide^] which describes the various libraries, their conventions, and their various dependencies.
+The dependency graph is shown below for convenience, but may not be up-to-date with the Bitcoin Core document.
+
+[id=library-dependency-graph]
+.Bitcoin library dependency graph
+[mermaid, target=bitcoin-lib-dependencies, format=svg]
+....
+flowchart TB
+    bitcoin-wallet --> libbitcoin_wallet_tool
+    bitcoin-wallet --> libbitcoin_wallet
+
+    bitcoin-qt ---> libbitcoin_wallet
+    bitcoin-qt ---> libbitcoinqt
+    bitcoin-qt ---> libbitcoin_node
+
+    bitcoind ---> libbitcoin_wallet
+    bitcoind --> libbitcoin_node
+
+    bitcoin-cli ---> libbitcoin-cli
+
+    libbitcoin_wallet_tool --> libbitcoin_wallet
+    libbitcoin_wallet_tool --> libbitcoin_util
+
+    libbitcoin-cli --> libbitcoin_common
+    libbitcoin-cli --> libbitcoin_util
+
+    libbitcoin_node --> libbitcoin_common
+    libbitcoin_node --> libbitcoin_consensus
+    libbitcoin_node --> libbitcoin_kernel
+    libbitcoin_node --> libbitcoin_util
+
+    libbitcoinqt --> libbitcoin_util
+    libbitcoinqt --> libbitcoin_common
+
+    libbitcoin_wallet --> libbitcoin_util
+    libbitcoin_wallet --> libbitcoin_common
+
+    libbitcoin_common --> libbitcoin_util
+    libbitcoin_common --> libbitcoin_consensus
+
+    libbitcoin_kernel --> libbitcoin_consensus
+    libbitcoin_kernel --> libbitcoin_util
+
+    classDef types fill:green,color:white,stroke:green;
+    class bitcoin-wallet,bitcoind,bitcoin-cli,bitcoin-qt types
+....
+
+It follows that API changes to the libraries which are internally-facing can be done slightly easier than for libraries with externally-facing APIs, for which more care for compatibility must be taken.

@@ -1,0 +1,19 @@
+= P2P
+:page-nav_order: 50
+:page-has_children: true
+include::links-onepage.adoc[]
+
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+With bitcoin we are seeking to create a permissionless network in which anyone can make a bitcoin transaction.
+Anybody should be free and able to run a node and join the network.
+
+The Bitcoin P2P network serves 3 purposes:
+
+* xref:address-relay.adoc#address_relay[Gossiping addresses] of known reachable nodes on the network
+* xref:transaction-relay.adoc#transaction_relay[Relaying unconfirmed transactions]
+* xref:block-relay.adoc#block_relay[Propagating blocks]
+
+Although these three purposes share the same network, they have different design goals and properties.
+Transaction relay is optimized for a combination of redundancy/robustness to peer misbehaviour as well as bandwidth minimization, while block relay is optimized to minimize delay.
+

@@ -1,0 +1,22 @@
+:page-title: Subtrees and PIMPL
+:page-nav_order: 90
+:page-parent: Architecture
+include::links-onepage.adoc[]
+[[subtrees]]
+== Subtrees
+
+Several parts of the repository (LevelDB, crc32c, secp256k1 etc.) are subtrees of software maintained elsewhere.
+
+Some of these are maintained by active developers of Bitcoin Core, in which case changes should go directly upstream without being PRed directly against the project.
+They will be merged back in the next subtree merge.
+
+Others are external projects without a tight relationship with our project.
+
+There is a tool in `test/lint/git-subtree-check.sh` to check a subtree directory for consistency with its upstream repository.
+
+See the full https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#subtrees[subtrees^] documentation for more information.
+
+== Implementation separation
+
+Many of the classes found throughout the codebase use the PIMPL technique to separate their implementation from the external representation.
+See xref:appendix.adoc#pimpl-technique[PIMPL technique] in the Appendix for more information.

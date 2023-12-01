@@ -1,0 +1,52 @@
+---
+# Feel free to add content and custom Front Matter to this file.
+# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
+
+layout: home
+---
+<style>
+.dah_container {
+  display: flex;
+  flex-flow: row wrap;
+
+  /* Then we define how is distributed the remaining space */
+  justify-content: space-around;
+
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  list-style-type: none;
+}
+
+.dah_card {
+  padding: 5px;
+  width: 300px;
+  height: 150px;
+  margin-top: 10px;
+  text-align: center;
+  list-style: none;
+}
+
+</style>
+
+<div class="dah_container">
+  <div class="dah_card">
+    <p><b>Get onboarded</b></p>
+    <p>Read the <a href="./bin/onboarding-to-bitcoin-core.html">entire onboarding guide</a> in a
+    convenient single-page format.</p>
+    <p>Or view the <a href="./bin/onboarding-to-bitcoin-core.pdf">entire guide</a>
+    (excluding mermaid charts) as a PDF.</p>
+  </div>
+
+  <div class="dah_card">
+    <p><b>Review a PR</b></p>
+    <p>Prevent problems before they affect your bitcoins  Choose a PR to
+    review and <a href="404">learn as you go</a>.</p>
+  </div>
+
+  <div class="dah_card">
+    <p><b>Squash a bug</b></p>
+    <p>The minimal information you need to <a href="/entries/bugs.html">fix a problem</a>.</p>
+  </div>
+
+</div>

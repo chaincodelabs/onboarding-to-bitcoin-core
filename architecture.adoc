@@ -1,0 +1,8 @@
+= Architecture
+:page-nav_order: 10
+:page-has_children: true
+
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+Bitcoin Core v0.1 contained 26 source code and header files (*.h/cpp) with _main.cpp_ containing the majority of the business logic.
+As of v23.0 there are more than 800 source files (excluding _bench/_, _test/_ and all subtrees), more than 200 benchmarking and cpp unit tests, and more than 200 python tests and lints.

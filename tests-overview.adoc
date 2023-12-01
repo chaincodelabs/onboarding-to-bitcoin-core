@@ -1,0 +1,71 @@
+:page-title: Tests overview
+:page-nav_order: 30
+:page-parent: Architecture
+:mermaid-puppeteer-config: ./puppeteer-config.json
+== Tests overview
+
+.Tests overview
+[%autowidth]
+|===
+|Tool |Usage
+
+|unit tests
+|`make check` or `./src/test_bitcoin`
+
+|functional tests
+|`test/functional/test_runner.py`
+
+|lint checks
+|`test/lint/all-lint.py`
+
+|fuzz
+|See the https://github.com/bitcoin/bitcoin/blob/master/doc/fuzzing.md[documentation^]
+
+|util tests
+|`test/util/test_runner.py`
+
+|===
+
+Bitcoin Core is also introducing (functional) "stress tests" which challenge the program via interruptions and missing files to ensure that we fail gracefully, e.g. the tests introduced in https://github.com/bitcoin/bitcoin/pull/23289[PR#23289^].
+
+=== Test directory structure
+
+The following diagram gives a brief overview of how the tests are structured within the source directory.
+
+WARNING: This diagram is **not** exhaustive and includes simplifications.
+
+NOTE: dashed lines indicate optional components
+
+NOTE: The `fuzz_targets` themselves are located in the `test` folder, however the fuzz tests are run via the `test_runner` in src/test so we point fuzz to there.
+
+NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate^] repo altogether, as they are quite large (~3.5GB repo size and ~13.4GB on clone).
+
+.Test directory Structure
+[mermaid, target=bitcoin-core-tests, format=svg]
+....
+flowchart LR
+    TR1[test_runner]
+    functional --> test
+    lint --> test
+    util --> test
+    test_framework --> functional
+    TR1 --> functional
+
+    TR2["test_runner (fuzz)"]
+    fuzz_targets --> fuzz
+    fuzz --> src/test
+    libFuzzer -.-> fuzz
+    TR2 --> fuzz
+    qa-assets -.-> fuzz
+    unit --> src/test
+    Boost --> unit
+    test_bitcoin --> unit
+
+    classDef types fill:green,color:white,stroke:green;
+    class functional,lint,util,fuzz,unit types
+....
+
+=== Test coverage
+
+Bitcoin Core's test coverage reports can be found https://marcofalke.github.io/btc_cov/[here^].
+

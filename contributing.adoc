@@ -1,0 +1,29 @@
+:page-title: Contributing code
+:page-nav_order: 30
+:page-parent: Overview and Development Process
+=== Contributing code
+
+This section details some of the processes surrounding code contributions to the Bitcoin Core project along with some common pitfalls and tips to try and avoid them.
+
+==== Branches
+
+You should *not* use the built-in GitHub branch https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository[creation^] process, as this interferes with and confuses the Bitcoin Core git process.
+
+Instead, you should use either the native https://git-scm.com/downloads[`git`^] or the GitHub https://github.com/cli/cli[`gh` cli^] (requires `git`) tools to create your own branches locally, before pushing them to your fork of the repo, and opening a PR against the Bitcoin Core repo from there.
+
+==== Creating a PR
+
+Jon Atack's article https://jonatack.github.io/articles/how-to-contribute-pull-requests-to-bitcoin-core[How To Contribute Pull Requests To Bitcoin Core^] describes some less-obvious requirements that any PR you make might be subjected to during peer review, for example that it needs an accompanying test, or that an intermediate commit on the branch doesn't compile.
+It also describes the uncodified expectation that Contributors should not only be writing code, but perhaps more importantly be providing reviews on other Contributors' PRs.
+Most developers enjoy writing their own code more than reviewing code from others, but the decentralized review process is arguably the most critical defence Bitcoin development has against malicious actors and therefore important to try and uphold.
+
+IMPORTANT: Jon's estimates of "5-15 PR reviews|issues solved" per PR submitted is not a hard requirement, just what Jon himself feels would be best for the project. Don't be put off submitting a potentially valuable PR just because "you haven't done enough reviews"!
+
+For some tips on how to maintain an open PR using git, such as how to redo commit history, as well as edit specific commits, check out this https://github.com/satsie/bitcoin-notez/blob/master/bitcoin-core-development/git-guide.md[guide^].
+
+==== Commit messages
+
+When writing commit messages be sure to have read Chris Beams' "How to Write a Git Commit Message" https://chris.beams.io/posts/git-commit/[blog post^].
+As described in CONTRIBUTING.md, PRs should be prefixed with the component or area the PR affects.
+Common areas are listed in CONTRIBUTING.md section: https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request^].
+Individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.

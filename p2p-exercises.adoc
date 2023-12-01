@@ -1,0 +1,37 @@
+:page-title: P2P exercises
+:page-nav_order: 160
+:page-parent: P2P
+include:links-onepage.adoc
+== Exercises
+
+include::exercise-intro.adoc[]
+
+. Make manual connections
+- [ ] Add the following configuration options to a new Bitcoin Core node running on signet to have it start it with no connections:
++
+[source,text]
+----
+signet=1
+dnsseed=0
+fixedseeds=0
+debug=addrman
+----
+- [ ] Find the (only!) Signet DNS seeder node (in the `SigNetParams` class starting with "seed") and using a terminal poll this seed node for an address to connect to.
++
+[TIP]
+====
+You can use `dig` or `nslookup` to retrieve seeds from the DNS seeder from the DNS seeders.
+====
++
+[CAUTION]
+====
+If you try this with the mainnet seeds you will need to consider which xref:bootstrapping.adoc#service_flags[service flags] the seeder advertises support for.
+For example, if a seed node advertises `x1` support this means they return IP addresses of nodes advertizing the `NODE_NETWORK` service flag.
+
+You could query these from sipa's mainnet seeder by prepending `x1` to the subdomain e.g. `nslookup x1.seeder.bitcoin.sipa.be`
+====
+- [ ] Check how many addresses are known to your node: `bitcoin-cli -signet getnodeaddresses 0 | jq length`
+- [ ] Using one of the addresses returned from the previous exercise, connect to this node using the `addnode` RPC.
+- [ ] Observe new addresses being received and connected to in the bitcoind terminal or _$DATADIR/debug.log_ file.
+- [ ] What dangers can there be in retrieving node addresses in this way?
+- [ ] Is this more of less safe than using the hardcoded seeds? Can you think of a better way to distribute seeds to new users?

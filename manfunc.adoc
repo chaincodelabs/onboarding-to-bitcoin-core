@@ -1,0 +1,35 @@
+:page-title: Manual testing of a functional test
+:page-nav_order: 100
+:page-parent: Overview and Development Process
+==== Manual testing while running a functional test
+
+Running regtest as described allows you to start from scratch with an empty chain, empty wallet, and no existing state.
+
+An effective way to use regtest is to start a https://github.com/chaincodelabs/bitcoin-core-onboarding/blob/main/functional_test_framework.asciidoc[functional test^] and insert a python debug breakpoint.
+You can set a breakpoint in a test by adding `import pdb; pdb.set_trace()` at the desired stopping point; when the script reaches this point you'll see the debugger's `(Pdb)` prompt, at which you can type `help` and see and do all kinds of useful things.
+
+While the (Python) test is paused, you can still control the node using `bitcoin-cli`.
+First you need to look up the data directory for the node(s), as below:
+
+[source,bash,options=nowrap]
+----
+$ ps alx | grep bitcoind
+0  1000   57478   57476  20   0 1031376 58604 pipe_r SLl+ pts/10    0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 -logtimemicros -debug (...)
+0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
+----
+
+With the `-datadir` path you can look at the `bitcoin.conf` files within the data directories to see what config options are being specified for the test (there's always `regtest=1`) in addition to the runtime options, which is a good way to learn about some advanced uses of regtest.
+
+In addition to this, we can use the `-datadir=` option with `bitcoin-cli` to control specific nodes, e.g.:
+
+[source,bash,options=nowrap]
+----
+$ src/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchaininfo
+----
+
+////
+Add `import time; time.sleep(600)` somewhere into a functional test (which is just a Python script) to suspend the test at that point for 10 minutes. (you may want to add a `print("paused")` statement just before the call to `sleep()` to know it's been reached)
+
+This has the further advantage (over calling `time.sleep()`), in that you can single-step through the test while also manually interacting with the nodes, combining automated and manual testing.
+
+////

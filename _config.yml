@@ -1,0 +1,95 @@
+# Welcome to Jekyll!
+#
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely edit after that. If you find
+# yourself editing this file very often, consider using Jekyll's data files
+# feature for the data you need to update frequently.
+#
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
+#
+# If you need help with YAML syntax, here are some quick references for you:
+# https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/#yaml
+# https://learnxinyminutes.com/docs/yaml/
+#
+# Site settings
+# These are used to personalize your new site. If you look in the HTML files,
+# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
+# You can create any custom variable you would like, and they will be accessible
+# in the templates via {{ site.myvariable }}.
+
+title: Bitcoin Core Onboarding
+email: your-email@example.com
+description: >- # this means to ignore newlines until "baseurl:"
+  Bitcoin Core developer obboarding documentation
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://bitcoincore.academy" # the base hostname & protocol for your site, e.g. http://example.com
+twitter_username: chaincodelabs
+github_username:  chaincodelabs
+
+# Build settings
+theme: just-the-docs
+plugins:
+  - jekyll-feed
+
+asciidoc:
+  processor: asciidoctor
+
+asciidoctor:
+  attributes:
+    imagesdir: images
+    source-highlighter: rouge
+    rouge-style: github
+    icons: font
+
+keep_files:
+  - images
+
+# Footer "Edit this page on GitHub" link text
+gh_edit_link: true # show or hide edit this page link
+gh_edit_link_text: "Edit this page on GitHub."
+gh_edit_repository: "https://github.com/bitcoin-dev-project/onboarding-to-bitcoin-core" # the github URL for your repo
+gh_edit_branch: "gh_pages" # the branch that your docs is served from
+gh_edit_source: "master" # the source that your files originate from
+gh_edit_view_mode: "edit" # "tree" or "edit" if you want the user to jump into the editor immediately
+
+mermaid:
+  # Version of mermaid library
+  # Pick an available version from https://cdn.jsdelivr.net/npm/mermaid/
+  version: "9.1.3"
+
+# Exclude from processing.
+# The following items will not be processed, by default.
+# Any item listed under the `exclude:` key here will be automatically added to
+# the internal "default list".
+#
+# Excluded items can be processed by explicitly listing the directories or
+# their entries' file path in the `include:` list.
+exclude:
+  - .jekyll-cache/
+  - 01_overview-and-development.adoc
+  - 02_architecture.adoc
+  - 03_consensus-and-validation.adoc
+  - 04_wallet.adoc
+  - 05_gui.adoc
+  - 06_p2p.adoc
+  - 07_mempool.adoc
+  - 08_script.adoc
+  - 09_build-system.adoc
+  - 10_rpc.adoc
+  - asciidoc_workflow.adoc
+  - index.adoc
+  - old.index.adoc
+  - settings.adoc
+  - README.adoc
+  - book.html
+  - Gemfile
+  - Gemfile.lock
+  - jekyll_workflow.md
+  - Makefile
+  - mermaid-config.json
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/

@@ -1,0 +1,36 @@
+:page-title: Testing P2P changes
+:page-nav_order: 150
+:page-parent: P2P
+== Testing P2P changes
+
+It can be challenging to test P2P changes as tooling and functional tests are lacking.
+Often devs simply setup a new node with the patch and leave it for some time!?
+
+[TIP]
+====
+Is there fuzzing for P2P messages yet?
+====
+
+=== Testing transaction and block relay under SegWit
+
+SegWit was a softfork defined in https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki[BIP 141^], with P2P changes defined in https://github.com/bitcoin/bips/blob/65529b12bb01b9f29717e1735ce4d472ef9d9fe7/bip-0144.mediawiki[BIP 144^].
+
+SegWit was activated at block 481,824 in August 2017.
+Prior to activation, some very careful testing was carried out to verify different scenarios, for example:
+
+. How are transactions and blocks relayed between un-upgraded and upgraded nodes?
+. How do upgraded nodes find other upgraded nodes to connect to?
+. If a node is un-upgraded at activation time and subsequently upgrades, how does it ensure that the blocks that it previously validated (without segwit rules) are valid according to segwit rules?
+
+To enable this kind of testing, https://github.com/bitcoin/bitcoin/pull/8418[PR#8418^] made it possible to configure the segwit activation parameters using a `-bip9params` configuration option.
+That configuration option was later renamed to `-vbparams` in https://github.com/bitcoin/bitcoin/pull/10463[PR#10463^], and replaced with `-segwitheight` in https://github.com/bitcoin/bitcoin/pull/16060[PR#16060^].
+
+Those options allowed starting a node which would never activate segwit by passing `-vbparams=segwit:0:0` (or later, `-segwitheight=-1`).
+This was used in the functional tests to test the node's behaviour across activation.
+
+The segwit mainnet activation was a one-time event.
+Now that segwit has been activated, those tests are no longer required.
+
+https://github.com/bitcoin/bitcoin/pull/21090[PR#21090^] removed the final tests that made use of `-segwitheight=0`.
+With those tests removed, the special casing for `-segwitheight=-1` behaviour can also be removed.
+That special casing impacted logic in _net_processing_, _validation_ and _mining_.

@@ -1,0 +1,76 @@
+:page-title: Userspace files
+:page-nav_order: 70
+:page-parent: Architecture
+== Userspace files
+
+Bitcoin Core stores a number of files in its data directory ($DATADIR) at runtime.
+
+=== Block and undo files
+
+$DATADIR/blocks/blk*.dat::
+Stores raw network-format block data in order received.
+
+$DATADIR/blocks/rev*.dat::
+Stores block "undo" data in order processed.
++
+[quote,Pieter Wuille,'https://bitcoin.stackexchange.com/questions/11104/what-is-the-database-for?rq=1[stackexchange]']
+____
+You can see blocks as 'patches' to the chain state (they consume some unspent outputs, and produce new ones), and see the undo data as reverse patches. They are necessary for rolling back the chainstate, which is necessary in case of reorganisations.
+____
+
+////
+TODO: bitcoin.conf, config.json, debug.log ??
+////
+
+=== Indexes
+
+With data from the raw block* and rev* files, various LevelDB indexes can be built.
+These indexes enable fast lookup of data without having to rescan the entire block chain on disk.
+
+Some of these databases are mandatory and some of them are optional and can be enabled using run-time configuration flags.
+
+Block Index::
+Filesystem location of blocks + some metadata
+
+Chainstate Index::
+All current UTXOs + some metadata
+
+Tx Index::
+Filesystem location of all transactions by txid
+
+Block Filter Index::
+https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki[BIP157] filters, hashes and headers
+
+Coinstats Index::
+UTXO set https://github.com/bitcoin/bitcoin/blob/b3f866a8dfd652b6339b79124843e58bd0bf3013/src/index/coinstatsindex.h#L26-L37[statistics]
+
+[%autowidth]
+|===
+|Name |Location |Optional |Class
+
+|Block Index
+|_$DATADIR/blocks/index_
+|No
+|`BlockIndex`
+
+|Chainstate Index
+|_$DATADIR/chainstate_
+|No
+|`Chainstate`
+
+|Tx Index
+|_$DATADIR/indexes/txindex_
+|Yes
+|`TxIndex`
+
+|Block Filter Index
+|_$DATADIR/indexes/blockfilter/<filter name>_
+|Yes
+|`BlockFilterIndex`
+
+|Coinstats Index
+|_$DATADIR/indexes/coinstats_
+|Yes
+|`CoinstatsIndex`
+
+|===

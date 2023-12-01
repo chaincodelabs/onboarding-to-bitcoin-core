@@ -1,0 +1,87 @@
+:page-title: Transaction format in the mempool
+:page-nav_order: 50
+:page-parent: Mempool
+[[mempool_tx_format]]
+== Transaction format in the mempool
+
+A `CTXMemPoolEntry` describes a mempool entry (i.e. transaction) in the mempool.
+It stores not only transaction information, but also pre-computed information about ancestors.
+
+.txmempool.h
+[source,cpp,options=nowrap]
+----
+
+class CTxMemPoolEntry
+{
+public:
+    typedef std::reference_wrapper<const CTxMemPoolEntry> CTxMemPoolEntryRef;
+    // two aliases, should the types ever diverge
+    typedef std::set<CTxMemPoolEntryRef, CompareIteratorByHash> Parents;
+    typedef std::set<CTxMemPoolEntryRef, CompareIteratorByHash> Children;
+
+private:
+    const CTransactionRef tx;
+    mutable Parents m_parents;
+    mutable Children m_children;
+    const CAmount nFee;             //!< Cached to avoid expensive parent-transaction lookups
+    const size_t nTxWeight;         //!< ... and avoid recomputing tx weight (also used for GetTxSize())
+    const size_t nUsageSize;        //!< ... and total memory usage
+    const int64_t nTime;            //!< Local time when entering the mempool
+    const unsigned int entryHeight; //!< Chain height when entering the mempool
+    const bool spendsCoinbase;      //!< keep track of transactions that spend a coinbase
+    const int64_t sigOpCost;        //!< Total sigop cost
+    int64_t feeDelta;          //!< Used for determining the priority of the transaction for mining in a block
+    LockPoints lockPoints;     //!< Track the height and time at which tx was final
+
+    // Information about descendants of this transaction that are in the
+    // mempool; if we remove this transaction we must remove all of these
+    // descendants as well.
+    uint64_t nCountWithDescendants;  //!< number of descendant transactions
+    uint64_t nSizeWithDescendants;   //!< ... and size
+    CAmount nModFeesWithDescendants; //!< ... and total fees (all including us)
+
+    // Analogous statistics for ancestor transactions
+    uint64_t nCountWithAncestors;
+    uint64_t nSizeWithAncestors;
+    CAmount nModFeesWithAncestors;
+    int64_t nSigOpCostWithAncestors;
+
+    // ...
+----
+
+The advantage to having pre-computed data on descendants and ancestors stored with each transaction in the mempool is that operations involving adding and removing transactions can be performed faster.
+When a transaction is added to the mempool we must update the descendant data for all ancestor ``CTxMemPoolEntry``'s.
+Conversely if a transaction is removed from the mempool, we must also remove all of its descendants.
+A particular area where speed can be critical is in block template assembly.
+
+TIP: Some of this extra transaction metadata counts towards the mempool's maximum size, therefore a default mempool of 300MB will contain less than 300MB of serialized transactions.
+
+== Mapping transactions in the mempool
+
+A lot of how fee-maximizing block templates can be swiftly generated from chains of potentially-complex interlinked and dependant transactions comes down to ``CTxMemPool``'s `boost::multi_index` `mapTx`, which is able to natively store transactions in an index against multiple criteria as described in the https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/index.html[documentation^] and code comments:
+
+.txmempool.h#CTxMemPool
+[source,cpp,options=nowrap]
+----
+
+/*
+ * mapTx is a boost::multi_index that sorts the mempool on 5 criteria:
+ * - transaction hash (txid)
+ * - witness-transaction hash (wtxid)
+ * - descendant feerate [we use max(feerate of tx, feerate of tx with all descendants)]
+ * - time in mempool
+ * - ancestor feerate [we use min(feerate of tx, feerate of tx with all unconfirmed ancestors)]
+ */
+
+----
+
+The index has 5 sort fields: the default, and tagged fields `index_by_wtxid`, `descendant_score`, `entry_time` and `ancestor_score`:
+
+. The default, and untagged, sort field of the index, which is using the https://www.boost.org/doc/libs/1_62_0/libs/multi_index/doc/reference/hash_indices.html#unique_non_unique[hashed_unique^] sort; hashing the `txid` using Bitcoin Core's implementation of the SipHash hasher for txids. +
+This is used when adding and removing transactions from the mempool, requesting and looking up mempool transactions (by txid) and checking whether RBF is enabled.
+. `index_by_wtxid` is used when checking whether transactions received over the P2P network already exist in the mempool (via the `exists()` function).
+. `descendant_score` is used when trying to trim the mempool to size (via `TrimToSize()`). +
+In this case we want to keep parent (ancestor) transactions in the mempool who have high fee-paying children (descendants).
+. `entry_time` is used to calculate when transactions in the mempool should expire.
+. `ancestor_score` is used to create new block templates by selecting the most valuable effective-feerate transaction chains.
+

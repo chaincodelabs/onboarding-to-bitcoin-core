@@ -1,0 +1,61 @@
+:page-title: Node components
+:page-nav_order: 20
+:page-parent: P2P
+:mermaid-puppeteer-config: ./puppeteer-config.json
+== Node P2P components
+
+.Node P2P components
+[mermaid,target=node-p2p-components,format=svg,align="center"]
+....
+flowchart LR
+    Addrman
+    Banman
+    CConnman
+    CTxMempool
+    ChainstateManager
+    NetGroupManager
+    Peerman
+    Asmap{{Asmap}}
+    peers.dat{{peers.dat}}
+    anchors.dat{{anchors.dat}}
+    banlist.dat{{banlist.dat}}
+    mempool.dat{{mempool.dat}}
+
+    subgraph node
+        node.netgroupman
+        node.addrman
+        node.banman
+        node.connman
+        node.mempool
+        node.chainman
+        node.peerman
+    end
+
+    Asmap -.-> NetGroupManager
+    peers.dat -.-> Addrman
+    Addrman --> node.addrman
+
+    NetGroupManager --> Addrman
+    NetGroupManager --> CConnman
+    NetGroupManager --> node.netgroupman
+
+    banlist.dat -.-> Banman
+    Banman --> Peerman
+    Banman --> node.banman
+
+    Addrman --> CConnman
+    anchors.dat -.-> CConnman
+    CConnman --> node.connman
+
+    mempool.dat -.-> CTxMempool
+    CTxMempool --> Peerman
+    CTxMempool --> node.mempool
+
+    ChainstateManager --> node.chainman
+
+    Addrman --> Peerman
+    CConnman --> Peerman
+    Peerman --> node.peerman
+
+....
+

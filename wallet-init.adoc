@@ -1,0 +1,120 @@
+:page-title: Wallet intialization
+:page-nav_order: 70
+:page-parent: Wallet
+[[wallet_component_initialisation]]
+== Wallet component initialisation
+
+The wallet component is initialized via the `WalletInitInterface` class as specified in https://github.com/bitcoin/bitcoin/blob/v23.0/src/walletinitinterface.h#L14-L26[_src/walletinitinterface.h_^].
+The member functions are marked as virtual in the `WalletInitInterface` definition, indicating that they are going to be overridden later by a derived class.
+
+Both _wallet/init.cpp_ and _dummywallet.cpp_ include derived classes which override the member functions of `WalletInitInterface`, depending on whether the wallet is being compiled in or not.
+
+The primary https://github.com/bitcoin/bitcoin/blob/v23.0/src/Makefile.am#L389-L394[_src/Makefile.am_^] describes which of these modules is chosen to override: if `./configure` has been run with the wallet feature enabled (default), then _wallet/init.cpp_ is added to the sources, otherwise (`./configure --disable-wallet`) _dummywallet.cpp_ is added:
+
+.src/Makefile.am
+[source,sh,options=nowrap]
+----
+if ENABLE_WALLET
+libbitcoin_server_a_SOURCES += wallet/init.cpp
+endif
+if !ENABLE_WALLET
+libbitcoin_server_a_SOURCES += dummywallet.cpp
+endif
+----
+
+_src/walletinitinterface.h_ declares the global `g_wallet_init_interface`  which will handle the configured `WalletInitInterface`.
+
+The wallet interface is created when the `Construct()` method is called on the `g_wallet_init_interface` object by https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1179-L1184[`AppInitMain()`^] in _init.cpp_.
+`Construct` takes a reference to a `NodeContext` as argument, and then checks that the wallet has not been disabled by a runtime argument before calling `interfaces::MakeWalletLoader()` on the node.
+This initialises a new `WalletLoader` object which is then added to the `node` object, both to the general list of `node.chain_clients` (wallet processes or other clients which want chain information from the node) in addition to being assigned as the unique `node.wallet_client` role, which specifies the particular `node.chain_client` that should be used to load or create wallets.
+
+The `NodeContext` struct is defined as the following:
+
+.src/node/context.h
+[quote]
+____
+...contains references to chain state and connection state.
+
+...used by init, rpc, and test code to pass object references around without needing to declare the same variables and parameters repeatedly, or to use globals...
+The struct isn't intended to have any member functions.
+It should just be a collection of references that can be used without pulling in unwanted dependencies or functionality.
+____
+
+== Wallets and program initialisation
+
+Wallets can optionally be loaded as part of main program startup (i.e. from _src/init.cpp_).
+Any wallets loaded during the life cycle of the main program are also unloaded as part of program shutdown.
+
+=== Specifying wallets loaded at startup
+
+Wallet(s) to be loaded as part of program startup can be specified by passing `-wallet=` or `-walletdir=` arguments to `bitcoind`/`bitcoin-qt`.
+If the wallet has been compiled in but no `-wallet*=` arguments have been passed, then the default wallet directory (_$datadir/wallets_) will be checked as per `GetWalletDir()`:
+
+Wallets can also be loaded after program startup via the `loadwallet` RPC.
+
+=== VerifyWallets
+
+Wallet verification refers to verification of the `-wallet` arguments as well as the underlying wallet database(s) on disk.
+
+Wallets loaded via program arguments are first verified as part of `AppInitMain()` which first https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1209-L1213[verifies wallet database integrity^] by calling https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/load.cpp#L25-L101[`VerifyWallets()`^] via the `WalletClientImpl` override of `client->verify()`.
+
+`VerifyWallets()` takes an `interfaces::Chain` object as argument, which is currently used to send init and error messages (about wallet verification) back to the GUI.
+`VerifyWallets()` starts by checking that the `walletdir` supplied by argument, or default of `""`, is valid.
+Next it loops through all wallets it finds in the `walletdir` and adds them to an `std::set` called `wallet_paths`, first de-duplicating them by tracking their absolute paths, and then checking that  the `WalletDatabase` for each wallet exists (or is otherwise constructed successfully) and can be verified.
+
+If this check passes for all wallets, then `VerifyWallets()` is complete and will return `true` to calling function `AppInitMain`, otherwise `false` will be returned.
+If `VerifyWallets()` fails and returns `false` (due to a corrupted wallet database, but notably not due to an incorrect wallet path), the main program process `AppInit()` will be immediately interrupted and shutdown.
+
+[IMPORTANT]
+====
+Program shutdown on a potentially-corrupt wallet database is a deliberate design decision.
+This is so that the wallet cannot display information to the user which is not guaranteed by the database.
+====
+
+=== LoadWallets
+
+"Startup" wallet(s) are loaded  when `client->load()` is called on each `node.chain_client` as part of https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/init.cpp#L1728-L1732[init.cpp^].
+
+.src/init.cpp#AppInitMain()
+[source,cpp,options=nowrap]
+----
+for (const auto& client : node.chain_clients) {
+    if (!client->load()) {
+        return false;
+    }
+}
+----
+
+The call to  `load()` on the wallet `chain_clients` has again been overridden, this time by ``WalletClientImpl``'s `LoadWallets()` https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/load.cpp#L103-L139[method^].
+This function works similarly to `VerifyWallets()`, first creating the `WalletDatabase` (memory) object for each wallet, although this time skipping the verify step, before creating a `CWallet` object from the database and adding it to the global list of wallets, the vector `vpwallets`, by calling `AddWallet()`.
+
+[IMPORTANT]
+====
+There are a number of steps in `init.cpp` that happen before the wallet is loaded, notably the blockchain is synced first.
+This is a safeguard which means that wallet operations cannot be called on a wallet which has been loaded against stale blockchain data.
+====
+
+_init.cpp_ is run on a single thread.
+This means that calls to wallet code block further initialisation of the node.
+
+The `interfaces::Chain` object taken as argument by `LoadWallets()` is used to pass back any error messages, exactly as it was in <<VerifyWallets,`VerifyWallets()`>>.
+More information on `AddWallet()` can be https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L110-L120[found in _src/wallet.cpp_].
+
+=== StartWallets
+
+The wallet is finally ready when (all) `chain_clients` have been started in _init.cpp_ which calls the overridden `client->start()` method from the `WalletClientImpl` class, resulting in https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/load.cpp#L141-L152[src/wallet/load.cpp#StartWallets()^] being called.
+
+This calls the `GetWallets()` function which returns a vector of pointers to the interfaces for all loaded `CWallet` objects, called `vpwallets`.
+As part of startup `PostInitProcess()` is called on each wallet which, after grabbing the main wallet lock `cs_wallet`, synchronises the wallet and mempool by adding wallet transactions not yet in a block to our mempool, and updating the wallet with any relevant transactions from the mempool.
+
+Also, as part of `StartWallets`, `flushwallet` _might_ be scheduled (if configured by argument) scheduling wallet transactions to be re-broadcast every second, although this interval is https://github.com/bitcoin/bitcoin/blob/v23.0/src/wallet/wallet.cpp#L1869-L1912[delayed^] upstream with a random timer.
+
+=== FlushWallets
+
+All wallets loaded into the program are "flushed" (to disk) before shutdown.
+As part of `init.cpp#Shutdown()` the `flush()` method is called on each member of `node.chain_clients` in sequence.
+`WalletClientImpl` again overrides this method to call `wallet/load.cpp#FlushWallets()` which makes sure all wallet changes have been successfully flushed to the wallet database.
+
+// TODO: Find out why we flush again here?
+Finally the `stop()` method is called on each member of `node.chain_clients` which is overridden by `StopWallets()`, flushing again and this time calling `close()` on the database file.
+

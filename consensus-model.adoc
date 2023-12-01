@@ -1,0 +1,25 @@
+:page-title: Consensus model
+:page-nav_order: 10
+:page-parent: Consensus and Validation
+=== Consensus model
+
+The consensus model in the codebase can be thought of as a database of the current state of the blockchain.
+When a new block is learned about it is processed and the consensus code must determine which block is the current best.
+Consensus can be thought of as a function of available information -- it's output is simply a deterministic function of its input.
+
+There are a simple set of rules for determining the best block:
+
+. Only consider valid blocks
+. Where multiple chains exist choose the one with the most cumulative Proof of Work (PoW)
+. If there is a tie-breaker (same height and work), then use first-seen
+
+The result of these rules is a tree-like structure from genesis to the current day, building on only valid blocks.
+
+Whilst this is easy-enough to reason about in theory, the implementation doesn't work exactly like that.
+It must consider state, do I go forward or backwards for example.
+
+== Validation in Bitcoin Core
+
+Originally consensus and validation were much of the same thing, in the same source file.
+However splitting of the code into strongly delineated sections was never fully completed, so validation.* files still hold some consensus codepaths.
+

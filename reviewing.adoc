@@ -1,0 +1,11 @@
+:page-title: Reviewing code
+:page-nav_order: 20
+:page-parent: Overview and Development Process
+=== Reviewing code
+
+Jon Atack provides a guide to reviewing a Bitcoin Core PR in his article https://jonatack.github.io/articles/how-to-review-pull-requests-in-bitcoin-core[How To Review Pull Requests in Bitcoin Core^].
+
+// Archived @ https://archive.is/MyohE
+Gloria Zhao's https://github.com/glozow/bitcoin-notes/blob/master/review-checklist.md[review checklist^] details what a "good" review might look like, along with some examples of what she personally considers good reviews.
+In addition to this, it details how potential Reviewers can approach a new PR they have chosen to review, along with the sorts of questions they should be asking (and answering) in order to provide a meaningful review.
+Some examples of the subject areas Gloria covers include the PR's subject area, motivation, downsides, approach, security and privacy risks, implementation of the idea, performance impact, concurrency footguns, tests and documentation needed.

@@ -1,0 +1,191 @@
+:page-title: Input validation
+:page-nav_order: 20
+:page-parent: Transaction Validation
+include::links-onepage.adoc[]
+[[prechecks]]
+=== PreChecks
+
+The code comments for `PreChecks` give a clear description of what the PreChecks are for:
+
+.src/validation.cpp#MemPoolAccept::PreChecks()
+[source,cpp,options=nowrap]
+----
+// Run the policy checks on a given transaction, excluding any script checks.
+// Looks up inputs, calculates feerate, considers replacement, evaluates
+// package limits, etc. As this function can be invoked for "free" by a peer,
+// only tests that are fast should be done here (to avoid CPU DoS).
+----
+
+The `PreChecks` function is very https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L668-L906[long^] but is worth examining to understand better which checks are undertaken as part of this first stage.
+
+=== ReplacementChecks
+
+During `PreChecks` the `m_rbf` bool will have been set to `true` if it is determined that this transaction would have to replace an existing transaction from our mempool.
+If this bool is set, then `ReplacementChecks` will be run.
+These checks are designed to check that BIP125 RBF rules are being adhered to.
+
+=== PolicyScriptChecks
+
+Following `ReplacementChecks` we initialise a `PrecomputedTransactionData` struct in the `Workspace` which will hold expensive-to-compute data that we might want to use again in subsequent validation steps.
+
+.Click to show the `PrecomputedTransactionData` struct
+[%collapsible]
+====
+.script/interpreter.cpp
+[source,cpp,options=nowrap]
+----
+struct PrecomputedTransactionData
+{
+    // BIP341 precomputed data.
+    // These are single-SHA256, see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#cite_note-15.
+    uint256 m_prevouts_single_hash;
+    uint256 m_sequences_single_hash;
+    uint256 m_outputs_single_hash;
+    uint256 m_spent_amounts_single_hash;
+    uint256 m_spent_scripts_single_hash;
+    //! Whether the 5 fields above are initialized.
+    bool m_bip341_taproot_ready = false;
+
+    // BIP143 precomputed data (double-SHA256).
+    uint256 hashPrevouts, hashSequence, hashOutputs;
+    //! Whether the 3 fields above are initialized.
+    bool m_bip143_segwit_ready = false;
+
+    std::vector<CTxOut> m_spent_outputs;
+    //! Whether m_spent_outputs is initialized.
+    bool m_spent_outputs_ready = false;
+
+    PrecomputedTransactionData() = default;
+
+    template <class T>
+    void Init(const T& tx, std::vector<CTxOut>&& spent_outputs);
+
+    template <class T>
+    explicit PrecomputedTransactionData(const T& tx);
+};
+----
+====
+
+Next we call `PolicyScriptChecks()` passing in the same `ATMPArgs` and `Workspace` that we used with PreChecks.
+This is going to check the transaction against our individual node's policies.
+
+[TIP]
+====
+Note that local node policies are not necessarily consensus-binding, but are designed to help prevent resource exhaustion (e.g. DoS) on our node.
+
+See the xref:transaction-validation.adoc#transaction_validation[transaction validation] and xref:locating-consensus-code.adoc#consensus_in_bitcoin_core[consensus in bitcoin core] sections for more information on the differences between policy and consensus.
+====
+
+`PolicyScriptChecks()` starts with initialisation of the transaction into a `CTransaction`, before beginning to https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L973-L999[check^] the input scripts against the script flags.
+
+.src/validation.cpp#PolicyScriptChecks
+[source,cpp,options=nowrap]
+----
+bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws, PrecomputedTransactionData& txdata)
+{
+    const CTransaction& tx = *ws.m_ptx;
+    TxValidationState& state = ws.m_state;
+
+    constexpr unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+
+    // Check input scripts and signatures.
+    // This is done last to help prevent CPU exhaustion denial-of-service attacks.
+    if (!CheckInputScripts(tx, state, m_view, scriptVerifyFlags, true, false, txdata)) { <1>
+        // SCRIPT_VERIFY_CLEANSTACK requires SCRIPT_VERIFY_WITNESS, so we
+        // need to turn both off, and compare against just turning off CLEANSTACK
+        // to see if the failure is specifically due to witness validation.
+        TxValidationState state_dummy; // Want reported failures to be from first CheckInputScripts
+        if (!tx.HasWitness() && CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~(SCRIPT_VERIFY_WITNESS | SCRIPT_VERIFY_CLEANSTACK), true, false, txdata) &&
+                !CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~SCRIPT_VERIFY_CLEANSTACK, true, false, txdata)) {
+            // Only the witness is missing, so the transaction itself may be fine.
+            state.Invalid(TxValidationResult::TX_WITNESS_STRIPPED,
+                    state.GetRejectReason(), state.GetDebugMessage());
+        }
+        return false; // state filled in by CheckInputScripts
+    }
+
+    return true;
+}
+----
+
+<1> Calling `CheckInputScripts()` involves ECDSA signature verification and is therefore computationally expensive.
+
+// TODO: Why?
+If the script type is SegWit an additional round of checking is performed, this time including the `CLEANSTACK` rule.
+The call(s) flag `cacheSigStore` as `true`, and `cacheFullScriptStore` as `false`, which means that matched signatures will be persisted in the cache, but matched full scripts will be removed.
+
+=== ConsensusScriptChecks
+
+If the `PolicyScriptChecks` return `true` we will move on to consensus script checks, again passing in the same `ATMPArgs`, `Workspace` and now `PrecomputedTransactionData` that we used previously with `PolicyScriptChecks`.
+
+The main check in here is `CheckInputsFromMempoolAndCache()` which is going to compare all the transaction inputs to our mempool, checking that they have not already been marked as spent.
+If the coin is not already spent, we reference it from either the UTXO set or our mempool, and finally submit it through `CheckInputScripts()` once more, this time caching both the signatures and the full scripts.
+
+.Click to show `CheckInputsFromMempoolAndCache()`
+[%collapsible]
+====
+.src/validation.cpp#CheckInputsFromMempoolAndCache
+[source,cpp,options=nowrap]
+----
+/**
+* Checks to avoid mempool polluting consensus critical paths since cached
+* signature and script validity results will be reused if we validate this
+* transaction again during block validation.
+* */
+static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationState& state,
+                const CCoinsViewCache& view, const CTxMemPool& pool,
+                unsigned int flags, PrecomputedTransactionData& txdata, CCoinsViewCache& coins_tip)
+                EXCLUSIVE_LOCKS_REQUIRED(cs_main, pool.cs)
+{
+    AssertLockHeld(cs_main);
+    AssertLockHeld(pool.cs);
+
+    assert(!tx.IsCoinBase());
+    for (const CTxIn& txin : tx.vin) {
+        const Coin& coin = view.AccessCoin(txin.prevout);
+
+        // This coin was checked in PreChecks and MemPoolAccept
+        // has been holding cs_main since then.
+        Assume(!coin.IsSpent());
+        if (coin.IsSpent()) return false;
+
+        // If the Coin is available, there are 2 possibilities:
+        // it is available in our current ChainstateActive UTXO set,
+        // or it's a UTXO provided by a transaction in our mempool.
+        // Ensure the scriptPubKeys in Coins from CoinsView are correct.
+        const CTransactionRef& txFrom = pool.get(txin.prevout.hash);
+        if (txFrom) {
+            assert(txFrom->GetHash() == txin.prevout.hash);
+            assert(txFrom->vout.size() > txin.prevout.n);
+            assert(txFrom->vout[txin.prevout.n] == coin.out);
+        } else {
+            assert(std::addressof(::ChainstateActive().CoinsTip()) == std::addressof(coins_tip));
+            const Coin& coinFromUTXOSet = coins_tip.AccessCoin(txin.prevout);
+            assert(!coinFromUTXOSet.IsSpent());
+            assert(coinFromUTXOSet.out == coin.out);
+        }
+    }
+
+    // Call CheckInputScripts() to cache signature and script validity against current tip consensus rules.
+    return CheckInputScripts(tx, state, view, flags, /* cacheSigStore = */ true, /* cacheFullSciptStore = */ true, txdata);
+}
+----
+====
+
+=== PackageMempoolChecks
+
+`PackageMempoolChecks` are designed to "Enforce package mempool ancestor/descendant limits (distinct from individual ancestor/descendant limits done in PreChecks)".
+They take a vector of ``CTransactionRef``s and a `PackageValidationState`.
+
+Again we take xref:single-transactions.adoc#multiple_locks[two locks] before checking that the transactions are not in the mempool.
+Any transactions which are part of the package and were in the mempool will have already been removed by `MemPoolAccept::AcceptPackage()`.
+
+Finally we check the package limits, which consists of checking the {ancestor|descendant} {count|size}.
+This check is unique to packages because we can now add descendants whose ancestors would not otherwise qualify for entry into our mempool with their low effective fee rate.
+
+=== Finalize
+
+Provided that consensus script checks pass and this was not a test ATMP call, we will call `Finalize()` on the transaction.
+This will remove any conflicting (lower fee) transactions from the mempool before adding this one, finishing by trimming the mempool to the configured size (default: `static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;` MB).
+In the event that *this* transaction got trimmed, we ensure that we return a `TxValidationResult::TX_MEMPOOL_POLICY, "mempool full"` result.
+

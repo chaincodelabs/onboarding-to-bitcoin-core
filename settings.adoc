@@ -2,10 +2,9 @@
 :toc:
 :toclevels: 3
 :toc: left
-// Use pygments.rb for source highlighting, emacs style
 :source-language: cpp
-:source-highlighter: pygments
-:pygments-style: emacs
+:source-highlighter: rouge
+:rouge-style: github
 // Use fancy icons for admonition boxes
 :icons: font
 // Add section links to HTML
@@ -14,4 +13,5 @@
 :imagesdir: images
 :docinfo: shared
 // mermaid.js config
-:mermaid-config: ./mermaid-config.json
+:config: ./mermaid-config.json
+:puppeteer-config: ./puppeteer-config.json

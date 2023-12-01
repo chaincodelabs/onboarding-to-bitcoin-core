@@ -1,0 +1,208 @@
+:page-title: Validating scripts
+:page-nav_order: 0
+:page-parent: Script
+include::links-onepage.adoc[]
+== Validating scripts
+
+For some additional context on how scripts are validated in Bitcoin see xref:script-appendix.adoc#executing_scripts[executing scripts] in the Appendix.
+
+Transactions contain a vector of inputs (`CTxIn`) and vector of outputs (`CTxOut`), along with other required data.
+
+Each `CTxIn` contains:
+
+* `COutPoint prevout;`
+* `CScript scriptSig;`
+* `uint32_t nSequence;`
+* `CScriptWitness scriptWitness;`
+
+Each `CTxOut` contains:
+
+* `CAmount nValue;`
+* `CScript scriptPubKey;`
+
+When a new transaction is learned about from the wallet or P2P network (as a TX INV ) it is passed to xref:single-transactions.adoc#single_transactions[`AcceptToMemoryPool()`] which will run the various script checks.
+
+TIP: Transactions learned about directly in blocks have their scripts validated via `ActivateBestChainStep()` --> `ConnectBlock()` --> `ConnectTip()` --> `CChainState::ConnectBlock()` (https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L1924-L2232[link^]), which will end up calling `CheckTxInputs()` and `CheckInputScripts()`, as described in the subsequent section on <<PolicyScriptChecks script checks, PolicyScriptChecks>>.
+
+=== PreCheck script checks
+
+`PreChecks()` performs some structural checks inside of `CheckTransaction()` before passing the transaction to `IsStandard()`.
+In here the transaction weight is checked, along with the `scriptSig` size of every input and the type of every output.
+Any failures are written back into the `reason` string which will be propagated up in the case the function returns `false`.
+
+The next script checks come after the mempool is consulted to test for conflicts, and inputs are checked against our `CoinsCache` (UTXO set).
+`AreInputsStandard()` will take the transaction and access each `vin` from a copy of our UTXO set `CCoinsViewCache`.
+
+TIP: We use a cached version of `CCoinsView` here because although we want to introspect the transaction by doing a mock evaluation of the script, we do not want to modify the UTXO set yet, nor mark any coins as `DIRTY`.
+
+The type of script can be evaluated using the _script/standard.cpp#Solver()_ function, which will return the script type as a member of the `TxOutType` https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/standard.h#L59-L71[enum^].
+
+[example]
+====
+`Solver()` takes a scriptPubkey as a `CScript` and a vector of `unsigned_char` vectors called `vSolutionsRet`.
+It will attempt to evaluate and return the script type, along with any parsed pubKeys or pubKeyHashes in the `vSolutionsRet` vector.
+
+For example, if the script type is P2SH it will execute:
+
+[source,cpp,options=nowrap]
+----
+    // Shortcut for pay-to-script-hash, which are more constrained than the other types:
+    // it is always OP_HASH160 20 [20 byte hash] OP_EQUAL
+    if (scriptPubKey.IsPayToScriptHash())
+    {
+        std::vector<unsigned char> hashBytes(scriptPubKey.begin()+2, scriptPubKey.begin()+22);
+        vSolutionsRet.push_back(hashBytes);
+        return TxoutType::SCRIPTHASH;
+    }
+----
+
+In this case, simply reading the scriptHash into the `vSolutionsRet` vector before returning with the type.
+
+For SegWit inputs the witness program is returned, for PayToPubKey (which although basically unused now is still supported) the pubKey is returned, and for P2PKH the pubKeyHash is returned.
+The MultiSig case returns the number of required signatures, all the pubKeys and, the total number of keys.
+
+====
+
+If the input is `NONSTANDARD` or `WITNESS_UNKNOWN` then we can return early with `false`.
+If the transaction is of type `SCRIPTHASH` (P2SH) then we want to check that the `scriptSig` does not have extra data included which is not relevant to the `scriptPubKey`, and that the `SigOpCount` for the input obeys the specific P2SH limits.
+To do this we perform a mini evaluation of the script by passing in the `SCRIPT_VERIFY_NONE` https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/interpreter.h#L44[flag^], which instructs the interpreter not to verify operations guarded by flags.
+
+Looking into `EvalScript()` itself we can see which verification operations are going to be skipped by using this flag; in the positions we see the flag being tested e.g.:
+
+[source,cpp,options=nowrap]
+----
+case OP_CHECKLOCKTIMEVERIFY:
+{
+    if (!(flags & SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY)) {
+        // not enabled; treat as a NOP2
+        break;
+    }
+----
+
+With `SCRIPT_VERIFY_NONE` set this will skip `fRequireMinimal`, `OP_CHECKLOCKTIMEVERIFY`, `OP_CHECKSEQUENCEVERIFY`, discouragement of the upgradable ``NOP``s 1; 4; 5; 6; 7; 8; 9; 10; `OP_CHECKSIG` and `OP_CHECKSIGVERIFY`.
+This makes the evaluation much cheaper by avoiding expensive signature verification, whilst still allowing quick testing that stack will not be empty (if signature verification succeeded), and that `MAX_P2SH_SIGOPS` count is not exceeded.
+
+IMPORTANT: Avoiding expensive operations, e.g. full script evaluation, for as long as possible, whilst also avoiding repeating work, is a key anti-DoS consideration of transaction and script validation.
+
+After `AreInputsStandard()` has returned, if the transaction is SegWit the witnesses are checked by `IsWitnessStandard()`.
+This functions similarly to `AreInputsStandard()` is that it will loop over every `vin` to the transaction and access the coin using the same `CCoinsViewCache` as used previously.
+
+The input's script `prevScript` is initialised to the input's scriptPubKey, but then a check is done to see if the input is of P2SH type (corresponding to a P2SH-wrapped address), again performing the mock script validation with the `SCRIPT_VERIFY_NONE` flag applied.
+If it is found to be P2SH-wrapped then the input's script is set to the `scriptSig` as converted into a stack.
+
+With the input script set witness evaluation can begin.
+First the script is checked to be a valid witness program, i.e. a single byte `PUSH` opcode, followed by a sized data push.
+This is using https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/script.cpp#L220-L234[`CScript::IsWitnessProgram()`^].
+
+Segwit V0 or V1 script size limits (as appropriate) are checked before returning `true`.
+The final script checks inside of `PreChecks()` are to get the full transaction sigOp cost, which is a total of the legacy, P2SH and Witness sigOps.
+
+////
+TODO: Why is this check https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L827-L829 not located right after the calculation, here: https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L806
+////
+
+=== PolicyScriptChecks script checks
+
+This block is going to re-use the same `Workspace` as `PreChecks`, but at this stage doesn't re-use any cached `PreComputedTransactionData`.
+
+The main check block is shown below:
+
+._validation.cpp:982_
+[source,cpp,options=nowrap]
+----
+    // Check input scripts and signatures.
+    // This is done last to help prevent CPU exhaustion denial-of-service attacks.
+    if (!CheckInputScripts(tx, state, m_view, scriptVerifyFlags, true, false, ws.m_precomputed_txdata)) {
+        // SCRIPT_VERIFY_CLEANSTACK requires SCRIPT_VERIFY_WITNESS, so we
+        // need to turn both off, and compare against just turning off CLEANSTACK
+        // to see if the failure is specifically due to witness validation.
+        TxValidationState state_dummy; // Want reported failures to be from first CheckInputScripts
+        if (!tx.HasWitness() && CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~(SCRIPT_VERIFY_WITNESS | SCRIPT_VERIFY_CLEANSTACK), true, false, ws.m_precomputed_txdata) &&
+                !CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~SCRIPT_VERIFY_CLEANSTACK, true, false, ws.m_precomputed_txdata)) {
+            // Only the witness is missing, so the transaction itself may be fine.
+            state.Invalid(TxValidationResult::TX_WITNESS_STRIPPED,
+                    state.GetRejectReason(), state.GetDebugMessage());
+        }
+        return false; // state filled in by CheckInputScripts
+    }
+----
+
+This performs validation of the input scripts using our "policy flags", where policy flags refer to a https://github.com/bitcoin/bitcoin/blob/v23.0/src/policy/policy.h#L60-L79[list^] of script verification https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/interpreter.h#L38-L147[flags^] that form "standard transactions", i.e. those transactions that will be relayed around the network by other nodes running the same policies.
+
+****
+Notice that `CheckInputScripts()` is run up to 3 times.
+The first run will check all the inputs using the whole `STANDARD_SCRIPT_VERIFY_FLAGS` and `cacheSigStore` set to `true`, so that we cache expensive signature verification results.
+If this returns `true` then `PolicyScriptChecks()` is complete and will also return `true` to the caller.
+
+If this first check fails we then check to see if it is specifically a missing witness which is causing the failure.
+In order to do this we will execute two more runs, one with `SCRIPT_VERIFY_WITNESS` and `SCRIPT_VERIFY_CLEANSTACK` disabled which should pass, and a second in series with only `SCRIPT_VERIFY_CLEANSTACK` disabled which should fail.
+****
+
+From this call-site inside MempoolAccept `CheckInputScripts()` is called with `cacheSigStore` set to `true`, and `cacheFullScriptStore` set to `false`.
+This means that we will keep signature verifications in the `CSignatureCache` (named `signatureCache`).
+Full scripts will not be cached.
+The two caches are setup as https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1144-L1145[part^] of `AppInitMain()`.
+
+`CheckInputScripts()` begins by checking that we have not already executed this input script and stored it in the global Cuckoo Cache `g_scriptExecutionCacheHasher`, if we have, then this means the previous execution already succeeded so we can return `true` early.
+Next check that we have all our input coins loaded from the cached copy of the UTXO set `CCoinsViewCache`.
+
+Now script execution begins by looping over each input and storing the input and transaction in a `CScriptCheck` closure (`check`) for later evaluation.
+Calling the `()` operator on the closure will https://github.com/bitcoin/bitcoin/blob/v23.0/src/validation.cpp#L1593-L1597[initialize^] a new `CScript` and `CScriptWitness` for the evaluation, and execute `VerifyScript()`.
+
+NOTE: You can see the `cacheSigStore` boolean being propagated to the `CachingSignatureTransactionChecker` signalling that we should cache these signature evalations.
+
+Execution of `VerifyScript` is described below.
+
+[[verifyscript]]
+=== VerifyScript
+
+////
+TODO:
+
+What is this doing? interpreter.cpp:1974
+
+    static const CScriptWitness emptyWitness;
+    if (witness == nullptr) {
+        witness = &emptyWitness;
+    }
+    bool hadWitness = false;
+
+////
+
+``Verifyscript()``s function is to very a single scriptSig (SS) against a scriptPubKey (SPK) and return a boolean `true` or `false`, returning a more specific error description via the passed in `ScriptError`.
+Historically (in Bitcoin versions < 0.3.5) this was done by concatenating the SS and the SPK and evaluating as one, however this meant that malicious actors could leave arbitrary extra objects on the stack, ultimately resulting in being able to spend coins using any scripts with what should have been an invalid SS.
+Therefore now evaluation takes place in two stages, first the SS, who's pre-populated `stack` is then passed in as an argument to SPK evaluation.
+
+TIP: The mechanics of `EvalScript()` are shown in the section <<EvalScript>>.
+
+If both calls to `EvalScript` succeed, then any witness program is verified, followed by P2SH scripts.
+Notice here how in each of these cases the stack is trimmed to size `1` at the end of evaluation, because in both cases extra elements would ordinarily remain on the stack (P2SH and witness inputs).
+If the evaluation succeeds then the `CLEANSTACK` rule is enforced https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/interpreter.cpp#L2067-L2078[afterwards^].
+
+=== EvalScript
+
+`EvalScript()` handles the Forth-like script interpretation itself.
+It takes in a stack, script, interpretation flags, a https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/interpreter.h#L243-L267[signature checker^], a signature version and a `ScriptExecutionData` struct.
+
+After checking that it's not about to evaluate a Taproot key-path spend (`SIGVERSION::TAPROOT`), which has no script to execute, we initialize some iterators on the script, along with variables to represent the current opcode, the push value, the condition stack and the altstack.
+The https://github.com/bitcoin/bitcoin/blob/v23.0/src/script/interpreter.cpp#L282-L343[condition stack^] is used to help evaluation of IF/ELSE clauses and the altstack is used to push and pop items from the main stack during execution (using `OP_TOALTSTACK` and `OP_FROMALTSTACK`).
+
+Next we check script size is less that `MAX_SCRIPT_SIZE` (10KB).
+Although total serialized transaction size, and SigOpCount has been checked previously, this is the first time the size of the scripts themselves are checked.
+
+Then comes the main evaluation for loop.
+Whilst many conditions are checked, and specific invalidity errors returned, there is also the possibility of other un-tested errors occurring during evaluation, and so the loop is enclosed by a try-except block which will catch these errors, instead of causing a program crash.
+
+[IMPORTANT]
+====
+Script execution is effectively executing uncontrolled, 3rd party data.
+If a malicious actor found a way to purposefully provoke an unhandled error during evaluation, without the try-catch block, they would be able to effectively crash any node on the network of their choosing by sending it the malicious script.
+====
+
+The main loop is simple conceptually:
+
+. Read an instruction using the `CScript::GetOp()` method.
+This will read an `opcodetype` into the `opcode` variable, and the raw instruction into the `vchPushValue` variable.
+. Test for the script element size, number of script ops, and whether this is a disabled opcode.
+. Enter a switch on `opcode` to perform specific evaluation according to the operation specified.
+

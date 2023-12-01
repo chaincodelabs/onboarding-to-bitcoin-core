@@ -1,0 +1,7 @@
+:page-title: Testing QT
+:page-nav_order: 50
+:page-parent: GUI
+== Testing QT
+
+Currently, although several QT tests exist in _src/qt/test_, there is no good way to test QT changes except by hand.
+A good way to try and have QT code included in the test framework is to target having the RPC layer be a thin as possible, so more code can be re-used between RPC and GUI.

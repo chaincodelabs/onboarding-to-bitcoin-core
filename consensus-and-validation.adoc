@@ -1,0 +1,24 @@
+= Consensus and Validation
+:page-nav_order: 20
+:page-has_children: true
+include::links-onepage.adoc[]
+
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+
+One of the fundamental concepts underlying bitcoin is that nodes on the network are able to maintain decentralized consensus on the ordering of transactions in the system.
+
+The primary mechanism at work is that all nodes validate every block, and every transaction contained within that block, against their own copy of the consensus rules.
+The secondary mechanism is that in the event of a discrepancy between two competing chain tips nodes should follow the chain with the most cumulative proof-of-work.
+The result is that all honest nodes in the network will eventually converge onto a single, canonical, valid chain.
+
+WARNING: If all nodes do not compute consensus values identically (including edge cases) a chainsplit will result.
+
+For more information on how the bitcoin networks' decentralized consensus mechanism works see the Mastering Bitcoin section on https://github.com/bitcoinbook/bitcoinbook/tree/develop/ch10.asciidoc#decentralized-consensus[decentralized consensus^].
+
+TIP: In Bitcoin Core there are an extra level of validation checks applied to incoming transactions in addition to consensus checks called "policy" which have a slightly different purpose, see xref:consensus-v-policy.adoc#consensus_vs_policy[consensus vs policy] for more information on the differences between the two.
+
+Consensus::
+A collection of functions and variables which **must** be computed identically to all https://bitnodes.io/nodes/[other^] nodes on the network in order to remain in consensus and therefore on the main chain.
+
+Validation::
+Validation of blocks, transactions and scripts, with a view to permitting them to be added to either the blockchain (must pass consensus checks) or our local mempool (must pass policy checks).

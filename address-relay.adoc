@@ -1,0 +1,48 @@
+:page-title: Address relay
+:page-nav_order: 70
+:page-parent: P2P
+[[address_relay]]
+=== Address relay
+
+The Bitcoin network uses `addr` messages to communicate (node) network addresses.
+See the https://en.bitcoin.it/wiki/Protocol_documentation#addr[Bitcoin wiki p2p documentation^] for more details.
+Good address propagation improves network connectivity and increases the difficulty of executing an eclipse attack.
+
+Bitcoin Core nodes will periodically self-announce (also known as self-advertise) their own network address to peers.
+When a Bitcoin Core node receives an `addr` message that contains 10 addresses or fewer, it forwards those addresses with a timestamp within 10 minutes of the current time to 1 or 2 peers, selected at random.
+If we assume all nodes do this, then self-announcements should reach a large portion of the nodes on the network. The timestamp condition is there to ensure that the relay of a given address stops after some time.
+
+Since https://github.com/bitcoin/bitcoin/pull/22387[PR#22387^], there is a rate limit for address relay processing, so that addresses from peers that send too many of them are ignored which can help to prevent CPU/memory exhaustion attacks.
+
+==== `Addr` privacy
+
+For some time, it was possible for a spy node to easily scrape the full contents of any reachable node's `AddrMan`.
+The spy just had to connect to a victim node multiple times and execute `GETADDR`.
+This scraped data could then be used to infer private information about the victim.
+
+For example, a spy could monitor the victim's `AddrMan` content in real time and figure out which peers a node is connected to.
+A spy could also compare the `AddrMan` content from two different connections (e.g. one identified by Tor address and one identified by IPv4) and figure out that it's actually the same physical node (`fingerprinting`).
+
+https://github.com/bitcoin/bitcoin/pull/18991[PR#18991^] was a first step towards fixing these privacy issues.
+By limiting (caching) the leaked portion of `AddrMan`, these inference activities became much harder.
+Caching in this context means that the `ADDR` response (which is only a small subset of a node's `AddrMan` content) remains the same for every `GETADDR` call during (roughly) a day.
+
+==== Addr black holes
+
+We know that some nodes on the network do _not_ relay `addr` messages that they receive.
+Two known cases are block-relay-only connections from Bitcoin Core nodes, and connections from certain light clients.
+We refer to these connections as `addr` black holes.
+`addr` messages go in, but they never escape!
+
+If a large portion of the connections on the network are `addr` black holes, then `addr` propagation may be negatively impacted: self-announcements might not reach a majority of nodes on the network in a timely fashion.
+It'd be better if we could somehow avoid picking black holes as the 1 or 2 peers that we select for relaying `addr` messages to.
+
+https://github.com/bitcoin/bitcoin/pull/21528[PR#21528^] defers initialization of `m_addr_known` of inbound peers until the peer sends an address related message (`addr`, `addrv2`, `getaddr` or `sendaddrv2`).
+The node uses the presence of `m_addr_known` to decide whether the peer is a candidate for relaying `addr` messages received from the network.
+
+==== addrv2
+
+https://github.com/bitcoin/bitcoin/pull/19031[PR#19031^] is a proposed implementation of the https://github.com/bitcoin/bips/blob/9286b5254317d9e73fb25c5f0acd2b2d9937843e/bip-0155.mediawiki[BIP155^] `addrv2` message, a new P2P message format proposed in early 2019 by Wladimir J. van der Laan to gossip longer node addresses.
+
+The `addrv2` message is required to support https://trac.torproject.org/projects/tor/wiki/doc/NextGenOnions[next-generation Tor v3 Onion addresses^], the https://geti2p.net[Invisible Internet Project (I2P)^], and potentially other networks that have longer endpoint addresses than fit in the 128 bits/16 bytes of the current `addr` message.
+

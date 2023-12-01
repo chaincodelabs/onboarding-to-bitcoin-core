@@ -1,0 +1,117 @@
+== Transaction validation
+:page-title: Transaction Validation
+:page-nav_order: 90
+:page-parent: Consensus and Validation
+:page-has_children: true
+:mermaid-puppeteer-config: ./puppeteer-config.json
+include::links-onepage.adoc[]
+
+[#transaction_validation]
+Transactions can originate from the P2P network, the wallet, RPCs or from tests.
+
+Transactions which originate from the wallet, RPCs or individually from the P2P network (from a `NetMsgType::TX` message) will follow a validation pathway which includes adding them to the mempool.
+This implies passing both consensus and policy checks.
+See the sections on xref:single-transactions.adoc[single_transactions] and xref:multiple-transactions.adoc#multiple_transactions[Multiple transactions] to learn more about transaction validation via the mempool.
+
+Transactions which are learned about in a new block from the P2P network (from a `NetMsgType::BLOCK` or `NetMsgType::BLOCKTXN` message) do not have to be added to the mempool and so do not have to pass policy checks.
+See the section xref:transactions-from-blocks.adoc[transactions from blocks] to learn more about transaction validation bypassing the mempool.
+
+.Transaction origination (excluding tests)
+[mermaid,target=tx-origination,format=svg,id=tx-origination]
+....
+flowchart LR
+    process_tx["ChainstateManager::ProcessTransaction()"]
+    process_msg["PeerManagerImpl::ProcessMessage()"]
+    process_block["ProcessBlock()"]
+    check_block["CheckBlock()"]
+    connect_block["ConnectBlock()"]
+    process_orphan["PeerManagerImpl::ProcessOrphanTx()"]
+    broadcast_tx["BroadcastTransaction()"]
+    srt["sendrawtransaction()"]
+    tmpa["testmempoolaccept()"]
+    submit_relay["CWallet::SubmitTxMemoryPoolAndRelay()"]
+    atmp["AcceptToMemoryPool()"]
+    accept_single["AcceptSingleTransaction()"]
+    process_package["ProcessNewPackage()"]
+    accept_package["AcceptPackage()"]
+    accept_multiple["AcceptMultipleTransactions()"]
+
+    subgraph net_processing.cpp
+        process_msg
+        process_orphan
+    end
+    subgraph 2 ["rpc/rawtransaction.cpp"]
+        srt
+        tmpa
+    end
+    subgraph 3 [wallet/wallet.cpp]
+        submit_relay
+    end
+    process_msg -. Packages ..-> process_package
+    process_msg ---> process_block --> check_block --> connect_block
+    process_msg -- NetMessage::TX --> process_tx
+    process_orphan ---> process_tx
+    tmpa --> process_tx
+    submit_relay --> broadcast_tx
+    srt --> broadcast_tx
+    broadcast_tx --> process_tx
+    process_tx --> atmp --> accept_single
+    srt -- Packages --> process_package
+    process_package --> accept_package
+    accept_package --> accept_multiple
+
+    classDef P2P fill:red,color:white,stroke:red;
+    classDef Wallet fill:green,color:white,stroke:green;
+    classDef RPC fill:blue,color:white,stroke:blue;
+    class process_msg,process_orphan P2P
+    class submit_relay Wallet
+    class tmpa,srt RPC
+....
+
+NOTE: Dotted lines represent potential future upgrades
+
+[NOTE]
+====
+P2P network = [red]#Red# +
+Wallet = [green]#Green# +
+RPCs = [blue]#Blue#
+====
+
+TIP: For more information on `PeerManagerImpl` see xref:appendix.adoc#pimpl-technique[PIMPL technique] in the appendix.
+
+Transactions are internally represented as either a `CTransaction`, a `CTransactionRef` (a shared pointer to a `CTransaction`) or in the case of packages a `Package` which is a `std::vector<CTransactionRef>`.
+
+[#glozow-tx-mempool-validation]
+We can follow the journey of a transaction through the Bitcoin Core mempool by following glozow's https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#Validation-and-Submission-to-Mempool[notes^] on transaction "Validation and Submission to the Mempool".
+glozow details the different types of checks that are run on a new transaction before it's accepted into the mempool, as well as breaking down how these checks are different from each other: consensus vs policy, script vs non-script, contextual vs context-free.
+
+The section on block validation https://github.com/glozow/bitcoin-notes/tree/e9855dc377811b6d77bb75d8606c776cc26c1860/transaction-lifecycle.md#block-validation[describes^] the consensus checks performed on newly-learned blocks, specifically:
+
+[quote,glozow]
+____
+Since v0.8, Bitcoin Core nodes have used a https://github.com/bitcoin/bitcoin/pull/1677[UTXO set^] rather than blockchain lookups to represent state and validate transactions.
+To fully validate new blocks nodes only need to consult their UTXO set and knowledge of the current consensus rules.
+Since consensus rules depend on block height and time (both of which can *decrease* during a reorg), they are recalculated for each block prior to validation.
+
+Regardless of whether or not transactions have already been previously validated and accepted to the mempool, nodes check block-wide consensus rules (e.g. https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1935[total sigop cost^], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1778-L1866[duplicate transactions^], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3172-L3179[timestamps^], https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L3229-L3255[witness commitments^] https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1965-L1969[block subsidy amount^]) and transaction-wide consensus rules (e.g. availability of inputs, locktimes, and https://github.com/bitcoin/bitcoin/blob/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1946[input scripts^]) for each block.
+
+Script checking is parallelized in block validation. Block transactions are checked in order (and coins set updated which allows for dependencies within the block), but input script checks are parallelizable. They are added to a https://github.com/bitcoin/bitcoin/tree/9df1906091f84d9a3a2e953a0424a88e0931ea33/src/validation.cpp#L1887[work queue^] delegated to a set of threads while the main validation thread is working on other things.
+While failures should be rare - creating a valid proof of work for an invalid block is quite expensive - any consensus failure on a transaction invalidates the entire block, so no state changes are saved until these threads successfully complete.
+
+If the node already validated a transaction before it was included in a block, no consensus rules have changed, and the script cache has not evicted this transaction's entry, it doesn't need to run script checks again - it just https://github.com/bitcoin/bitcoin/tree/1a369f006fd0bec373b95001ed84b480e852f191/src/validation.cpp#L1419-L1430[uses the script cache^]!
+____
+
+The section from bitcoin-core-architecture on script verification also https://github.com/chaincodelabs/bitcoin-core-onboarding/tree/main/1.0_bitcoin_core_architecture.asciidoc#script-verification[highlights^] how the script interpreter is called from at least 3 distinct sites within the codebase:
+
+[quote]
+____
+* when the node https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3001[receives a new transaction^].
+
+* when the https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/node/transaction.cpp#L29[node wants to broadcast a new transaction^].
+
+* when https://github.com/bitcoin/bitcoin/tree/4b5659c6b115315c9fd2902b4edd4b960a5e066e/src/net_processing.cpp#L3529[receiving a new block^]
+____
+
+Having considered both transactions that have entered into the mempool and transactions that were learned about in a new block we now understand both ways a transaction can be considered for validation.
+
+TIP: As you read through the following sub-sections, consider whether making changes to them could affect policy or consensus.

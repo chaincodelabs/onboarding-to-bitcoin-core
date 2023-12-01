@@ -1,0 +1,20 @@
+:page-title: Mempool purpose
+:page-nav_order: 10
+:page-parent: Mempool
+== Mempool purpose
+
+. The mempool is designed to hold a list of unconfirmed-but-valid transactions that the node has learned about.
+. Miners will select transactions from the mempool for assembly into a block using the `getblocktemplate` RPC.
+. Transactions have to pass all policy and validation checks before being allowed to enter the mempool. +
+The mempool therefore also acts as DoS protection for the node.
+. Transactions will not be added to the mempool if they do not meet fee requirements, are non-standard, or double-spend an input of a transaction already in the mempool (excluding BIP 125 RBF transactions).
+
+There is a bitcoin-devwiki page https://github.com/bitcoin-core/bitcoin-devwiki/wiki/Mempool-and-mining[Mempool and mining^] which includes some additional mempool philosophy.
+
+James O'Beirne has https://github.com/jamesob/mempool.work/blob/master/README.md[written] a comprehensive overview of the current challenges and work in mempool design.
+It "documents the existing design, failures, and vulnerabilities of the mempool as well as some proposals that exist to remedy the shortcomings."
+
+== Mempool policy goals
+
+The documentation subfolder https://github.com/bitcoin/bitcoin/tree/master/doc/policy[doc/policy^] contains up-to-date information on **some**, but not all, of the current mempool policy rules.
+

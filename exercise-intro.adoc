@@ -1,5 +1,7 @@
+include::links-onepage.adoc[]
+
 ****
-Using either `bitcoin-cli` in your terminal, or a <<test_shell_nodes,Jupyter Notebook>> in conjunction with the `TestShell` class from the Bitcoin Core Test Framework, try to complete the following exercises.
+Using either `bitcoin-cli` in your terminal, or a xref:contributor-exercises.adoc#test_shell_nodes[Jupyter notebook] in conjunction with the `TestShell` class from the Bitcoin Core Test Framework, try to complete the following exercises.
 
 Changes to the codebase will require you to re-compile afterwards.
 

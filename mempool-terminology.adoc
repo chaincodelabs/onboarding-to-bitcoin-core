@@ -1,0 +1,14 @@
+:page-title: Mempool terminology
+:page-nav_order: 0
+:page-parent: Mempool
+== Mempool terminology
+
+Ancestor(s):: One or more "parent" transactions which must be confirmed **before** the current transaction. +
+The ancestor transaction(s) _create_ outputs which are depended on by the current transaction.
+Descendant(s):: One or more "child" transactions which must be confirmed **after** the current transaction. +
+The descendant transaction(s) _depend_ on outputs from the current transaction.
+Orphan:: A transaction with missing ancestors.
+
+TIP: When _ancestor_ and _descendant_ are encountered in the codebase, they refer specifically to other **in-mempool** transactions.
+
+TIP: Ancestors and descendants can be confirmed in the same block but they must be in the correct order within the list of `transactions` for the block to be valid.
