@@ -19,6 +19,7 @@ group :jekyll_plugins do
   gem "jekyll-feed", "~> 0.12"
   gem "jekyll-asciidoc", "~> 3.0.0"
   gem "asciidoctor-diagram"
+  gem "asciidoctor-pdf"
   gem 'rouge'
 end
 

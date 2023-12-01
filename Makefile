@@ -47,8 +47,12 @@ test-after-build: build
 
 build-other-versions:
 	mkdir -p bin
+	## Single page HTML
 	## Set imagesdir to parent_dir/images to work with jekyll build
-	bundle exec asciidoctor -r asciidoctor-diagram -o book.html index.adoc --attribute imagesdir=../images
+	bundle exec asciidoctor -r asciidoctor-diagram -o onboarding-to-bitcoin-core.html index.adoc --attribute imagesdir=../images
 	## Delete non-deterministic asciidoctor output
-	sed -i '/^Last updated /d' book.html
-	mv book.html bin/
+	sed -i '/^Last updated /d' onboarding-to-bitcoin-core.html
+	mv onboarding-to-bitcoin-core.html bin/
+	## PDF version
+	bundle exec asciidoctor -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index.adoc --attribute imagesdir=../images
+	mv onboarding-to-bitcoin-core.pdf bin/
