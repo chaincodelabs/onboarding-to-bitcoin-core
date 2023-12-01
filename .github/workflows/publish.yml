@@ -35,11 +35,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm install -g @mermaid-js/mermaid-cli
+      - name: Install mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli
       - name: Generate Site
-        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        run: |
+          bundle
+          make publish
         env:
           JEKYLL_ENV: production
+          ADD_JEKYLL_ARGS: --baseurl "${{ steps.pages.outputs.base_path }}"
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v1
       - name: Deploy to GitHub Pages

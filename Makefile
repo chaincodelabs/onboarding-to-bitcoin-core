@@ -1,4 +1,5 @@
 all: test-before-build build-other-versions build test-after-build
+publish: test-before-build build-other-versions build
 production: clean all production-test
 
 ## If we call git in our tests without using the --no-pager option
@@ -23,7 +24,7 @@ build:
 	@# files aren't created before changed input files are marked
 	@# for schema validation.
 	@sleep 0.1
-	bundle exec jekyll build $(JEKYLL_FLAGS)
+	bundle exec jekyll build $(JEKYLL_FLAGS) $(ADD_JEKYLL_ARGS)
 
 test-before-build: $(compatibility_validation) $(topic_validation)
 	## Check for Markdown formatting problems
