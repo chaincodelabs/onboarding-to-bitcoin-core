@@ -42,6 +42,7 @@ asciidoctor:
     imagesdir: images
     source-highlighter: rouge
     rouge-style: github
+    icons: font
 
 keep_files:
   - images
