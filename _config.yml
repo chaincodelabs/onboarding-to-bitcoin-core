@@ -38,6 +38,9 @@ asciidoc:
 asciidoctor:
   attributes:
     imagesdir: images
+    mermaid-config: mermaid-config.json
+    mermaid-format: svg
+    mermaid-puppeteer-config: puppeteer-config.json
     source-highlighter: rouge
     rouge-style: github
     icons: font

@@ -12,7 +12,7 @@ The dependency graph is shown below for convenience, but may not be up-to-date w
 
 [id=library-dependency-graph]
 .Bitcoin library dependency graph
-[mermaid, target=bitcoin-lib-dependencies, format=svg]
+[mermaid, target=bitcoin-lib-dependencies]
 ....
 flowchart TB
     bitcoin-wallet --> libbitcoin_wallet_tool

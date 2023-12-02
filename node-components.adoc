@@ -5,7 +5,7 @@
 == Node P2P components
 
 .Node P2P components
-[mermaid,target=node-p2p-components,format=svg,align="center"]
+[mermaid,target=node-p2p-components,align="center"]
 ....
 flowchart LR
     Addrman

@@ -16,7 +16,7 @@ We call `ProcessBlock()` when processing new blocks received from the P2P networ
 
 
 .Abbreviated block transaction validation
-[mermaid,target=block-tx-validation,format=svg,id=block-tx-validation]
+[mermaid,target=block-tx-validation,id=block-tx-validation]
 ....
 flowchart LR
     process_block["ProcessBlock()"]

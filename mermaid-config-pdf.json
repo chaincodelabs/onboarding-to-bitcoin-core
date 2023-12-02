@@ -1,0 +1,5 @@
+{
+  "themeCSS": ".label foreignObject { font-size: 85%; overflow: visible; }",
+  "puppeteerConfigFile": "puppeteer-config.json",
+  "outputFormat": "png"
+}

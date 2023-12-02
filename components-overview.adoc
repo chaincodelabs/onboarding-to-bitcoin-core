@@ -11,7 +11,7 @@ WARNING: This diagram is **not** exhaustive and includes simplifications.
 NOTE: dashed lines indicate optional components
 
 .`bitcoind` overview
-[mermaid, target=bitcoind-overview, format=svg, id=bitcoind-overview]
+[mermaid, target=bitcoind-overview, id=bitcoind-overview]
 ....
 flowchart LR
     bitcoind
@@ -77,7 +77,7 @@ The following diagram gives a brief overview of the major components in bitcoin-
 WARNING: This diagram is **not** exhaustive and includes simplifications.
 
 .`bitcoin-cli` overview
-[mermaid, target=bitcoin-cli-overview, format=svg, id=bitcoin-cli-overview-chart]
+[mermaid, target=bitcoin-cli-overview, id=bitcoin-cli-overview-chart]
 ....
 flowchart LR
     BaseRequestHandler["BaseRequestHandler()"]
@@ -105,7 +105,7 @@ WARNING: This diagram is **not** exhaustive and includes simplifications.
 NOTE: dashed lines indicate optional components
 
 .Wallet structure overview
-[mermaid, target=bitcoin-wallet-overview, format=svg]
+[mermaid, target=bitcoin-wallet-overview]
 ....
 flowchart LR
     ScriptPubKeyMan --> DescriptorScriptPubKeyMan

@@ -41,7 +41,7 @@ NOTE: The `fuzz_targets` themselves are located in the `test` folder, however th
 NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate^] repo altogether, as they are quite large (~3.5GB repo size and ~13.4GB on clone).
 
 .Test directory Structure
-[mermaid, target=bitcoin-core-tests, format=svg]
+[mermaid, target=bitcoin-core-tests]
 ....
 flowchart LR
     TR1[test_runner]

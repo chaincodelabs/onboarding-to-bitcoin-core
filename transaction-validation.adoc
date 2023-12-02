@@ -17,7 +17,7 @@ Transactions which are learned about in a new block from the P2P network (from a
 See the section xref:transactions-from-blocks.adoc[transactions from blocks] to learn more about transaction validation bypassing the mempool.
 
 .Transaction origination (excluding tests)
-[mermaid,target=tx-origination,format=svg,id=tx-origination]
+[mermaid,target=tx-origination,id=tx-origination]
 ....
 flowchart LR
     process_tx["ChainstateManager::ProcessTransaction()"]
