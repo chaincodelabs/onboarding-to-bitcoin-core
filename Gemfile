@@ -5,6 +5,9 @@ source 'https://rubygems.org'
 ## version.
 ruby '3.2.2'
 
+gem "asciidoctor", "~>2.0.20"
+gem "rouge"
+
 ## If you add a new Gem below, run `bundle install` to install it.
 group :development do
   gem "jekyll", "~> 4.3.2"
@@ -24,7 +27,6 @@ end
 group :asciidoc_plugins do
   gem "asciidoctor-epub3"
   gem "asciidoctor-pdf"
-  gem 'rouge'
 end
 
 group :testing do

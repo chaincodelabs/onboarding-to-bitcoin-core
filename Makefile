@@ -57,3 +57,6 @@ build-other-versions:
 	## PDF version
 	bundle exec asciidoctor --attribute imagesdir=./images --attribute mermaid-format=png -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index.adoc
 	mv onboarding-to-bitcoin-core.pdf bin/
+	## ePub version
+	asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram --attribute mermaid-format=png --attribute doctype=book index.adoc
+	mv index.epub bin/onboarding-to-bitcoin-core.epub
