@@ -1,7 +1,7 @@
-= Consensus and Validation
 :page-nav_order: 20
 :page-has_children: true
 include::links-onepage.adoc[]
+= Consensus and Validation
 
 TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
 

@@ -1,8 +1,8 @@
 :page-title: Multiple transactions
 :page-nav_order: 10
 :page-parent: Transaction Validation
+:page-grand_parent: Consensus and Validation
 include::links-onepage.adoc[]
-
 [#multiple_transactions]
 === Multiple transactions (and packages)
 

@@ -1,6 +1,7 @@
 :page-title: Single transactions
 :page-nav_order: 0
 :page-parent: Transaction Validation
+:page-grand_parent: Consensus and Validation
 :mermaid-puppeteer-config: ./puppeteer-config.json
 [[single_transactions]]
 === Single transactions
