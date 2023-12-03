@@ -1,4 +1,5 @@
 all: test-before-build build-other-versions build test-after-build
+build-other-versions: html pdf epub
 publish: test-before-build build-other-versions build
 production: clean all production-test
 
@@ -45,7 +46,7 @@ test-after-build: build
 	## Check for broken links
 	bundle exec htmlproofer --disable-external --ignore-urls '/^\/bin/.*/' ./_site
 
-build-other-versions:
+html:
 	mkdir -p bin
 	## Single page HTML
 	## Set imagesdir to parent_dir/images to work with jekyll build
@@ -54,9 +55,11 @@ build-other-versions:
 	sed -i '/^Last updated /d' onboarding-to-bitcoin-core.html
 	mv onboarding-to-bitcoin-core.html bin/
 	cp -r images bin/
-	## PDF version
+
+pdf:
 	bundle exec asciidoctor --attribute imagesdir=./images --attribute mermaid-format=png -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index.adoc
 	mv onboarding-to-bitcoin-core.pdf bin/
-	## ePub version
+
+epub:
 	asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram --attribute mermaid-format=png --attribute doctype=book index.adoc
 	mv index.epub bin/onboarding-to-bitcoin-core.epub
