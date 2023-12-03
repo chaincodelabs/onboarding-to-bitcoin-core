@@ -21,7 +21,7 @@
 title: Bitcoin Core Onboarding
 email: your-email@example.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Bitcoin Core developer obboarding documentation
+  Bitcoin Core developer onboarding documentation
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://bitcoincore.academy" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: chaincodelabs
@@ -30,14 +30,16 @@ github_username:  chaincodelabs
 # Build settings
 theme: just-the-docs
 plugins:
+  - asciidoctor-diagram
   - jekyll-feed
+  - jekyll-asciidoc
 
 asciidoc:
   processor: asciidoctor
 
 asciidoctor:
   attributes:
-    imagesdir: images
+    imagesdir: /images
     mermaid-config: mermaid-config.json
     mermaid-format: svg
     mermaid-puppeteer-config: puppeteer-config.json
