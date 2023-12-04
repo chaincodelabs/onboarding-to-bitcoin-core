@@ -10,6 +10,8 @@ production: clean all production-test
 ## https://github.com/bitcoinops/bitcoinops.github.io/pull/494#discussion_r546376335
 export GIT_PAGER='_contrib/kill0'
 JEKYLL_FLAGS = --future --drafts --unpublished --incremental
+## Needed for github actions to work properly
+SHELL=/bin/bash
 
 clean:
 	bundle exec jekyll clean
@@ -61,5 +63,5 @@ pdf:
 	mv onboarding-to-bitcoin-core.pdf bin/
 
 epub:
-	asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram -o index.epub index_epub.adoc
+	bundle exec asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram -o index.epub index_epub.adoc
 	mv index.epub bin/onboarding-to-bitcoin-core.epub

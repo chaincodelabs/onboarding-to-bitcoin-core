@@ -35,7 +35,7 @@ to Bitcoin Core but don't know what to work on or how to get started.
   - If you're trying to find a particular file, learn about Bitcoin
     Core's [architecture](/architecture.html).
 
-  - If you encounter confusing code, esearch the [history of that
+  - If you encounter confusing code, research the [history of that
     particular code](/past-changes.html).
 
 - To contribute a change:
