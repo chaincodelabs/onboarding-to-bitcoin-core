@@ -72,6 +72,7 @@ mermaid:
 # their entries' file path in the `include:` list.
 exclude:
   - .jekyll-cache/
+  - all_chapters.adoc
   - 01_overview-and-development.adoc
   - 02_architecture.adoc
   - 03_consensus-and-validation.adoc
@@ -84,7 +85,8 @@ exclude:
   - 10_rpc.adoc
   - asciidoc_workflow.adoc
   - index.adoc
-  - old.index.adoc
+  - index_pdf.adoc
+  - index_epub.adoc
   - settings.adoc
   - README.adoc
   - book.html

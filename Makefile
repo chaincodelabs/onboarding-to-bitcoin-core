@@ -50,16 +50,16 @@ html:
 	mkdir -p bin
 	## Single page HTML
 	## Set imagesdir to parent_dir/images to work with jekyll build
-	bundle exec asciidoctor --attribute imagesdir=./images --attribute mermaid-format=svg -r asciidoctor-diagram -o onboarding-to-bitcoin-core.html index.adoc
+	bundle exec asciidoctor -r asciidoctor-diagram -o onboarding-to-bitcoin-core.html index.adoc
 	## Delete non-deterministic asciidoctor output
 	sed -i '/^Last updated /d' onboarding-to-bitcoin-core.html
 	mv onboarding-to-bitcoin-core.html bin/
 	cp -r images bin/
 
 pdf:
-	bundle exec asciidoctor --attribute imagesdir=./images --attribute mermaid-format=png -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index.adoc
+	bundle exec asciidoctor -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index_pdf.adoc
 	mv onboarding-to-bitcoin-core.pdf bin/
 
 epub:
-	asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram --attribute mermaid-format=png --attribute doctype=book index.adoc
+	asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram -o index.epub index_epub.adoc
 	mv index.epub bin/onboarding-to-bitcoin-core.epub
