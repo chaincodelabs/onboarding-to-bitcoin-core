@@ -10,6 +10,7 @@ include::settings.adoc[]
 :copyright: MIT Licensed
 :source: https://github.com/chaincodelabs/onboarding-to-bitcoin-core/
 :mermaid-format: png
+:mermaid-scale: 2
 
 :leveloffset: +1
 
