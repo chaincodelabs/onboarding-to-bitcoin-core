@@ -1,4 +1,5 @@
 all: test-before-build build-other-versions build test-after-build
+build-other-versions: html pdf epub
 publish: test-before-build build-other-versions build
 production: clean all production-test
 
@@ -45,14 +46,20 @@ test-after-build: build
 	## Check for broken links
 	bundle exec htmlproofer --disable-external --ignore-urls '/^\/bin/.*/' ./_site
 
-build-other-versions:
+html:
 	mkdir -p bin
 	## Single page HTML
 	## Set imagesdir to parent_dir/images to work with jekyll build
-	bundle exec asciidoctor -r asciidoctor-diagram -o onboarding-to-bitcoin-core.html index.adoc --attribute imagesdir=../images
+	bundle exec asciidoctor -r asciidoctor-diagram -o onboarding-to-bitcoin-core.html index.adoc
 	## Delete non-deterministic asciidoctor output
 	sed -i '/^Last updated /d' onboarding-to-bitcoin-core.html
 	mv onboarding-to-bitcoin-core.html bin/
-	## PDF version
-	bundle exec asciidoctor -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index.adoc --attribute imagesdir=../images
+	cp -r images bin/
+
+pdf:
+	bundle exec asciidoctor -r asciidoctor-pdf -b pdf -r asciidoctor-diagram -o onboarding-to-bitcoin-core.pdf index_pdf.adoc
 	mv onboarding-to-bitcoin-core.pdf bin/
+
+epub:
+	asciidoctor -b epub3 -r asciidoctor-epub3 -r asciidoctor-diagram -o index.epub index_epub.adoc
+	mv index.epub bin/onboarding-to-bitcoin-core.epub

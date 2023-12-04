@@ -1,0 +1,19 @@
+= Onboarding to Bitcoin Core
+include::settings.adoc[]
+:doctype: book
+:lang: en
+:revdate: 2023-12-04
+:doctitle: Onboarding to Bitcoin Core
+:author: Will Clark
+:description: Onboarding documentation for Bitcoin Core developers.
+:keywords: bitcoin, core, crypto, p2p, consensus, node, wallet, docs
+:copyright: MIT Licensed
+:source: https://github.com/chaincodelabs/onboarding-to-bitcoin-core/
+:mermaid-format: png
+:mermaid-scale: 2
+
+:leveloffset: +1
+
+include::all_chapters.adoc[]
+
+:leveloffset: -1

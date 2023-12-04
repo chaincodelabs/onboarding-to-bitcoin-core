@@ -1,6 +1,7 @@
 :page-title: Transactions from blocks
 :page-nav_order: 30
 :page-parent: Transaction Validation
+:page-grand_parent: Consensus and Validation
 :mermaid-puppeteer-config: ./puppeteer-config.json
 [[transactions_from_blocks]]
 === Transactions from blocks
@@ -14,9 +15,8 @@ Transactions learned about from blocks:
 This means that we can validate these transactions based only on our copy of the UTXO set and the data contained within the block itself.
 We call `ProcessBlock()` when processing new blocks received from the P2P network (in _net_processing.cpp_) from net message types: `NetMsgType::CMPCTBLOCK`, `NetMsgType::BLOCKTXN` and `NetMsgType::BLOCK`.
 
-
 .Abbreviated block transaction validation
-[mermaid,target=block-tx-validation,format=svg,id=block-tx-validation]
+[mermaid,target=block-tx-validation,id=block-tx-validation]
 ....
 flowchart LR
     process_block["ProcessBlock()"]
@@ -86,7 +86,6 @@ In these cases this block may still be useful to us in the future.
 
 Once the block has been written to disk by `AcceptBlock()` full validation of the block and its transactions begins via `CChainState::ActivateBestChain()` and its inner call to `ActivateBestChainStep()`.
 
-////
 As part of `ProcessBlock()` we end up calling `CheckBlock()` twice: once on the inner `ProcessNewBlock()` and, if this first is successful, once again inside of `AcceptBlock()`.
 We find the following code comment inside `ProcessBlock()`:
 
@@ -128,7 +127,6 @@ Therefore we call `CheckBlock()` first, and only try `AcceptBlock()` if this pas
 
 Note here how the developers have had to balance consideration for sensitive validation code, staying in consensus with the rest of the network and avoiding potential P2P DoS attacks.
 This type of thinking is common across the codebase.
-////
 
 ////
 TODO: Note that the primary validation occurs inside `ConnectBlock()`, not `CheckBlock()` and `AcceptBlock()`

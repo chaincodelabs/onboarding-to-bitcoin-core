@@ -1,12 +1,11 @@
-== Transaction validation
 :page-title: Transaction Validation
 :page-nav_order: 90
 :page-parent: Consensus and Validation
 :page-has_children: true
 :mermaid-puppeteer-config: ./puppeteer-config.json
 include::links-onepage.adoc[]
-
 [#transaction_validation]
+== Transaction validation
 Transactions can originate from the P2P network, the wallet, RPCs or from tests.
 
 Transactions which originate from the wallet, RPCs or individually from the P2P network (from a `NetMsgType::TX` message) will follow a validation pathway which includes adding them to the mempool.
@@ -17,7 +16,7 @@ Transactions which are learned about in a new block from the P2P network (from a
 See the section xref:transactions-from-blocks.adoc[transactions from blocks] to learn more about transaction validation bypassing the mempool.
 
 .Transaction origination (excluding tests)
-[mermaid,target=tx-origination,format=svg,id=tx-origination]
+[mermaid,target=tx-origination,id=tx-origination]
 ....
 flowchart LR
     process_tx["ChainstateManager::ProcessTransaction()"]

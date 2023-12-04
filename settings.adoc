@@ -13,5 +13,6 @@
 :imagesdir: images
 :docinfo: shared
 // mermaid.js config
-:config: ./mermaid-config.json
-:puppeteer-config: ./puppeteer-config.json
+:mermaid-config: mermaid-config.json
+:mermaid-format: svg
+:mermaid-puppeteer-config: puppeteer-config.json

@@ -46,7 +46,7 @@ Transactions are removed from the mempool for a number of reasons:
 . The mempool must be trimmed back down below its maximum size `TrimToSize()`
 
 .Removal from the mempool
-[mermaid,target=mempool-removal,format=svg,align="center"]
+[mermaid,target=mempool-removal,align="center"]
 ....
 flowchart LR
     remove_staged["RemoveStaged()"]

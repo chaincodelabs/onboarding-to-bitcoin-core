@@ -1,6 +1,7 @@
 :page-title: Single transactions
 :page-nav_order: 0
 :page-parent: Transaction Validation
+:page-grand_parent: Consensus and Validation
 :mermaid-puppeteer-config: ./puppeteer-config.json
 [[single_transactions]]
 === Single transactions
@@ -8,7 +9,7 @@
 `AcceptToMemoryPool()` (ATMP) is where the checks on single transactions occur before they enter the mempool.
 
 .ATMP validation flow chart
-[mermaid,target=ATMP-validation-flow,format=svg,id=ATMP-validation-flow]
+[mermaid,target=ATMP-validation-flow,id=ATMP-validation-flow]
 ....
 flowchart TB
     success[MempoolAcceptResult::Success]

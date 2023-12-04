@@ -1,6 +1,8 @@
 = Onboarding to Bitcoin Core
 include::settings.adoc[]
 :leveloffset: +1
+:mermaid-format: png
+:mermaid-scale: 2
 
 include::all_chapters.adoc[]
 

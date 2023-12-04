@@ -12,7 +12,7 @@ TIP: The version of BDB we used for the wallet is unmaintained, so new wallets s
 The wallet is stored on disk as a Key Value store.
 
 .Wallet database
-[mermaid,target=wallet-database,format=svg,align="center"]
+[mermaid,target=wallet-database,align="center"]
 ....
 flowchart BT
    database["database\n(KV store)"]
