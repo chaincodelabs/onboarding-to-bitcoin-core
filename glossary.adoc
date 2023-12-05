@@ -297,7 +297,7 @@ Proof-of-Work::
     A hash adhering to a pattern that requires significant computation to find, therefore "proving" work was done to find it (on average).
     Miners must construct a block template which, when hashed using SHA256 (the work), will have a value at or below a network-wide Difficulty Target.
 
-Partially Spent Bitcoin Transaction (PSBT)::
+Partially Signed Bitcoin Transaction (PSBT)::
     The Partially Signed Bitcoin Transaction (PSBT) format consists of key-value maps.
     Each map consists of a sequence of key-value records, terminated by a 0x00 byte.
     https://github.com/bitcoin/bips/blob/cf420089a4ed10c50e3ad2834fe13e72e1af7177/bip-0174.mediawiki#cite_note-1[BIP 174] and V2 https://github.com/bitcoin/bips/blob/cf420089a4ed10c50e3ad2834fe13e72e1af7177/bip-0370.mediawiki[BIP 370]
