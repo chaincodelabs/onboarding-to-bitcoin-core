@@ -67,5 +67,5 @@ flowchart LR
 
 === Test coverage
 
-Bitcoin Core's test coverage reports can be found https://marcofalke.github.io/btc_cov/[here^].
+Bitcoin Core's test coverage reports can be found https://maflcko.github.io/b-c-cov/[here^].
 
