@@ -27,3 +27,11 @@ When writing commit messages be sure to have read Chris Beams' "How to Write a G
 As described in CONTRIBUTING.md, PRs should be prefixed with the component or area the PR affects.
 Common areas are listed in CONTRIBUTING.md section: https://github.com/bitcoin/bitcoin/tree/master/CONTRIBUTING.md#creating-the-pull-request[Creating the pull request^].
 Individual commit messages are also often given similar prefixes in the commit title depending on which area of the codebase the changes primarily affect.
+
+[TIP]
+====
+Unless there is a merge conflict (usually detected by DrahtBot), don't rebase your changes on master branch before pushing.
+If you avoid rebases on upstream, Github will show a very useful "Compare" button which reviewers can often use to quickly re-ACK the new changes if they are sufficiently small.
+If you _do_ rebase this button becomes useless, as all the rebased changes from master get included and so a full re-review may be needed.
+Developer review time is currently our major bottleneck in the project!
+====
