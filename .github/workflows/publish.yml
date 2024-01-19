@@ -28,7 +28,7 @@ jobs:
       - name: Install Ruby and Jekyll
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.2.2'
           bundler-cache: true
           cache-version: 0
       - name: Setup Node.JS 18
