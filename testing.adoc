@@ -24,7 +24,7 @@ Or you can run all checks with:
 
 [source,bash]
 ----
-python test/lint/all-lint.py
+cd ./test/lint/test_runner/ && cargo fmt && cargo clippy && cargo run
 ----
 
 NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python on master.
