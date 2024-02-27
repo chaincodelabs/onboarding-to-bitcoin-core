@@ -7,7 +7,7 @@ Some Contributors have documented their journeys into the space which lets us le
 
 * https://github.com/amitiuttarwar[Amiti Uttarwar^] - https://medium.com/@amitiu/onboarding-to-bitcoin-core-7c1a83b20365[Onboarding to Bitcoin Core^]
 * https://github.com/jonatack[Jon Atack^] - https://jonatack.github.io/articles/on-reviewing-and-helping-those-who-do-it[On Reviewing, and Helping Those Who Do It^]
-* https://github.com/jimmysong[Jimmy Song^] - https://bitcointechtalk.com/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[A Gentle Introduction to Bitcoin Core Development^]
+* https://github.com/jimmysong[Jimmy Song^] - https://medium.com/bitcoin-tech-talk/a-gentle-introduction-to-bitcoin-core-development-fdc95eaee6b8[A Gentle Introduction to Bitcoin Core Development^]
 
 == Decentralized development
 
