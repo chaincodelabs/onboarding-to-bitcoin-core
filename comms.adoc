@@ -1,4 +1,4 @@
-:page-title: Communication chanels
+:page-title: Communication channels
 :page-nav_order: 120
 :page-parent: Overview and Development Process
 === #bitcoin-core-dev IRC channel
