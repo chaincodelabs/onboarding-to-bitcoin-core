@@ -3,5 +3,5 @@
 :page-parent: Wallet
 == Multiwallet
 
-Work on the https://github.com/bitcoin/bitcoin/projects/2[multiwallet project^] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
+Work on the https://github.com/bitcoin/bitcoin/pull/8694[multiwallet project^] means that Bitcoin Core can now handle dynamic loading and unloading of multiple wallets while running.
 
