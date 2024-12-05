@@ -1,34 +1,6 @@
 :page-title: Consensus libraries
 :page-nav_order: 70
 :page-parent: Consensus and Validation
-== libbitcoinconsensus
-
-The libbitcoinconsensus library is described in the 0.10.0 release notes:
-
-[quote]
-____
-Consensus library
-
-Starting from 0.10.0, the Bitcoin Core distribution includes a consensus library.
-
-The purpose of this library is to make the verification functionality that is
-critical to Bitcoin's consensus available to other applications, e.g. to language
-bindings such as [python-bitcoinlib](https://pypi.python.org/pypi/python-bitcoinlib) or
-alternative node implementations.
-
-This library is called `libbitcoinconsensus.so` (or, `.dll` for Windows).
-Its interface is defined in the C header [bitcoinconsensus.h](https://github.com/bitcoin/bitcoin/blob/0.10/src/script/bitcoinconsensus.h).
-
-In its initial version the API includes two functions:
-
-- `bitcoinconsensus_verify_script` verifies a script. It returns whether the indicated input of the provided serialized transaction
-correctly spends the passed scriptPubKey under additional constraints indicated by flags
-- `bitcoinconsensus_version` returns the API version, currently at an experimental `0`
-
-The functionality is planned to be extended to e.g. UTXO management in upcoming releases, but the interface
-for existing methods should remain stable.
-____
-
 == libbitcoinkernel
 
 The https://github.com/bitcoin/bitcoin/issues/24303[libbitcoinkernel^] project seeks to modularise Bitcoin Cores' consensus engine and make it easier for developers to reason about when they are modifying code which could be consensus-critical.
@@ -51,3 +23,21 @@ In theory this should get us something which Bitcoin Core can use much faster (i
 Part of libbitcoinkernel has been merged in via Carl Dong's https://github.com/bitcoin/bitcoin/pull/24304[`bitcoin-chainstate` PR^].
 It also has its own project https://github.com/bitcoin/bitcoin/projects/18[board^] to track progress.
 
+== libbitcoinconsensus
+
+The libbitcoinconsensus library has been deprecated since Bitcoin Core v27.0, with the Release Note:
+
+[quote]
+____
+libbitcoinconsensus is deprecated and will be removed for v28. This library has
+existed for nearly 10 years with very little known uptake or impact. It has
+become a maintenance burden.
+
+The underlying functionality does not change between versions, so any users of
+the library can continue to use the final release indefinitely, with the
+understanding that Taproot is its final consensus update.
+
+In the future, libbitcoinkernel will provide a much more useful API that is
+aware of the UTXO set, and therefore be able to fully validate transactions and
+blocks. (#29189)
+____
