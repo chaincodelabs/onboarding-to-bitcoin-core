@@ -1,2 +1,19 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="/css/asciidoc.css">
+
+<button class="btn js-toggle-dark-mode"><i class="fa fa-sun-o"></i></button>
+
+<script>
+const toggleDarkMode = document.querySelector('.js-toggle-dark-mode');
+const toggleIcon = toggleDarkMode.querySelector('i');
+
+jtd.addEvent(toggleDarkMode, 'click', function() {
+  if (jtd.getTheme() === 'dark') {
+    jtd.setTheme('light');
+    toggleIcon.className = 'fa fa-moon-o';
+  } else {
+    jtd.setTheme('dark');
+    toggleIcon.className = 'fa fa-sun-o';
+  }
+});
+</script>

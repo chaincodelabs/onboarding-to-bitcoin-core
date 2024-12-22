@@ -29,6 +29,8 @@ github_username:  chaincodelabs
 
 # Build settings
 theme: just-the-docs
+# Color scheme supports "light" (default) and "dark"
+color_scheme: dark
 plugins:
   - asciidoctor-diagram
   - jekyll-feed
