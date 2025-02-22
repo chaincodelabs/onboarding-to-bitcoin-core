@@ -69,3 +69,7 @@ flowchart LR
 
 Bitcoin Core's test coverage reports can be found https://maflcko.github.io/b-c-cov/[here^].
 
+=== Mutation testing
+
+Bitcoin Core's mutation testing reports can be found https://bitcoincore.space/[here^].
+
