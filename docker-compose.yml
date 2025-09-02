@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  dev:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/srv
+      - bundle_cache:/usr/local/bundle
+      - node_modules_cache:/srv/node_modules
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+      - JEKYLL_ENV=development
+      - PATH=/srv/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    command: sh -c "bundle install && npm install && bundle exec jekyll serve --host 0.0.0.0 --future --drafts --unpublished --incremental --force_polling"
+
+  shell:
+    build: .
+    volumes:
+      - .:/srv
+      - bundle_cache:/usr/local/bundle
+      - node_modules_cache:/srv/node_modules
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+      - PATH=/srv/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    entrypoint: /bin/sh
+    profiles:
+      - tools
+
+volumes:
+  bundle_cache:
+  node_modules_cache:

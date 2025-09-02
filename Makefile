@@ -11,7 +11,26 @@ production: clean all production-test
 export GIT_PAGER='_contrib/kill0'
 JEKYLL_FLAGS = --future --drafts --unpublished --incremental
 ## Needed for github actions to work properly
-SHELL=/bin/bash
+SHELL=/usr/bin/env bash
+
+## Docker targets
+docker-dev:
+	docker-compose up dev
+
+docker-shell:
+	docker-compose run --rm shell
+
+docker-clean:
+	docker-compose down -v
+	docker system prune -f
+
+## Simple Docker commands
+docker-build:
+	docker buildx build -t guide .
+
+docker-run:
+	@echo "Use 'make docker-dev' instead for better volume handling"
+	@echo "Or run: docker-compose up dev"
 
 clean:
 	bundle exec jekyll clean
