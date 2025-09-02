@@ -6,9 +6,15 @@ GEM
       public_suffix (>= 2.0.2, < 7.0)
     afm (1.0.0)
     asciidoctor (2.0.23)
-    asciidoctor-diagram (3.0.1)
+    asciidoctor-diagram (2.3.2)
       asciidoctor (>= 1.5.7, < 3.x)
+      asciidoctor-diagram-ditaamini (~> 1.0)
+      asciidoctor-diagram-plantuml (~> 1.2021)
       rexml
+    asciidoctor-diagram-batik (1.17)
+    asciidoctor-diagram-ditaamini (1.0.3)
+    asciidoctor-diagram-plantuml (1.2025.3)
+      asciidoctor-diagram-batik (~> 1.17)
     asciidoctor-epub3 (2.3.0)
       asciidoctor (~> 2.0)
       gepub (~> 1.0.0)
@@ -31,6 +37,7 @@ GEM
       io-event (~> 1.11)
       metrics (~> 0.12)
       traces (~> 0.18)
+    base64 (0.3.0)
     bigdecimal (3.2.2)
     chef-utils (18.8.11)
       concurrent-ruby
@@ -42,6 +49,7 @@ GEM
       json
     css_parser (1.21.1)
       addressable
+    csv (3.3.5)
     em-websocket (0.5.3)
       eventmachine (>= 0.12.9)
       http_parser.rb (~> 0)
@@ -132,7 +140,7 @@ GEM
     jekyll-watch (2.2.1)
       listen (~> 3.0)
     json (2.13.2)
-    json-schema (6.0.0)
+    json-schema (5.2.2)
       addressable (~> 2.8)
       bigdecimal (~> 3.1)
     just-the-docs (0.10.1)
@@ -162,15 +170,11 @@ GEM
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2025.0826)
-    mini_portile2 (2.8.9)
     mixlib-cli (2.1.8)
     mixlib-config (3.0.27)
       tomlrb
     mixlib-shellout (3.3.9)
       chef-utils
-    nokogiri (1.18.9)
-      mini_portile2 (~> 2.8.2)
-      racc (~> 1.4)
     nokogiri (1.18.9-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.18.9-aarch64-linux-musl)
@@ -273,29 +277,31 @@ PLATFORMS
   arm-linux-musl
   arm-linux-musleabihf
   arm64-darwin
-  ruby
   x86_64-darwin
   x86_64-linux-gnu
   x86_64-linux-musl
 
 DEPENDENCIES
-  asciidoctor (~> 2.0.20)
-  asciidoctor-diagram
-  asciidoctor-epub3
-  asciidoctor-pdf
-  html-proofer
-  jekyll (~> 4.3.2)
-  jekyll-asciidoc (~> 3.0.0)
-  jekyll-feed (~> 0.12)
-  jekyll-redirect-from
-  json-schema
-  just-the-docs
-  mdl
-  rouge
-  toml
+  asciidoctor (~> 2.0.23)
+  asciidoctor-diagram (~> 2.3)
+  asciidoctor-epub3 (~> 2.1)
+  asciidoctor-pdf (~> 2.3)
+  base64 (~> 0.2)
+  csv (~> 3.3)
+  html-proofer (~> 5.0)
+  jekyll (~> 4.3.4)
+  jekyll-asciidoc (~> 3.0.1)
+  jekyll-feed (~> 0.17)
+  jekyll-redirect-from (~> 0.16)
+  json-schema (~> 5.0)
+  just-the-docs (~> 0.10)
+  mdl (~> 0.13)
+  rouge (~> 4.4)
+  rubyzip (~> 2.3.0)
+  toml (~> 0.3)
 
 RUBY VERSION
-   ruby 3.2.2p53
+   ruby 3.3.8p144
 
 BUNDLED WITH
    2.7.1
