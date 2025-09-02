@@ -1,14 +1,13 @@
-FROM docker.io/library/ruby:3.2.2-slim
+FROM docker.io/library/ruby:3.2.2-alpine
 
 # Install system dependencies
-RUN apt-get update && apt-get install --yes --no-install-recommends \
-    build-essential \
+RUN apk add --no-cache \
+    build-base \
     git \
     nodejs \
     npm \
     chromium \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+    make
 
 # Set chromium path for puppeteer (needed for mermaid diagrams)
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
