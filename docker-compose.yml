@@ -12,8 +12,7 @@ services:
     environment:
       - BUNDLE_PATH=/usr/local/bundle
       - JEKYLL_ENV=development
-      - PATH=/srv/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    command: sh -c "bundle install && npm install && bundle exec jekyll serve --host 0.0.0.0 --future --drafts --unpublished --incremental --force_polling"
+      - PATH=/srv/node_modules/.bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
 
   shell:
     build: .
@@ -23,7 +22,7 @@ services:
       - node_modules_cache:/srv/node_modules
     environment:
       - BUNDLE_PATH=/usr/local/bundle
-      - PATH=/srv/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - PATH=/srv/node_modules/.bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
     entrypoint: /bin/sh
     profiles:
       - tools

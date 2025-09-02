@@ -24,13 +24,6 @@ docker-clean:
 	docker-compose down -v
 	docker system prune -f
 
-## Simple Docker commands
-docker-build:
-	docker buildx build -t guide .
-
-docker-run:
-	@echo "Use 'make docker-dev' instead for better volume handling"
-	@echo "Or run: docker-compose up dev"
 
 clean:
 	bundle exec jekyll clean
