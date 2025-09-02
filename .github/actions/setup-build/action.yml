@@ -1,0 +1,22 @@
+name: 'Setup Build Environment'
+description: 'Set up Ruby, Node.js, and dependencies for Jekyll site building'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Ruby and Jekyll
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.8'
+        bundler-cache: true
+        cache-version: 1
+    - name: Setup Node.JS 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Install mermaid-cli
+      shell: bash
+      run: npm install -g @mermaid-js/mermaid-cli
+    - name: Install bundle dependencies
+      shell: bash
+      run: bundle

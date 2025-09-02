@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  dev:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/srv
+      - bundle_cache:/usr/local/bundle
+      - node_modules_cache:/srv/node_modules
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+      - JEKYLL_ENV=development
+      - PATH=/srv/node_modules/.bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+  shell:
+    build: .
+    volumes:
+      - .:/srv
+      - bundle_cache:/usr/local/bundle
+      - node_modules_cache:/srv/node_modules
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+      - PATH=/srv/node_modules/.bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+    entrypoint: /bin/sh
+    profiles:
+      - tools
+
+volumes:
+  bundle_cache:
+  node_modules_cache:
