@@ -31,7 +31,7 @@
  Shell                  50         2612         1745          535          332
  SVG                    20          720          697           15            8
  Plain Text              6         1125            0         1113           12
- TypeScript             98       228893       228831            0           62
+ Typescript*            98       228893       228831            0           62
  Visual Studio Pro|     16          956          940            0           16
  Visual Studio Sol|      1          162          162            0            0
  XML                     2           53           47            0            6
@@ -56,5 +56,9 @@
 ===============================================================================
 ----
 
+
 Source: https://github.com/XAMPPRocky/tokei[tokei^]
+
+Actually, Tokei considers all `.ts` files as Typescript files. In the Bitcoin Core repository,`.ts` files are translation source files used to translate the internal Bitcoin Wallet into various languages located in the `./src/qt/locale`.
+
 
