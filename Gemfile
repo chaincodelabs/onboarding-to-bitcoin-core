@@ -1,37 +1,38 @@
 source 'https://rubygems.org'
 
-## If you update the version here, also update it in .travis.yml, .ruby-version,
-## and README.md. Then push your branch and make sure Travis supports that
-## version.
-ruby '3.2.2'
+## If you update the version here, also update it in Docker and GitHub Actions
+ruby '3.3.8'
 
-gem "asciidoctor", "~>2.0.20"
-gem "rouge"
+gem "asciidoctor", "~>2.0.23"
+gem "rouge", "~> 4.4"
+gem "csv", "~> 3.3"
+gem "base64", "~> 0.2"
 
 ## If you add a new Gem below, run `bundle install` to install it.
 group :development do
-  gem "jekyll", "~> 4.3.2"
-  gem "just-the-docs"
-  gem 'jekyll-redirect-from'
+  gem "jekyll", "~> 4.3.4"
+  gem "just-the-docs", "~> 0.10"
+  gem 'jekyll-redirect-from', '~> 0.16'
   # Lock `http_parser.rb` gem to `v0.6.x` on JRuby builds since newer versions of the gem
   # do not have a Java counterpart.
   #gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 end
 
 group :jekyll_plugins do
-  gem "asciidoctor-diagram"
-  gem "jekyll-feed", "~> 0.12"
-  gem "jekyll-asciidoc", "~> 3.0.0"
+  gem "asciidoctor-diagram", "~> 2.3"
+  gem "jekyll-feed", "~> 0.17"
+  gem "jekyll-asciidoc", "~> 3.0.1"
 end
 
 group :asciidoc_plugins do
-  gem "asciidoctor-epub3"
-  gem "asciidoctor-pdf"
+  gem "asciidoctor-epub3", "~> 2.1"
+  gem "asciidoctor-pdf", "~> 2.3"
+  gem "rubyzip", "~> 2.3.0"
 end
 
 group :testing do
-  gem 'html-proofer'
-  gem 'mdl'
-  gem 'json-schema'
-  gem 'toml'
+  gem 'html-proofer', '~> 5.0'
+  gem 'mdl', '~> 0.13'
+  gem 'json-schema', '~> 5.0'
+  gem 'toml', '~> 0.3'
 end

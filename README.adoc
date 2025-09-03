@@ -2,5 +2,70 @@
 
 This documentation is currently hosted at https://bitcoincore.academy[bitcoincore.academy] however this location may be subject to change in the future.
 
-See https://github.com/chaincodelabs/onboarding-to-bitcoin-core/blob/master/asciidoc_workflow.adoc[asciidoc_workflow.adoc] 
-and https://github.com/chaincodelabs/onboarding-to-bitcoin-core/blob/master/jekyll_workflow.md[jekyll_workflow.md] for tips on contributing and instructions for running locally.
+== Development
+
+=== Local Development with Docker
+
+The easiest way to serve the site locally is using Docker:
+
+[source,bash]
+----
+docker compose up dev
+----
+
+This will:
+- Build the development environment
+- Install all dependencies (Ruby gems and Node.js packages)
+- Start a Jekyll development server on port 4000
+- Mount the current directory for live reloading
+- Use development environment settings
+
+The site will be available at http://localhost:4000
+
+=== Makefile Commands
+
+The project includes several useful Makefile targets for development and deployment:
+
+==== Docker Commands
+- `make docker-dev` - Start development server using Docker Compose
+- `make docker-shell` - Open an interactive shell in the Docker container
+- `make docker-clean` - Clean up Docker containers and system resources
+
+==== Build Commands
+- `make build` - Build the Jekyll site into `_site` directory
+- `make preview` - Build and serve the site locally with live reload
+- `make clean` - Clean up generated files
+
+==== Testing and Quality
+- `make test-before-build` - Run pre-build tests (Markdown linting)
+- `make test-after-build` - Run post-build tests (link checking, duplicate anchors)
+- `make all` - Complete build and test pipeline
+
+==== Output Formats
+- `make html` - Generate single-page HTML version
+- `make pdf` - Generate PDF version
+- `make epub` - Generate EPUB version
+- `make publish` - Full publish pipeline with all formats
+- `make production` - Production build with all tests
+
+=== Development Workflow
+
+1. Local Development: Use `docker compose up dev` or `make docker-dev` to start the development server
+2. Shell Access: Use `make docker-shell` to access the container for debugging or manual commands
+3. Testing: Run `make all` before submitting changes to ensure everything builds and passes tests
+4. Cleanup: Use `make docker-clean` to clean up containers and free disk space
+
+=== Dependencies
+
+The project uses:
+- Jekyll for static site generation
+- Asciidoctor for processing AsciiDoc files
+- Mermaid CLI for diagram generation
+- HTMLProofer for link checking
+- Markdownlint for Markdown validation
+
+All dependencies are managed through the Docker container, so you don't need to install anything locally except Docker.
+
+=== Contributing
+
+See https://github.com/chaincodelabs/onboarding-to-bitcoin-core/blob/master/asciidoc_workflow.adoc[asciidoc_workflow.adoc] for detailed contributing guidelines and AsciiDoc formatting instructions.

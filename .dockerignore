@@ -1,0 +1,47 @@
+# Build output
+_site/
+bin/
+*.html
+*.pdf
+*.epub
+
+# Dependencies
+node_modules/
+.gem/
+vendor/
+
+# Git
+.git/
+.gitignore
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+/tmp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Development
+TODO
+ATMP-validation-flow.png
+OP_RETURN.ipynb
+exercise_tutorial-extended_class.ipynb
+favicon.ico
