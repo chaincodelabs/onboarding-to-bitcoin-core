@@ -13,11 +13,8 @@ Bitcoin Core has a https://github.com/bitcoin/bitcoin/blob/master/doc/design/lib
 .Bitcoin library dependency graph
 [mermaid, target=bitcoion-lib-dependencies]
 
-```mermaid
-
-%%{ init : { "flowchart" : { "curve" : "basis" }}}%%
-
-graph TD;
+....
+flowchart TB
 
 bitcoin-cli[bitcoin-cli]-->libbitcoin_cli;
 
@@ -64,7 +61,7 @@ libbitcoin_wallet_tool-->libbitcoin_util;
 
 classDef bold stroke-width:2px, font-weight:bold, font-size: smaller;
 class bitcoin-qt,bitcoind,bitcoin-cli,bitcoin-wallet bold
-```
+....
 **Dependency graph**. Arrows show linker symbol dependencies. `libbitcoin_crypto` depends on nothing. `libbitcoin_util` is depended on by everything. `libbitcoin_kernel` depends only on consensus, crypto, and util.
 
 It follows that API changes to the libraries which are internally-facing can be done slightly easier than for libraries with externally-facing APIs, for which more care for compatibility must be taken.
