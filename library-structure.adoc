@@ -5,7 +5,7 @@
 == Library structure
 
 Bitcoin Core compilation outputs a number of libraries, some which are designed to be used internally, and some which are designed to be re-used by external applications.
-The internally-used libraries generally have unstable APIs making them unsuitable for re-use, but `libbitcoin_consensus` and `libbitcoin_kernel` are designed to be re-used by external applications.
+The internally-used libraries generally have unstable APIs making them unsuitable for re-use, but `libbitcoin_kernel` (still a WIP) is designed to be re-used by external applications.
 
 Bitcoin Core has a https://github.com/bitcoin/bitcoin/blob/master/doc/design/libraries.md[guide^] which describes the various libraries, their conventions, and their various dependencies.
 
@@ -16,52 +16,56 @@ Bitcoin Core has a https://github.com/bitcoin/bitcoin/blob/master/doc/design/lib
 ....
 flowchart TB
 
-bitcoin-cli[bitcoin-cli]-->libbitcoin_cli;
+bitcoin-cli-->libbitcoin_cli;
 
-bitcoind[bitcoind]-->libbitcoin_node;
-bitcoind[bitcoind]-->libbitcoin_wallet;
+bitcoind-->libbitcoin_node;
+bitcoind-->libbitcoin_wallet;
 
-bitcoin-qt[bitcoin-qt]-->libbitcoin_node;
-bitcoin-qt[bitcoin-qt]-->libbitcoinqt;
-bitcoin-qt[bitcoin-qt]-->libbitcoin_wallet;
+bitcoin-qt-->libbitcoin_node;
+bitcoin-qt-->libbitcoinqt;
+bitcoin-qt-->libbitcoin_wallet;
 
-bitcoin-wallet[bitcoin-wallet]-->libbitcoin_wallet;
-bitcoin-wallet[bitcoin-wallet]-->libbitcoin_wallet_tool;
+bitcoin-wallet-->libbitcoin_wallet;
+bitcoin-wallet-->libbitcoin_common;
+bitcoin-wallet-->libbitcoin_util;
 
-libbitcoin_cli-->libbitcoin_util;
+bitcoin-node-->libbitcoin_node;
+bitcoin-node-->libbitcoin_ipc;
+bitcoin-node-->libbitcoin_wallet;
+
+bitcoin-gui-->libbitcoinqt;
+bitcoin-gui-->libbitcoin_node;
+bitcoin-gui-->libbitcoin_ipc;
+
 libbitcoin_cli-->libbitcoin_common;
+libbitcoin_cli-->libbitcoin_util;
 
 libbitcoin_consensus-->libbitcoin_crypto;
 
 libbitcoin_common-->libbitcoin_consensus;
-libbitcoin_common-->libbitcoin_crypto;
 libbitcoin_common-->libbitcoin_util;
 
-libbitcoin_kernel-->libbitcoin_consensus;
-libbitcoin_kernel-->libbitcoin_crypto;
-libbitcoin_kernel-->libbitcoin_util;
+libbitcoinkernel-->libbitcoin_crypto;
 
-libbitcoin_node-->libbitcoin_consensus;
-libbitcoin_node-->libbitcoin_crypto;
-libbitcoin_node-->libbitcoin_kernel;
 libbitcoin_node-->libbitcoin_common;
 libbitcoin_node-->libbitcoin_util;
+libbitcoin_node-->libbitcoin_zmq;
 
-libbitcoinqt-->libbitcoin_common;
-libbitcoinqt-->libbitcoin_util;
+libbitcoinqt-->libbitcoin_cli;
+libbitcoinqt-->libbitcoin_wallet;
 
 libbitcoin_util-->libbitcoin_crypto;
 
 libbitcoin_wallet-->libbitcoin_common;
-libbitcoin_wallet-->libbitcoin_crypto;
-libbitcoin_wallet-->libbitcoin_util;
 
-libbitcoin_wallet_tool-->libbitcoin_wallet;
-libbitcoin_wallet_tool-->libbitcoin_util;
+libbitcoin_ipc-->libbitcoin_util;
 
-classDef bold stroke-width:2px, font-weight:bold, font-size: smaller;
-class bitcoin-qt,bitcoind,bitcoin-cli,bitcoin-wallet bold
+libbitcoin_zmq-->libbitcoin_util;
+libbitcoin_zmq-->libbitcoin_common;
+
+classDef types fill:green,color:white,stroke:green;
+class bitcoin-wallet,bitcoind,bitcoin-cli,bitcoin-qt,bitcoin-node,bitcoin-gui types
 ....
-**Dependency graph**. Arrows show linker symbol dependencies. `libbitcoin_crypto` depends on nothing. `libbitcoin_util` is depended on by everything. `libbitcoin_kernel` depends only on consensus, crypto, and util.
+**Dependency graph**. Arrows show linker symbol dependencies. `libbitcoin_crypto` depends on nothing and is fundamental. `libbitcoin_util` depends on crypto. `libbitcoinkernel` (experimental kernel library) depends only on crypto.
 
 It follows that API changes to the libraries which are internally-facing can be done slightly easier than for libraries with externally-facing APIs, for which more care for compatibility must be taken.
