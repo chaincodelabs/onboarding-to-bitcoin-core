@@ -9,15 +9,15 @@ To prepare for this we will begin with the following exercises which will ensure
 
 . Build Bitcoin Core from source
 - [ ] Clone Bitcoin Core repository from GitHub
-- [ ] Check out the latest release tag (e.g. `v24.0.1`)
+- [ ] Check out the latest release tag (e.g. `v30.2`)
 - [ ] Install any dependencies required for your system
 - [ ] Follow the build instructions to compile the programs
-- [ ] Run `make check` to run the https://github.com/bitcoin/bitcoin/tree/master/src/test#readme[unit tests^]
-- [ ] Follow the documentation to install dependencies required to run the https://github.com/bitcoin/bitcoin/tree/master/test[functional tests^]
+- [ ] Run the https://github.com/bitcoin/bitcoin/tree/v30.2/src/test#readme[unit tests^]
+- [ ] Follow the documentation to install dependencies required to run the https://github.com/bitcoin/bitcoin/tree/v30.2/test[functional tests^]
 - [ ] Run the functional tests
 . Run a `bitcoind` node in regtest mode and control it using the `cli` tool +
 +
-TIP: `./src/bitcoind -regtest` will start bitcoind in regtest mode. You can then control it using `./src/bitcoin-cli -regtest -getinfo`
+TIP: `./build/bin/bitcoind -regtest` will start bitcoind in regtest mode. You can then control it using `./build/bin/bitcoin-cli -regtest -getinfo`
 . Run and control a Bitcoin Core node using the `TestShell` python class from the test framework in a Jupyter notebook
 ** See <<test_shell_nodes, Running nodes via Test Framework>> for more information on how to do this
 . Review a Pull Request from the repo
@@ -65,12 +65,6 @@ Once a complex command or sequence of commands is established, they can generall
 
 You **MUST** have a compiled `bitcoind` binary in the Bitcoin Core source directory.
 You can use any recent supported version of Bitcoin Core.
-
-In order to add startup (`bitcoind` program) options to our node(s) we need https://github.com/bitcoin/bitcoin/pull/26617/commits/989a52e0a50c0ae30a5c2bd3c08bb3ad1363a250[this^] commit.
-We can include this two ways:
-
-. Use the master branch of Bitcoin Core and running `git pull`, which will include the change.
-. Use any recent tag (e.g. v24.0.1) and running `git cherry-pick 989a52e0` to pull that change into the Test Framework code.
 
 You **MUST** have a copy of the jupyter notebook, either manually downloaded from https://github.com/chaincodelabs/onboarding-to-bitcoin-core or by cloning the onboarding-to-bitcoin-core repo (recommended) with:
 

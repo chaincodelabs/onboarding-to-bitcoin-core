@@ -3,11 +3,11 @@
 :page-parent: Overview and Development Process
 ==== Continuous integration
 
-When PRs are submitted against the primary Bitcoin Core repo a series of CI https://github.com/bitcoin/bitcoin/tree/v23.0/ci[tests^] will automatically be run.
+When PRs are submitted against the primary Bitcoin Core repo a series of CI https://github.com/bitcoin/bitcoin/tree/v30.2/ci[tests^] will automatically be run.
 These include a series of linters and formatters such as `clang-format`, `flake8` and `shellcheck`.
 It's possible (and advised) to run these checks locally against any changes you make before you push them.
 
-In order to run the lints yourself you'll have to first make sure your python environment and system have the packages listed in the CI install https://github.com/bitcoin/bitcoin/blob/v23.0/ci/lint/04_install.sh[script].
+In order to run the lints yourself you'll have to first make sure your python environment and system have the packages listed in the CI install https://github.com/bitcoin/bitcoin/blob/v30.2/ci/lint/04_install.sh[script].
 You can then run a decent sub-set of the checks by running:
 
 [source,bash]
@@ -29,7 +29,7 @@ cd ./test/lint/test_runner/ && cargo fmt && cargo clippy && cargo run
 
 NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python on master.
 +
-If you are following with tag v23.0 these may still exist as `*.sh`.
+If you are following with an older tag (pre-v24) these may still exist as `*.sh`.
 
 Linting your changes reduces the chances of pushing them as a PR and then having them quickly being marked as failing CI. The GitHub PR page auto-updates the CI status.
 
