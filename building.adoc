@@ -8,10 +8,6 @@ When building Bitcoin Core from source, there are some platform-dependant instru
 To learn how to build for your platform, visit the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/v30.2/doc[bitcoin/doc^] directory, and read the file named "build-\*.md", where "*" is the name of your platform.
 For windows this is "build-windows.md", for macOS this is "build-osx.md" and for most linux distributions this is "build-unix.md".
 
-There is also a guide by Jon Atack on how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core^].
-
-Finally, Blockchain Commons also offer a guide to https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/A2_0_Compiling_Bitcoin_from_Source.md[building from source^].
-
 ==== Out-of-source builds with CMake
 
 Bitcoin Core v30.2 uses CMake as the build system (replacing the older autotools).
