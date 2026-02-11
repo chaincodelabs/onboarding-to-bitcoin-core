@@ -27,9 +27,7 @@ Or you can run all checks with:
 cd ./test/lint/test_runner/ && cargo fmt && cargo clippy && cargo run
 ----
 
-NOTE: Previously these checks were shell scripts (`*.sh`), but they have now been migrated to python on master.
-+
-If you are following with an older tag (pre-v24) these may still exist as `*.sh`.
+NOTE: The lint checks have been refactored over different Bitcoin Core versions. In v30.2, individual Python lints can be run separately, or you can run the full CI lint suite. Older versions (pre-v24) used shell scripts (`*.sh`).
 
 Linting your changes reduces the chances of pushing them as a PR and then having them quickly being marked as failing CI. The GitHub PR page auto-updates the CI status.
 
