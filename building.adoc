@@ -24,7 +24,7 @@ cmake -B build
 cmake --build build -j$(nproc)
 
 # Run the tests
-ctest --test-dir build -j$(nproc)
+test/functional/test_runner.py -j$(nproc)
 ----
 
 You can pass configuration options with `-D` flags:
@@ -40,11 +40,11 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
 
 [TIP]
 ====
-To run individual functional tests using the bitcoind binary built in an out-of-source build, use the binaries from the build directory:
+To run individual functional tests using the bitcoind binary built in an out-of-source build change directory back to the root source and specify the config.ini file from within the build directory:
 
 [source,bash]
 ----
-$ test/functional/p2p_ping.py --bitcoind=$PWD/build/bin/bitcoind
+$ test/functional/p2p_ping.py --configfile build/test/config.ini
 ----
 ====
 
