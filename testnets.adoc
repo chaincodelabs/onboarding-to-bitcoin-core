@@ -109,7 +109,4 @@ This can leave the network with a high difficulty which the DA will take a long 
 Therefore a https://en.bitcoin.it/wiki/Testnet#Differences["20 minute" rule^] was introduced such that the difficulty would reduce to the minimum for one block before returning to its previous value.
 This ensures that there are no intra-block times greater than 20 minutes.
 
-However there is a bug in the implementation which means that if this adjustment occurs on a difficulty adjustment block the difficulty is lowered to the minimum for one block but then not reset, making it permanent rather than a one-off adjustment.
-This will result in a large number of blocks being found until the DA catches up to the level of hashpower on the network.
-
 It's usually preferable to test private changes on a local regtest, or public changes on a Signet for this reason.
