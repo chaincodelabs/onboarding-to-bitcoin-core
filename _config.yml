@@ -49,6 +49,13 @@ asciidoctor:
     rouge-style: github
     icons: font
 
+sass:
+  quiet_deps: true
+  silence_deprecations:
+    - color-functions
+    - import
+    - global-builtin
+
 keep_files:
   - images
 
