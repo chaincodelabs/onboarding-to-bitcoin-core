@@ -2,4 +2,4 @@
 :page-nav_order: 0
 :page-has_children: true
 
-TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v23.0[v23.0^]
+TIP: This section has been updated to Bitcoin Core @ https://github.com/bitcoin/bitcoin/tree/v30.2[v30.2^]

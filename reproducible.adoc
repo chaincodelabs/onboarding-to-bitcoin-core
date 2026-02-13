@@ -4,7 +4,7 @@
 == Reproducible Guix builds
 
 Bitcoin Core uses the https://guix.gnu.org/[Guix^] package manager to achieve reproducible builds.
-Carl Dong gave an introduction to GUIX via a https://btctranscripts.com/breaking-bitcoin/2019/bitcoin-build-system/[remote talk^] in 2019, and also discussed it further on a ChainCode https://btctranscripts.com/chaincode-labs/chaincode-podcast/2020-11-30-carl-dong-reproducible-builds/[podcast^] episode.
+Carl Dong gave an introduction to GUIX via a https://btctranscripts.com/breaking-bitcoin/2019/bitcoin-build-system/[remote talk^] in 2019, and also discussed it further on a ChainCode https://www.youtube.com/watch?v=Y5Gfli3x6rI[podcast^] episode.
 
 There are official https://github.com/bitcoin/bitcoin/blob/master/contrib/guix/README.md[instructions^] on how to run a Guix build in the Bitcoin Core repo which you should certainly follow for your first build, but once you have managed to set up the Guix environment (along with e.g. MacOS SDK), hebasto provides a more concise workflow for subsequent or repeated builds in his https://gist.github.com/hebasto/7293726cbfcd0b58e1cfd5418316cee3[gist^].
 

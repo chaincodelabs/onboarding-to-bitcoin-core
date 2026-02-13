@@ -14,8 +14,8 @@ First you need to look up the data directory for the node(s), as below:
 [source,bash,options=nowrap]
 ----
 $ ps alx | grep bitcoind
-0  1000   57478   57476  20   0 1031376 58604 pipe_r SLl+ pts/10    0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 -logtimemicros -debug (...)
-0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/src/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
+0  1000   57478   57476  20   0 1031376 58604 pipe_r SLl+ pts/10    0:06 /g/bitcoin/build/bin/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 -logtimemicros -debug (...)
+0  1000   57479   57476  20   0 965964 58448 pipe_r SLl+ pts/10     0:06 /g/bitcoin/build/bin/bitcoind -datadir=/tmp/bitcoin_func_test_ovsi15f9/node1 -logtimemicros -debug (...)
 ----
 
 With the `-datadir` path you can look at the `bitcoin.conf` files within the data directories to see what config options are being specified for the test (there's always `regtest=1`) in addition to the runtime options, which is a good way to learn about some advanced uses of regtest.
@@ -24,7 +24,7 @@ In addition to this, we can use the `-datadir=` option with `bitcoin-cli` to con
 
 [source,bash,options=nowrap]
 ----
-$ src/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchaininfo
+$ build/bin/bitcoin-cli -datadir=/tmp/bitcoin_func_test_ovsi15f9/node0 getblockchaininfo
 ----
 
 ////

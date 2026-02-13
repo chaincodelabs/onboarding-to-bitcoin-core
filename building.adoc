@@ -5,44 +5,58 @@
 
 When building Bitcoin Core from source, there are some platform-dependant instructions to follow.
 
-To learn how to build for your platform, visit the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/master/doc[bitcoin/doc^] directory, and read the file named "build-\*.md", where "*" is the name of your platform.
+To learn how to build for your platform, visit the Bitcoin Core https://github.com/bitcoin/bitcoin/tree/v30.2/doc[bitcoin/doc^] directory, and read the file named "build-\*.md", where "*" is the name of your platform.
 For windows this is "build-windows.md", for macOS this is "build-osx.md" and for most linux distributions this is "build-unix.md".
 
-There is also a guide by Jon Atack on how to https://jonatack.github.io/articles/how-to-compile-bitcoin-core-and-run-the-tests[compile and test Bitcoin Core^].
+==== Out-of-source builds with CMake
 
-Finally, Blockchain Commons also offer a guide to https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line/blob/master/A2_0_Compiling_Bitcoin_from_Source.md[building from source^].
-
-==== Cleaner builds
-
-It can be helpful to use a separate build directory e.g. `build/` when compiling from source.
-This can help avoid spurious Linker errors without requiring you to run `make clean` often.
+Bitcoin Core v30.2 uses CMake as the build system (replacing the older autotools).
+Using a separate build directory is the standard approach with CMake and helps keep the source directory clean.
 
 From within your Bitcoin Core source directory you can run:
 
 [source,bash]
 ----
-# Clean current source dir in case it was already configured
-make distclean
+# Configure the build (creates build/ directory)
+cmake -B build
 
-# Make new build dir
-mkdir build && cd build
+# Build with all available cores
+cmake --build build -j$(nproc)
 
-# Run normal build sequence with amended path
-../autogen.sh
-../configure --your-normal-options-here
-make -j `nproc`
-make check
+# Run the tests
+test/functional/test_runner.py -j$(nproc)
+----
+
+You can pass configuration options with `-D` flags:
+
+[source,bash]
+----
+# Example: build with wallet disabled
+cmake -B build -DENABLE_WALLET=OFF
+
+# Example: build in release mode with tests
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
 ----
 
 [TIP]
 ====
-To run individual functional tests using the bitcoind binary built in an out-of-source build change directory back to the root source and specify the _config.ini_ file from within the build directory:
+To run individual functional tests using the bitcoind binary built in an out-of-source build change directory back to the root source and specify the config.ini file from within the build directory:
 
 [source,bash]
 ----
-$ pwd
-/path/to/source/build
-$ cd ..
 $ test/functional/p2p_ping.py --configfile build/test/config.ini
+----
+====
+
+[NOTE]
+====
+For older versions (pre-v28) that use autotools, the build sequence was:
+
+[source,bash]
+----
+./autogen.sh
+./configure --your-options-here
+make -j$(nproc)
+make check
 ----
 ====
