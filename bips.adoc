@@ -25,7 +25,6 @@ NOTE: This view was not completely unanimous in the community.
 
 For consensus-critical code most Bitcoin Core Developers consider "the code is the spec" to be the ultimate source of truth, which is one of the reasons that recommending running other full node implementations can be so difficult.
 A knock-on effect of this was that there were calls for review on BIP2 itself, with respect to how BIPs should be updated/amended.
-Newly-appointed BIP maintainer Karl-Johan Alm (a.k.a. kallewoof) posted his thoughts on this to the https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2021-September/019457.html[bitcoin-dev mailing list^].
 
 In summary a BIP represents a design document which should assist others in implementing a specific feature in a compatible way.
 These features are optional to usage of Bitcoin, and therefore implementation of BIPs are not required to use Bitcoin, only to remain compatible.
