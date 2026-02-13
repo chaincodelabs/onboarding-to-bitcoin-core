@@ -1,4 +1,4 @@
-FROM docker.io/library/ruby:3.3.8-alpine
+FROM docker.io/library/ruby:4.0.1-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
