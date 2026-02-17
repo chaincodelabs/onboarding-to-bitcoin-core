@@ -15,7 +15,7 @@ SHELL=/usr/bin/env bash
 
 ## Docker targets
 docker-dev:
-	docker-compose up dev
+	docker compose up --build dev
 
 docker-shell:
 	docker-compose run --rm shell

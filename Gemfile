@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 ## If you update the version here, also update it in Docker and GitHub Actions
-ruby '3.3.8'
+ruby '4.0.1'
 
 gem "asciidoctor", "~>2.0.23"
 gem "rouge", "~> 4.4"
