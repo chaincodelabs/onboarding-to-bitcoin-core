@@ -10,7 +10,7 @@ The easiest way to serve the site locally is using Docker:
 
 [source,bash]
 ----
-docker compose up dev
+docker compose up --build dev
 ----
 
 This will:
@@ -50,7 +50,7 @@ The project includes several useful Makefile targets for development and deploym
 
 === Development Workflow
 
-1. Local Development: Use `docker compose up dev` or `make docker-dev` to start the development server
+1. Local Development: Use `docker compose up --build dev` or `make docker-dev` to start the development server
 2. Shell Access: Use `make docker-shell` to access the container for debugging or manual commands
 3. Testing: Run `make all` before submitting changes to ensure everything builds and passes tests
 4. Cleanup: Use `make docker-clean` to clean up containers and free disk space
