@@ -18,9 +18,16 @@ ____
 You can see blocks as 'patches' to the chain state (they consume some unspent outputs, and produce new ones), and see the undo data as reverse patches. They are necessary for rolling back the chainstate, which is necessary in case of reorganisations.
 ____
 
-////
-TODO: bitcoin.conf, config.json, debug.log ??
-////
+=== Configuration and log files
+
+$DATADIR/bitcoin.conf::
+Configuration file for Bitcoin Core. Contains runtime options like network settings, RPC credentials, and node behavior. If not present, command-line options or defaults are used.
+
+$DATADIR/settings.json::
+Stores GUI settings and runtime configuration options (e.g., prune mode settings, loaded wallets). Automatically managed by Bitcoin Core and takes precedence over `bitcoin.conf` for overlapping settings.
+
+$DATADIR/debug.log::
+Main log file containing node activity, warnings, and errors. Useful for troubleshooting. Can be tailed with `tail -f ~/.bitcoin/debug.log` on Unix systems.
 
 === Indexes
 
