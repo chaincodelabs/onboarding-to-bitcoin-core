@@ -69,7 +69,7 @@ UTXO set https://github.com/bitcoin/bitcoin/blob/b3f866a8dfd652b6339b79124843e58
 |`BlockFilterIndex`
 
 |Coinstats Index
-|_$DATADIR/indexes/coinstats_
+|_$DATADIR/indexes/coinstatsindex/db/_
 |Yes
 |`CoinstatsIndex`
 
