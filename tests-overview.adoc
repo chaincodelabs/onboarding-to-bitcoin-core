@@ -36,7 +36,7 @@ WARNING: This diagram is **not** exhaustive and includes simplifications.
 
 NOTE: dashed lines indicate optional components
 
-NOTE: The `fuzz_targets` themselves are located in the `test` folder, however the fuzz tests are run via the `test_runner` in src/test so we point fuzz to there.
+NOTE: The `fuzz_targets` themselves are located in `src/test/fuzz/`, while the fuzz `test_runner` is located in `test/fuzz/`.
 
 NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate^] repo altogether, as they are quite large (~0.6GB repo size and ~6.9GB on clone).
 
@@ -53,7 +53,7 @@ flowchart LR
 
     TR2["test_runner (fuzz)"]
     fuzz_targets --> fuzz
-    fuzz --> src/test
+    fuzz_targets --> src/test
     libFuzzer -.-> fuzz
     TR2 --> fuzz
     qa-assets -.-> fuzz
