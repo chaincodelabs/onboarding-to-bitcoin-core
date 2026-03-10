@@ -29,7 +29,6 @@ flowchart LR
     ScriptPubKeyMan --> Wallet
     WalletDatabase --> Wallet
     sqlite -.-> WalletDatabase
-    BDB -.-> WalletDatabase
     Logger --> bitcoind
     ZMQ -.-> bitcoind
     BlockManager --> ChainstateManager
@@ -110,9 +109,8 @@ NOTE: dashed lines indicate optional components
 flowchart LR
     ScriptPubKeyMan --> DescriptorScriptPubKeyMan
     ScriptPubKeyMan --> LegacyScriptPubKeyMan
-    subgraph Descriptor or Legacy wallet
+    subgraph Descriptor wallet
     DescriptorScriptPubKeyMan
-    LegacyScriptPubKeyMan
     end
     DescriptorScriptPubKeyMan -.-> CWallet
     LegacyScriptPubKeyMan -.-> CWallet
@@ -120,11 +118,9 @@ flowchart LR
     WalletDatabase --> CWallet
     cs_wallet{{cs_wallet}} ---> CWallet
 
-    subgraph BDB or sqlite database
-    BDB
+    subgraph sqlite database
     sqlite
     end
-    BDB -.-> WalletDatabase
     sqlite -.-> WalletDatabase
 
     SigningProvider --> ScriptPubKeyMan
@@ -148,7 +144,7 @@ flowchart LR
 |A SPKM for https://github.com/bitcoin/bitcoin/pull/16528[descriptor-based^] wallets
 
 |`LegacyScriptPubKeyMan`
-|A SPKM for legacy wallets
+|A SPKM for legacy wallets. Deprecated; retained for wallet migration purposes only
 
 |`SigningProvider`
 |An interface for a `KeyStore` to sign transactions from
