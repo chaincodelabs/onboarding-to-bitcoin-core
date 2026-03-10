@@ -13,7 +13,7 @@
 |`ctest --test-dir build` or `./build/bin/test_bitcoin`
 
 |functional tests
-|`test/functional/test_runner.py`
+|`build/test/functional/test_runner.py`
 
 |lint checks
 |See the https://github.com/bitcoin/bitcoin/blob/master/test/lint/README.md#running-locally[documentation^]
