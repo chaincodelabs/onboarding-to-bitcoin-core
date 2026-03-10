@@ -26,7 +26,7 @@
 
 |===
 
-Bitcoin Core is also introducing (functional) "stress tests" which challenge the program via interruptions and missing files to ensure that we fail gracefully, e.g. the tests introduced in https://github.com/bitcoin/bitcoin/pull/23289[PR#23289^].
+Bitcoin Core also has (functional) "stress tests" which challenge the program via interruptions and missing files to ensure that we fail gracefully, e.g. the tests introduced in https://github.com/bitcoin/bitcoin/pull/23289[PR#23289^].
 
 === Test directory structure
 
@@ -38,7 +38,7 @@ NOTE: dashed lines indicate optional components
 
 NOTE: The `fuzz_targets` themselves are located in the `test` folder, however the fuzz tests are run via the `test_runner` in src/test so we point fuzz to there.
 
-NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate^] repo altogether, as they are quite large (~3.5GB repo size and ~13.4GB on clone).
+NOTE: `qa_assets` are found in a https://github.com/bitcoin-core/qa-assets[separate^] repo altogether, as they are quite large (~0.6GB repo size and ~6.9GB on clone).
 
 .Test directory Structure
 [mermaid, target=bitcoin-core-tests]
