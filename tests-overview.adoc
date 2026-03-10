@@ -10,7 +10,7 @@
 |Tool |Usage
 
 |unit tests
-|`make check` or `./src/test_bitcoin`
+|`ctest --test-dir build` or `./build/bin/test_bitcoin`
 
 |functional tests
 |`test/functional/test_runner.py`
