@@ -6,6 +6,11 @@
 Over the last decade, as the scope, complexity and test coverage of the codebase has increased, there has been a general effort to not only break Bitcoin Core down from its monolithic structure but also to move towards it being a collection of self-contained subsystems.
 The rationale for such a goal is that this makes components easier to reason about, easier to test, and less-prone to layer violations, as subsystems can contain a full view of all the information they need to operate.
 
+The most prominent recent example of this decomposition effort is the
+https://github.com/bitcoin/bitcoin/issues/27587[_libbitcoinkernel_^] project,
+which aims to extract the consensus-critical parts of Bitcoin Core into a
+standalone, embeddable library.
+
 Subsystems can be notified of events relevant to them and take appropriate actions on their own.
 On the GUI/QT side this is handled with signals and slots, but in the core daemon this is largely still a producer/consumer pattern.
 
@@ -14,6 +19,6 @@ The various subsystems are often suffixed with `Manager` or `man`, e.g. `CConnma
 TIP: The extra "C" in `CConnman` is a hangover from the https://en.wikipedia.org/wiki/Hungarian_notation[Hungarian notation^] used originally by Satoshi.
 This is being phased out as-and-when affected code is touched during other changes.
 
-You can see some (but not all) of these subsystems being initialized in https://github.com/bitcoin/bitcoin/blob/v23.0/src/init.cpp#L1113[_init.cpp#AppInitMain()_^].
+You can see some (but not all) of these subsystems being initialized in https://github.com/bitcoin/bitcoin/blob/v30.2/src/init.cpp#L1357[_init.cpp#AppInitMain()_^].
 
 There is a recent preference to favour python over bash/sh for scripting, e.g. for linters, but many shell scripts remain in place for CI and contrib/ scripts.
