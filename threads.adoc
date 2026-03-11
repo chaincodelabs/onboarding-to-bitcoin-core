@@ -17,9 +17,9 @@ The Bitcoin Core Developer https://github.com/bitcoin/bitcoin/blob/master/doc/de
 |`main()`
 |Responsible for starting up and shutting down the application, and spawning all sub-threads
 
-|`b-loadblk`
-|`ThreadImport`
-|Loads blocks from `blk*.dat` files or `-loadblock=<file>` on startup
+|`b-initload`
+|`Init load`
+|Performs various loading tasks that are part of init but shouldn't block the node from being started: external block import, reindex, reindex-chainstate, main chain activation, spawn indexes background sync threads and mempool load
 
 |`b-scriptch.x`
 |`ThreadScriptCheck`
@@ -63,7 +63,7 @@ The Bitcoin Core Developer https://github.com/bitcoin/bitcoin/blob/master/doc/de
 |`ThreadDNSAddressSeed`
 |Loads addresses of peers from the `ThreadDNS`
 
-|`b-upnp`
+|`b-mapport`
 |`ThreadMapPort`
 |Universal plug-and-play startup/shutdown
 
@@ -95,7 +95,7 @@ The file also loads break points where new threads are spawned.
 [source,bash]
 ----
 set follow-fork-mode child
-break node::ThreadImport
+break ImportBlocks
 break StartScriptCheckWorkerThreads
 break ThreadHTTP
 break StartHTTPServer
