@@ -18,6 +18,6 @@ Issue https://github.com/bitcoin/bitcoin/issues/15732[#15732^] describes how the
 
 You can track the progress of these changes by following links from the issue to associated PRs.
 
-The `libbitcoin-kernel` https://github.com/bitcoin/bitcoin/issues/24303[project^] will provide further clean-ups and improvements in this area.
+The `libbitcoin-kernel` https://github.com/bitcoin/bitcoin/issues/27587[project^] will provide further clean-ups and improvements in this area.
 
-If you want to explore for yourself which sources certain libraries require on the current codebase, you can open the file `src/Makefile.am` and search for `_SOURCES`.
+If you want to explore for yourself which sources certain libraries require on the current codebase, you can open the file `src/CMakeLists.txt` and search for `add_library(bitcoin_`.
