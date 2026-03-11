@@ -18,6 +18,9 @@ ____
 You can see blocks as 'patches' to the chain state (they consume some unspent outputs, and produce new ones), and see the undo data as reverse patches. They are necessary for rolling back the chainstate, which is necessary in case of reorganisations.
 ____
 
+$DATADIR/blocks/xor.dat::
+Rolling XOR pattern used to obfuscate block and undo data files (prevents antivirus false positives on block data).
+
 === Configuration and log files
 
 $DATADIR/bitcoin.conf::
@@ -45,6 +48,9 @@ All current UTXOs + some metadata
 Tx Index::
 Filesystem location of all transactions by txid
 
+Tx Spender Index::
+Filesystem location of transactions by the outputs they spend
+
 Block Filter Index::
 https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki[BIP157] filters, hashes and headers
 
@@ -69,6 +75,11 @@ UTXO set https://github.com/bitcoin/bitcoin/blob/b3f866a8dfd652b6339b79124843e58
 |_$DATADIR/indexes/txindex_
 |Yes
 |`TxIndex`
+
+|Tx Spender Index
+|_$DATADIR/indexes/txospenderindex_
+|Yes
+|`TxSpenderIndex`
 
 |Block Filter Index
 |_$DATADIR/indexes/blockfilter/<filter name>_
