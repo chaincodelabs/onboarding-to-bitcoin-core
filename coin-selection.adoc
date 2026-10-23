@@ -49,11 +49,13 @@ If this is still unsuccessful it increases the number of ancestors and descendan
 This function is orchestrating the <<GroupOutputs,Output group>> creation, and then the <<selectCoins,coin selection>>.
 Currently, this is always based on the xref:constructing-transactions.adoc#coin-selection[waste metric].
 
-It is using 3 algorithms and then selecting the "best" of the three (based on the waste metric):
+It is using 4 algorithms and then selecting the "best" of the four (based on the waste metric):
 
 . Branch n bound (bnb)
 . Knapsack
 . Single Random Draw (SRD)
+. CoinGrinder (cg)
 
-There is currently an idea that a limited SRD could replace Knapsack in the future.
-Due to this plan for removal, it would not make sense to focus development effort on improving the Knapsack algorithm at this time.
+SRD was added in https://github.com/bitcoin/bitcoin/pull/17526[PR#17526^] (v23.0) as a second fallback alongside Knapsack.
+The earlier idea that SRD would eventually replace Knapsack has not happened: Knapsack is still run, and is the only one of the four that is also given outputs with a negative effective value, preserving its legacy behaviour of spending dust.
+CoinGrinder was added in https://github.com/bitcoin/bitcoin/pull/27877[PR#27877^] (v27.0), minimises the weight of the input set, and only runs when the effective fee rate is more than three times the long-term fee rate (10 sat/vB by default, so above 30 sat/vB).

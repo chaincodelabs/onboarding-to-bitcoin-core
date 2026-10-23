@@ -134,10 +134,12 @@ The `discard_fee_rate` refers to any change output which would be dust at the `d
 === Coin selection
 
 Now that we have a vector of available coins and our fee rate settings estimated, we are ready to start coin selection itself.
-This is still an active area of research, with two possible coin selection solving algorithms currently implemented:
+This is still an active area of research, with four possible coin selection solving algorithms currently implemented:
 
 . Branch and bound ("bnb")
 . Knapsack
+. Single Random Draw ("srd")
+. CoinGrinder ("cg")
 
 The branch and bound algorithm is well-documented in the codebase itself:
 
@@ -188,9 +190,11 @@ The Branch and Bound algorithm is described in detail in Murch's Master Thesis: 
 
 ----
 
-You can read a little more about the differences between these two coin selection algorithms in this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer^].
+You can read a little more about the differences between these coin selection algorithms in this https://bitcoin.stackexchange.com/questions/32145/what-are-the-trade-offs-between-the-different-algorithms-for-deciding-which-utxo/32445#32445[StackExchange answer^].
 
 You can read more about `waste` and the waste metric in this https://bitcoin.stackexchange.com/questions/113622/what-does-waste-metric-mean-in-the-context-of-coin-selection/113625#113625[StackExchange answer^].
+
+LearnBitcoin has a https://www.learnbitcoin.com/rabbit-hole/coin-selection[chapter^] which walks through all four algorithms and the waste metric with worked examples and links the relevant Bitcoin Core PRs.
 
 Coin selection is performed as a loop, as it may take multiple iterations to select the optimal coins for a given transaction.
 
